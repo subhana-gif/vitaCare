@@ -17,7 +17,6 @@ const generateOTP = (email) => {
 
 const sendOTPEmail = async (email, otp) => {
   try {
-    console.log("🚀 Sending OTP to:", email);
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -37,14 +36,12 @@ const sendOTPEmail = async (email, otp) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("✅ Email sent successfully:", result);
   } catch (error) {
     console.error("❌ Error sending OTP email:", error);
   }
 };
 
 const verifyOTP = (email, otp) => {
-  console.log(`🔍 Verifying OTP for ${email}: Received ${otp}, Expected ${otpStore[email]}`);
   return otpStore[email] === otp;
 };
 

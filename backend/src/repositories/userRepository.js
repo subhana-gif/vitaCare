@@ -6,6 +6,7 @@ class UserRepository {
   }
 
   async findByEmail(email) {
+    console.log("Finding user with email:", email);
     return await User.findOne({ email });
   }
 }

@@ -34,14 +34,26 @@ const Signup = () => {
     try {
       const res = await axios.post("http://localhost:5000/api/auth/verify-otp", { email, otp });
       setMessage(res.data.message);
+  
       if (res.data.success) {
-        navigate("/home"); // Redirect to home page after OTP verification
+        // ✅ Step 1: OTP Verified, Now Register the User
+        const signupRes = await axios.post("http://localhost:5000/api/auth/signup", {
+          name,
+          email,
+          password,
+        });
+  
+        setMessage(signupRes.data.message);
+  
+        if (signupRes.data.success) {
+          navigate("/home"); // Redirect after successful signup
+        }
       }
     } catch (error) {
       setMessage(error.response?.data?.message || "Error verifying OTP");
     }
   };
-
+  
   return (
     <div>
       <h2>Signup</h2>
