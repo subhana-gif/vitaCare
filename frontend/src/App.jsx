@@ -16,6 +16,8 @@ import DoctorDashboard from "./pages/Doctor/Dashboard";
 import DoctorAppointments from "./pages/Doctor/Appointments"
 import DoctorProfile from "./pages/Doctor/Profile";
 import AllDoctors from "./pages/User/AllDoctors"
+import About from "./pages/User/About";
+import Contact from "./pages/User/Contact";
 import LayoutUser from "./components/User/Layout";
 
 const App = () => {
@@ -28,6 +30,8 @@ const App = () => {
         <Route path="/home" element={<LayoutUser />}>
           <Route index element={<Home />} />
           <Route path="doctors" element={<AllDoctors />} />
+          <Route path="About" element={<About/>}/>
+          <Route path="contact" element={<Contact/>}/>
         </Route>
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />

@@ -6,10 +6,10 @@ const nodemailer = require("nodemailer");
 // 📌 Send Invitation Email with Link to Set Password
 exports.addDoctor = async (req, res) => {
   try {
-    const { name, email, speciality, degree, experience, address1, address2, about } = req.body;
+    const { name, email, speciality, degree, experience, address, about, available,appointmentfee } = req.body;
     const image = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const newDoctor = new Doctor({ name, email, speciality, degree, experience, address1, address2, about, image });
+    const newDoctor = new Doctor({ name, email, speciality, degree, experience, address, about, image, available, appointmentfee: Number(appointmentfee), });
     await newDoctor.save();
 
     const frontendUrl = "http://localhost:5173/doctors/set-password?email=" + encodeURIComponent(email);
@@ -18,6 +18,7 @@ exports.addDoctor = async (req, res) => {
       service: "gmail",
       auth: { user: process.env.EMAIL, pass: process.env.EMAIL_PASSWORD },
     });
+    console.log("Attempting to send email to:", email);
 
     const mailOptions = {
       from: process.env.EMAIL,
@@ -27,6 +28,7 @@ exports.addDoctor = async (req, res) => {
              <p>You have been added as a doctor in our system. Please click the link below to set your password:</p>
              <a href="${frontendUrl}" style="display:inline-block;padding:10px 15px;color:#fff;background:#007bff;text-decoration:none;border-radius:5px;">Set Password</a>`,
     };
+    console.log("Mail options:", mailOptions);
 
     transporter.sendMail(mailOptions, (err) => {
       if (err) {
@@ -73,22 +75,17 @@ exports.setPassword = async (req, res) => {
 exports.loginDoctor = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("🔹 Received Login Request:", email, password);
 
     const doctor = await Doctor.findOne({ email });
 
     if (!doctor || !doctor.password) {
-      console.log("❌ Doctor not found or password missing");
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    console.log("🔹 Stored Hashed Password:", doctor.password);
 
     const isMatch = await bcrypt.compare(password, doctor.password);
-    console.log("🔹 Password Match Status:", isMatch);
 
     if (!isMatch) {
-      console.log("❌ Password does not match");
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
@@ -96,7 +93,6 @@ exports.loginDoctor = async (req, res) => {
     res.status(200).json({ message: "Login successful", token, doctor });
 
   } catch (error) {
-    console.error("❌ Server Error:", error.message);
     res.status(500).json({ error: "Server error", details: error.message });
   }
 };

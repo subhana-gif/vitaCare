@@ -8,10 +8,11 @@ const doctorSchema = new mongoose.Schema({
   speciality: String,
   degree: String,
   experience: String,
-  address1: String,
-  address2: String,
+  address: String,
   about: String,
   image: String,
+  available: { type: Boolean, default: true },
+  appointmentfee:Number,
 });
 
 

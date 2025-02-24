@@ -12,7 +12,7 @@ const DoctorListSidebar = () => {
       try {
         const response = await fetch("http://localhost:5000/api/doctors");
         const data = await response.json();
-        setDoctors(data);
+        setDoctors(data.doctors);
       } catch (error) {
         console.error("Error fetching doctors:", error);
       }
