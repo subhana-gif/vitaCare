@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { FaUserCircle } from "react-icons/fa";
-import { logout } from "../../redux/slices/authSlice";
-import { NavLink } from "react-router-dom";
+import { logout } from "../../redux/slices/authSlice"; // Adjust the path if needed
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -48,51 +47,13 @@ const Navbar = () => {
 
       {/* Centered Nav Links */}
       <div className="flex space-x-8 mx-auto">
-      <NavLink
-  to="/home"
-  end
-  className={({ isActive }) =>
-    `text-3xl hover:text-blue-600 ${
-      isActive ? "text-blue-600 font-bold" : "text-gray-600"
-    }`
-  }
->
-  HOME
-</NavLink>
+        <a href="/home" className="text-gray-600 text-3xl hover:text-blue-600">HOME</a>
+        <a href="/home/doctors" className="text-gray-600 text-3xl hover:text-blue-600">ALL DOCTORS</a>
+        <a href="/home/myAppointments" className="text-gray-600 text-3xl hover:text-blue-600">APPOINTMENTS</a>
+        <a href="#" className="text-gray-600 text-3xl hover:text-blue-600">ABOUT</a>
+        <a href="#" className="text-gray-600 text-3xl hover:text-blue-600">CONTACT</a>
+      </div>
 
-  <NavLink
-    to="/home/doctors"
-    className={({ isActive }) =>
-      `text-3xl hover:text-blue-600 ${
-        isActive ? "text-blue-600 font-bold" : "text-gray-600"
-      }`
-    }
-  >
-    ALL DOCTORS
-  </NavLink>
-
-  <NavLink
-    to="/home/about"
-    className={({ isActive }) =>
-      `text-3xl hover:text-blue-600 ${
-        isActive ? "text-blue-600 font-bold" : "text-gray-600"
-      }`
-    }
-  >
-    ABOUT
-  </NavLink>
-
-  <NavLink
-    to="/home/contact"
-    className={({ isActive }) =>
-      `text-3xl hover:text-blue-600 ${
-        isActive ? "text-blue-600 font-bold" : "text-gray-600"
-      }`
-    }
-  >
-    CONTACT
-  </NavLink>
-</div>
       {/* Profile Icon with Dropdown */}
       <div className="relative" ref={dropdownRef}>
         <button

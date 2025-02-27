@@ -1,30 +1,35 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "./utils/cropImage"; // Utility function to get cropped image
 
 const DoctorProfile = () => {
   const [doctor, setDoctor] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
-  const [image, setImage] = useState(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-
-  const specializations = [
-    "General",
-    "Gynecologist",
-    "Dermatologist",
-    "Pediatrician",
-    "Neurologist",
-    "Gastroenterologist"
-  ];
+  const [imageSrc, setImageSrc] = useState(null);
+  const [croppedImage, setCroppedImage] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
 
   useEffect(() => {
     const fetchDoctor = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/doctors/doctor");
-        const data = await response.json();
-        setDoctor(data);
-        setFormData(data);
+        const res = await fetch("http://localhost:5000/api/doctors/doctor", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          setDoctor(data);
+          setFormData(data);
+        } else {
+          console.error("Error fetching doctor details:", data.message);
+        }
       } catch (error) {
-        console.error("Error fetching doctor details:", error);
+        console.error("Fetch error:", error);
       }
     };
     fetchDoctor();
@@ -34,46 +39,46 @@ const DoctorProfile = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleImageChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    setImage(file);
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = useCallback(async (_, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCrop = async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
+
+    const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+    setCroppedImage(croppedImageBlob);
+    setShowCropModal(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let imageUrl = doctor.image;
-      if (image) {
-        setIsUploadingImage(true);
-        const formData = new FormData();
-        formData.append("image", image);
-
-        const imageResponse = await fetch("http://localhost:5000/api/doctors/${doctor._id}", {
-          method: "PUT",
-          body: formData,
-        });
-        const imageData = await imageResponse.json();
-        imageUrl = imageData.imageUrl;
-        setIsUploadingImage(false);
-      }
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("speciality", formData.speciality);
+      if (croppedImage) formDataToSend.append("image", croppedImage);
 
       const response = await fetch(`http://localhost:5000/api/doctors/${doctor._id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          image: imageUrl,
-        }),
+        body: formDataToSend,
       });
-
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to update details");
-      }
+      if (!response.ok) throw new Error(data.message || "Failed to update details");
 
-      setDoctor({ ...doctor, ...formData, image: imageUrl });
+      setDoctor({ ...doctor, ...formData });
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating doctor details:", error);
@@ -86,53 +91,50 @@ const DoctorProfile = () => {
     <div className="p-16 space-y-8">
       <h2 className="text-5xl font-bold mb-10 text-center">Doctor Profile</h2>
       <div className="bg-white shadow-xl p-12 rounded-2xl max-w-4xl mx-auto space-y-10">
+        <div className="flex flex-col items-center space-y-6">
+          <img
+            src={croppedImage ? URL.createObjectURL(croppedImage) : `http://localhost:5000${doctor.image}`}
+            alt="Doctor"
+            className="w-72 h-72 object-cover rounded-2xl border-4 border-gray-300"
+          />
+          {isEditing && (
+            <label className="bg-blue-600 text-white px-8 py-4 text-2xl rounded-2xl cursor-pointer">
+              Change Image
+              <input type="file" onChange={handleFileChange} className="hidden" />
+            </label>
+          )}
+        </div>
+
         {isEditing ? (
           <form onSubmit={handleSubmit} className="space-y-10">
-            <div className="text-center">
-              <img
-                src={image ? URL.createObjectURL(image) : doctor.image ? `http://localhost:5000${doctor.image}` : "https://via.placeholder.com/180"}
-                alt="Doctor"
-                className="w-48 h-48 mx-auto rounded-full object-cover"
-              />
-              <input type="file" accept="image/*" onChange={handleImageChange} className="mt-4" />
-            </div>
-            
             <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full border p-5 text-2xl rounded-2xl" placeholder="Name" />
-            
+            <input type="email" name="email" value={doctor.email} disabled className="w-full border p-5 text-2xl bg-gray-200 rounded-2xl" />
             <select name="speciality" value={formData.speciality} onChange={handleChange} className="w-full border p-5 text-2xl rounded-2xl">
-              {specializations.map((spec) => (
-                <option key={spec} value={spec}>{spec}</option>
-              ))}
+              {["General", "Gynecologist", "Dermatologist", "Pediatrician", "Neurologist", "Gastroenterologist"].map(spec => <option key={spec} value={spec}>{spec}</option>)}
             </select>
-
-            <input type="text" name="degree" value={formData.degree} onChange={handleChange} className="w-full border p-5 text-2xl rounded-2xl" placeholder="Degree" />
-            <input type="number" name="experience" value={formData.experience} onChange={handleChange} min="1" className="w-full border p-5 text-2xl rounded-2xl" placeholder="Experience (Years)" />
-            <input type="text" name="address1" value={formData.address} onChange={handleChange} className="w-full border p-5 text-2xl rounded-2xl" placeholder="Address Line 1" />
-            <textarea name="about" value={formData.about} onChange={handleChange} className="w-full border p-5 text-2xl rounded-2xl" placeholder="About" />
-            <input type="text" name="available" value={formData.available} onChange={handleChange} className="w-full border p-5 text-2xl rounded-2xl" placeholder="Available (Yes/No)" />
-            <input type="number" name="appointmentFee" value={formData.appointmentfee} onChange={handleChange} className="w-full border p-5 text-2xl rounded-2xl" placeholder="Appointment Fee" />
-
             <div className="flex gap-12 justify-center">
-              <button type="submit" className="bg-green-600 text-white px-10 py-5 text-2xl rounded-2xl">{isUploadingImage ? "Uploading..." : "Save"}</button>
+              <button type="submit" className="bg-green-600 text-white px-10 py-5 text-2xl rounded-2xl">Save</button>
               <button type="button" onClick={() => { setIsEditing(false); setFormData(doctor); }} className="bg-gray-600 text-white px-10 py-5 text-2xl rounded-2xl">Cancel</button>
             </div>
           </form>
         ) : (
-          <div className="space-y-6 text-2xl text-center">
-            <img src={doctor.image ? `http://localhost:5000${doctor.image}` : "https://via.placeholder.com/180"} alt="Doctor" className="w-48 h-48 mx-auto rounded-full object-cover" />
+          <div className="text-center space-y-6 text-2xl">
             <h3 className="text-4xl font-semibold">{doctor.name}</h3>
             <p>{doctor.degree} - {doctor.speciality}</p>
-            <p><strong>Experience:</strong> {doctor.experience} Years</p>
-            <p><strong>About:</strong> {doctor.about}</p>
-            <p><strong>Address:</strong> {doctor.address1}, {doctor.address2}</p>
-            <p><strong>Available:</strong> {doctor.available}</p>
-            <p><strong>Appointment Fee:</strong> ₹{doctor.appointmentfee}</p>
-            <div className="flex justify-center mt-10">
-              <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white px-10 py-5 text-2xl rounded-2xl">Edit</button>
-            </div>
+            <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white px-10 py-5 text-2xl rounded-2xl">Edit</button>
           </div>
         )}
       </div>
+
+      {showCropModal && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center">
+          <div className="bg-white p-8 rounded-2xl space-y-6">
+            <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
+            <button onClick={handleCrop} className="bg-green-600 text-white px-10 py-5 text-2xl rounded-2xl">Crop</button>
+            <button onClick={() => setShowCropModal(false)} className="bg-red-600 text-white px-10 py-5 text-2xl rounded-2xl">Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
