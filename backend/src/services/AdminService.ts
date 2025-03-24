@@ -14,7 +14,7 @@ class AuthService implements IAuthService {
       throw new Error("Invalid credentials");
     }
 
-    return this.tokenService.generateToken({ email: ADMIN_EMAIL, role: "admin" });
+    return this.tokenService.generateToken({ email: ADMIN_EMAIL, role: "admin", id: "admin123" });
   }
 }
 

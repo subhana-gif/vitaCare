@@ -28,6 +28,13 @@ interface Appointment {
   paymentId?: string;
 }
 
+interface Medicine {
+  name: string;
+  dosage: string;
+  duration: string;
+  timing: string;
+}
+
 const AppointmentPage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -35,6 +42,13 @@ const AppointmentPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [prescriptionModalOpen, setPrescriptionModalOpen] = useState<boolean>(false);
+  const [existingPrescription, setExistingPrescription] = useState<any>(null); // Track existing prescription
+  const [medicines, setMedicines] = useState<Medicine[]>([
+    { name: '', dosage: '', duration: '', timing: '' },
+  ]);
+
+  const [diagnosis, setDiagnosis] = useState('');
+  const [notes, setNotes] = useState('');
   const MySwal = withReactContent(Swal);
   const token = useSelector((state: RootState) => state.doctors.token);
   const doctorId = useSelector((state: RootState) => state.doctors.doctorId);
@@ -66,6 +80,61 @@ const AppointmentPage: React.FC = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  const checkPrescriptionExists = async (appointmentId: string) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5001/api/prescriptions/${appointmentId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+  
+      // Log the prescription data for debugging
+      console.log("Existing prescription data:", response.data);
+  
+      // Return the prescription data
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          // No prescription exists for this appointment
+          console.log("No prescription found for appointment ID:", appointmentId);
+          return null;
+        } else {
+          // Handle other Axios errors
+          console.error("Error fetching prescription:", error.message);
+          throw new Error(`Failed to fetch prescription: ${error.message}`);
+        }
+      } else {
+        // Handle non-Axios errors
+        console.error("Unexpected error:", error);
+        throw new Error("An unexpected error occurred while fetching prescription.");
+      }
+    }
+  };
+
+const handleGivePrescription = async (appointment: Appointment) => {
+  try {
+    const existingPrescription = await checkPrescriptionExists(appointment._id);
+    setSelectedAppointment(appointment);
+    setPrescriptionModalOpen(true);
+
+    if (existingPrescription) {
+      // Populate the modal with existing prescription data
+      setMedicines(existingPrescription.medicines);
+      setDiagnosis(existingPrescription.diagnosis);
+      setNotes(existingPrescription.notes);
+    } else {
+      // Reset the form for a new prescription
+      setMedicines([{ name: '', dosage: '', duration: '', timing: '' }]);
+      setDiagnosis('');
+      setNotes('');
+    }
+  } catch (error) {
+    console.error("Error handling prescription:", error);
+    toast.error("Failed to fetch prescription details.");
+  }
+};
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
     try {
       const appointment = appointments.find(appt => appt._id === appointmentId);
@@ -103,9 +172,9 @@ const AppointmentPage: React.FC = () => {
             title: 'text-xl',
           }
         });
-  
+
         if (!result.isConfirmed) return;
-  
+
         try {
           // Show processing state
           MySwal.fire({
@@ -128,11 +197,11 @@ const AppointmentPage: React.FC = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-  
+
           if (!refundResponse.data.success) {
             throw new Error(refundResponse.data.message || "Refund failed");
           }
-  
+
           const refundDetails = refundResponse.data.refundDetails;
           
           // Enhanced success modal
@@ -213,7 +282,7 @@ const AppointmentPage: React.FC = () => {
           return;
         }
       }
-  
+
       // Update appointment status
       const response = await axios.put(
         `http://localhost:5001/api/appointments/${appointmentId}/status`,
@@ -222,7 +291,7 @@ const AppointmentPage: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  
+
       setAppointments((prevAppointments) =>
         prevAppointments.map((appt) =>
           appt._id === appointmentId
@@ -230,14 +299,14 @@ const AppointmentPage: React.FC = () => {
             : appt
         )
       );
-  
+
       toast.success("Status updated successfully.");
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Failed to update status. Please try again.");
     }
   };  
-  
+
   const getStatusBadgeClass = (status: string) => {
     switch(status.toLowerCase()) {
       case 'scheduled':
@@ -320,20 +389,20 @@ const AppointmentPage: React.FC = () => {
                     <div className="text-base text-gray-500">{appointment.time}</div>
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap">
-  <select
-    value={appointment.status}
-    onChange={(e) => handleStatusChange(appointment._id, e.target.value)}
-    className="border border-gray-300 rounded px-2 py-1 text-gray-700"
-    disabled={appointment.status === 'cancelled' || appointment.status === 'completed'} // ✅ Disable for 'cancelled' or 'completed'
-  >
-    <option value="pending" disabled={appointment.status === "confirmed"}>
-      Pending
-    </option>
-    <option value="confirmed">Confirmed</option>
-    <option value="cancelled">Cancelled</option>
-    <option value="completed">Completed</option>
-  </select>
-</td>
+                    <select
+                      value={appointment.status}
+                      onChange={(e) => handleStatusChange(appointment._id, e.target.value)}
+                      className="border border-gray-300 rounded px-2 py-1 text-gray-700"
+                      disabled={appointment.status === 'cancelled' || appointment.status === 'completed'}
+                    >
+                      <option value="pending" disabled={appointment.status === "confirmed"}>
+                        Pending
+                      </option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </td>
                   <td className="px-6 py-5 whitespace-nowrap">
                     <span className={`px-3 py-1.5 text-sm font-medium rounded-full ${getPaymentBadgeClass(appointment.paymentStatus)}`}>
                       {appointment.paymentStatus}
@@ -351,13 +420,10 @@ const AppointmentPage: React.FC = () => {
                     </button>
                     {appointment.status === 'completed' && (
                       <button
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setPrescriptionModalOpen(true);
-                        }}
+                        onClick={() => handleGivePrescription(appointment)}
                         className="text-green-600 hover:text-green-900"
                       >
-                        Give Prescription
+                        {existingPrescription ? 'Edit Prescription' : 'Give Prescription'}
                       </button>
                     )}
                   </td>
@@ -378,9 +444,14 @@ const AppointmentPage: React.FC = () => {
         onClose={() => setPrescriptionModalOpen(false)}
         appointmentId={selectedAppointment?._id || ''}
         patientName={selectedAppointment ? ((selectedAppointment.patientId as unknown as Patient)?.name || '') : ''}
+        existingPrescription={existingPrescription} // Pass existing prescription
+        setMedicines={setMedicines}
+        setDiagnosis={setDiagnosis}
+        setNotes={setNotes}
       />
     </div>
   );
 };
 
 export default AppointmentPage;
+

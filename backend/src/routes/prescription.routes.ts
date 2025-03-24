@@ -14,7 +14,7 @@ router.post('/', verifyToken(["doctor"]), async (req, res, next) => {
 });
 
 // Get prescription by appointment ID
-router.get('/:appointmentId', verifyToken(["user"]), async (req, res, next) => {
+router.get('/:appointmentId', verifyToken(["user","doctor"]), async (req, res, next) => {
     try {
         await getPrescriptionByAppointment(req, res);
     } catch (error) {

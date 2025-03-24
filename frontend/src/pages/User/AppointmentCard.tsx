@@ -1,6 +1,7 @@
 import React from "react";
 import { Appointment } from "../../types/appointment";
 import { formatDate, isUpcoming } from "../../utils/dateUtils";
+import { useNavigate } from "react-router-dom";
 
 interface AppointmentCardProps {
   appointment: Appointment & {
@@ -35,9 +36,15 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         return "bg-gray-100 text-gray-800";
     }
   };
+  const navigate = useNavigate();
+
+  const handleViewPrescription = () => {
+    navigate(`/prescription/${appointment._id}`);
+  };
 
   // Function to render the appropriate action content based on appointment status
   const renderActionContent = () => {
+    // Handle cancelled appointments
     if (appointment.status === "cancelled") {
       return (
         <div className="min-h-[80px] flex items-center justify-center">
@@ -45,7 +52,23 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         </div>
       );
     }
-    
+  
+    // Handle completed appointments
+    if (appointment.status === "completed") {
+      return (
+        <div className="min-h-[80px] flex flex-col items-center justify-center space-y-3">
+          <span className="text-center text-gray-500 italic">Appointment completed</span>
+          <button
+            onClick={handleViewPrescription}
+            className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
+          >
+            View Prescription
+          </button>
+        </div>
+      );
+    }
+  
+    // Handle past appointments (excluding completed ones)
     if (!isUpcoming(appointment.date)) {
       return (
         <div className="min-h-[80px] flex items-center justify-center">
@@ -53,15 +76,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         </div>
       );
     }
-    
-    if (appointment.status === "completed") {
-      return (
-        <div className="min-h-[80px] flex items-center justify-center">
-          <span className="text-center text-gray-500 italic">Appointment completed</span>
-        </div>
-      );
-    }
-    
+  
+    // Handle pending appointments
     if (appointment.status === "pending") {
       return (
         <div className="min-h-[80px] flex items-center justify-center">
@@ -77,7 +93,8 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
         </div>
       );
     }
-    
+  
+    // Handle confirmed appointments with payment due
     return (
       <div className="min-h-[80px] flex flex-col justify-center space-y-3">
         {appointment.status === "confirmed" && 
@@ -101,7 +118,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       </div>
     );
   };
-
   // Helper function to determine if appointment is active
   const isActive = isUpcoming(appointment.date) && appointment.status !== "cancelled" && appointment.status !== "completed";
 

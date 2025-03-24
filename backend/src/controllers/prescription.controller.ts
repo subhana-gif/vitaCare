@@ -7,25 +7,52 @@ export const createPrescription = async (req: Request, res: Response) => {
   try {
     const { appointmentId, medicines, diagnosis, notes } = req.body;
 
+    // Validate appointmentId
     if (!Types.ObjectId.isValid(appointmentId)) {
       return res.status(400).json({ message: 'Invalid appointment ID' });
     }
 
-    const prescription = new Prescription({
-      appointmentId,
-      medicines,
-      diagnosis,
-      notes
-    });
+    // Check if a prescription already exists for this appointment
+    const existingPrescription = await Prescription.findOne({ appointmentId });
 
-    await prescription.save();
-    res.status(201).json(prescription);
+    if (existingPrescription) {
+      // Update the existing prescription
+      existingPrescription.medicines = medicines;
+      existingPrescription.diagnosis = diagnosis;
+      existingPrescription.notes = notes;
+
+      await existingPrescription.save();
+      return res.status(200).json({
+        success: true,
+        message: 'Prescription updated successfully',
+        data: existingPrescription,
+      });
+    } else {
+      // Create a new prescription
+      const newPrescription = new Prescription({
+        appointmentId,
+        medicines,
+        diagnosis,
+        notes,
+      });
+
+      await newPrescription.save();
+      return res.status(201).json({
+        success: true,
+        message: 'Prescription created successfully',
+        data: newPrescription,
+      });
+    }
   } catch (error) {
-    console.error('Error creating prescription:', error);
-    res.status(500).json({ message: 'Failed to create prescription' });
+    if (error instanceof Error) {
+      console.error('Error saving prescription:', error.message);
+      res.status(500).json({ message: 'Failed to save prescription', error: error.message });
+    } else {
+      console.error('Unknown error:', error);
+      res.status(500).json({ message: 'Failed to save prescription', error: 'An unknown error occurred' });
+    }
   }
 };
-
 export const getPrescriptionByAppointment = async (req: Request, res: Response) => {
   try {
     const { appointmentId } = req.params;

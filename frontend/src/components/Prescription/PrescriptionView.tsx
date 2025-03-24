@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { FaDownload } from 'react-icons/fa';
+import { useParams } from "react-router-dom";
+
 
 interface PrescriptionViewProps {
   appointmentId: string;
@@ -25,7 +27,8 @@ interface Prescription {
   createdAt: string;
 }
 
-const PrescriptionView: React.FC<PrescriptionViewProps> = ({ appointmentId }) => {
+const PrescriptionView: React.FC = () => {
+  const { appointmentId } = useParams<{ appointmentId: string }>();
   const [prescription, setPrescription] = useState<Prescription | null>(null);
   const [loading, setLoading] = useState(true);
   const token = useSelector((state: RootState) => state.auth.accessToken);

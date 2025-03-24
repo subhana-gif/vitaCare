@@ -10,6 +10,7 @@ const AdminLogin: React.FC = () => {
     try {
       const { token } = await adminService.login(email, password);
       localStorage.setItem("adminToken", token);
+      console.log("set admin token:",token)
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Admin Login Error:", error);

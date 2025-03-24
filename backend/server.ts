@@ -16,6 +16,7 @@ import chatRoutes from "./src/routes/chatRoutes"
 import slotRoutes from "./src/routes/slotRoutes"
 import reviews from "./src/routes/reviewRoutes"
 import prescription from "./src/routes/prescription.routes"
+import dashboard from "./src/routes/dashboard"
 
 
 dotenv.config();
@@ -53,6 +54,7 @@ app.use("/api/chat",chatRoutes)
 app.use("/api/slots",slotRoutes)
 app.use("/api/reviews",reviews)
 app.use("/api/prescriptions",prescription)
+app.use("/api/dashboard",dashboard)
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });

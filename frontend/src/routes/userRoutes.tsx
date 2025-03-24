@@ -15,6 +15,7 @@ import ProtectedRoute from "../pages/User/ProtectedRoutes";
 import DoctorLogin from "../pages/Doctor/Login";
 import DoctorSignup from "../pages/Doctor/signup";
 import Chats from "../pages/Common/chat";
+import PrescriptionView from "../components/Prescription/PrescriptionView";
 
 
 const UserRoutes: React.FC = () => {
@@ -36,7 +37,10 @@ const UserRoutes: React.FC = () => {
         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="myAppointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
         <Route path="chats/:userId?/:doctorId?"element={<ProtectedRoute><Chats /></ProtectedRoute>}/>
-      </Route>
+        <Route path="chats/:userId?/:doctorId?"element={<ProtectedRoute><Chats /></ProtectedRoute>}/>
+        <Route path="prescription/:appointmentId" element={<ProtectedRoute><PrescriptionView /></ProtectedRoute>} />
+        
+        </Route>
     </Routes>
   );
 };
