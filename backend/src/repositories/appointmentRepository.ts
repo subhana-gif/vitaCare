@@ -18,7 +18,8 @@ export class AppointmentRepository {
   }
   
   async getAppointments({ patientId }: { patientId: string }) {
-    return await appointment.find({ patientId }).populate("doctorId");
+    return await appointment.find({ patientId }).populate("doctorId") .sort({ createdAt: -1 })
+    .exec();
   }
   // ✅ Create Appointment
   async create(appointmentData: AppointmentData): Promise<IAppointment> {

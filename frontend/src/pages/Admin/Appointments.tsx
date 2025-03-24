@@ -165,11 +165,11 @@ const AdminAppointmentPage: React.FC = () => {
     
     if (totalPages <= maxDisplayedPages) {
       for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
+        pages.push(i as never);
       }
     } else {
       // Always include first page
-      pages.push(1);
+      pages.push(1 as never);
       
       // Calculate start and end of displayed pages
       let start = Math.max(2, currentPage - 1);
@@ -184,21 +184,21 @@ const AdminAppointmentPage: React.FC = () => {
       
       // Add ellipsis if needed
       if (start > 2) {
-        pages.push('...');
+        pages.push('...' as never);
       }
       
       // Add middle pages
       for (let i = start; i <= end; i++) {
-        pages.push(i);
+        pages.push(i as never);
       }
       
       // Add ellipsis if needed
       if (end < totalPages - 1) {
-        pages.push('...');
+        pages.push('...' as never);
       }
       
       // Always include last page
-      pages.push(totalPages);
+pages.push(totalPages as never);
     }
     
     return pages;

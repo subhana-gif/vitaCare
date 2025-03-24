@@ -21,20 +21,3 @@ router.get("/", verifyToken(["admin"]), appointmentController.getAllAppointments
 
 export default router;
 
-
-// // Get appointments for a specific doctor
-// router.get('/doctor/:doctorId', getDoctorAppointments);
-
-// // Get appointments for a specific patient
-// router.get('/patient/:patientId', getPatientAppointments);
-
-// // Update appointment status
-// router.patch('/:appointmentId/status', async (req: Request, res: Response, next: NextFunction) => {
-//   await updateAppointmentStatus(req, res);
-// });
-
-// // Update payment status
-// router.patch('/:appointmentId/payment', async (req: Request, res: Response, next: NextFunction) => {
-//   await updatePaymentStatus(req, res);
-// });
-

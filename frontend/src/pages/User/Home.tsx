@@ -193,7 +193,7 @@ const HomePage: React.FC = () => {
               <img
                 src={article.urlToImage || "/placeholder.jpg"}
                 alt={article.title}
-                className="w-full h-48 object-cover rounded"
+                className="w-full h-auto object-cover rounded"
               />
               <h2 className="text-lg font-bold mt-4">{article.title}</h2>
               <p className="text-gray-600">{article.description}</p>

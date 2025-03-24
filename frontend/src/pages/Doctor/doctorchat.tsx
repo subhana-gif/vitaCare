@@ -13,11 +13,19 @@ interface Chat {
 }
 
 interface Message {
+  _id: string; // Add unique ID for messages
   sender: string;
   receiver: string;
   text?: string;
   media?: string;
-  type?: "image" | "video"; // Add this field
+  type?: "image" | "video";
+  createdAt: Date;  
+  read: boolean; // Track read status
+}
+
+interface UnreadInfo {
+  count: number;
+  lastOpened: Date | null;
 }
 
 const DoctorChatPage: React.FC = () => {
@@ -28,29 +36,107 @@ const DoctorChatPage: React.FC = () => {
   const [text, setText] = useState<string>("");
   const [media, setMedia] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const [unreadInfo, setUnreadInfo] = useState<{ [key: string]: UnreadInfo }>({});
+  const [viewedMessages, setViewedMessages] = useState<Set<string>>(new Set());
+  
   // Fetch chat list
   useEffect(() => {
     if (!doctorId) return;
-    console.log("doctorid:", doctorId);
+    
     axios
       .get<Chat[]>(`http://localhost:5001/api/chat/doctor/${doctorId}/chats`)
       .then((res) => setChatList(res.data))
       .catch((err) => console.error("Error fetching chat list:", err));
+      
+    // Also fetch unread counts for all chats
+    axios
+      .get(`http://localhost:5001/api/chat/doctor/${doctorId}/unread`)
+      .then((res) => {
+        const unreadData = res.data;
+        const initialUnreadInfo: { [key: string]: UnreadInfo } = {};
+        
+        unreadData.forEach((item: any) => {
+          initialUnreadInfo[item.patientId] = {
+            count: item.count,
+            lastOpened: item.lastOpened ? new Date(item.lastOpened) : null
+          };
+        });
+        
+        setUnreadInfo(initialUnreadInfo);
+      })
+      .catch((err) => console.error("Error fetching unread counts:", err));
   }, [doctorId]);
 
   // Fetch messages when a patient is selected
   useEffect(() => {
     if (!selectedPatient || !doctorId) return;
-    console.log("selectedpatient:", selectedPatient);
+    
     axios
       .get<Message[]>(`http://localhost:5001/api/chat/${selectedPatient}/${doctorId}`)
       .then((res) => {
         setMessages(res.data);
-        scrollToBottom();
+        
+        // Mark messages as being viewed (but not yet read)
+        const messageIds = new Set(res.data.map(msg => msg._id));
+        setViewedMessages(messageIds);
       })
       .catch((err) => console.error("Error fetching messages:", err));
   }, [selectedPatient, doctorId]);
+
+  // Track when messages are actually viewed (scrolled into view)
+  useEffect(() => {
+    if (!selectedPatient) return;
+    
+    // Create an intersection observer to detect when messages are in view
+    const options = {
+      root: document.querySelector('.messages-container'),
+      rootMargin: '0px',
+      threshold: 0.5
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const messageId = entry.target.getAttribute('data-message-id');
+          if (messageId) {
+            // Mark message as read in the database
+            axios.post(`http://localhost:5001/api/chat/markAsRead`, {
+              messageId,
+              doctorId
+            }).catch(err => console.error("Error marking message as read:", err));
+            
+            // Update unread count when messages are actually viewed
+            if (selectedPatient && viewedMessages.has(messageId)) {
+              setUnreadInfo(prev => {
+                const currentInfo = prev[selectedPatient] || { count: 0, lastOpened: null };
+                if (currentInfo.count > 0) {
+                  return {
+                    ...prev,
+                    [selectedPatient]: {
+                      ...currentInfo,
+                      count: Math.max(0, currentInfo.count - 1)
+                    }
+                  };
+                }
+                return prev;
+              });
+            }
+          }
+          
+          // Stop observing this message
+          observer.unobserve(entry.target);
+        }
+      });
+    }, options);
+    
+    // Observe all message elements from the other user
+    const messageElements = document.querySelectorAll('.message-bubble[data-sender="other"]');
+    messageElements.forEach(el => observer.observe(el));
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [messages, selectedPatient, doctorId]);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -67,10 +153,29 @@ const DoctorChatPage: React.FC = () => {
   // Listen for incoming messages and update state dynamically
   useEffect(() => {
     const handleReceiveMessage = (message: Message) => {
+      // Update unread count for chats that aren't currently selected
+      if (message.sender !== doctorId && message.sender !== selectedPatient) {
+        setUnreadInfo(prev => {
+          const currentInfo = prev[message.sender] || { count: 0, lastOpened: null };
+          return {
+            ...prev,
+            [message.sender]: {
+              ...currentInfo,
+              count: currentInfo.count + 1
+            }
+          };
+        });
+      }
+
+      // Add message to current chat if relevant
       if (message.sender === selectedPatient || message.receiver === selectedPatient) {
-        setMessages((prev) => {
+        setMessages(prev => {
           // Check if the message already exists in the state to avoid duplicates
-          if (!prev.some((msg) => msg.text === message.text && msg.media === message.media)) {
+          if (!prev.some(msg => msg._id === message._id)) {
+            // If this is a new message, add it to viewedMessages if the chat is currently open
+            if (message.sender === selectedPatient) {
+              setViewedMessages(prev => new Set(prev).add(message._id));
+            }
             return [...prev, message];
           }
           return prev;
@@ -100,26 +205,29 @@ const DoctorChatPage: React.FC = () => {
     formData.append("sender", doctorId);
     formData.append("receiver", selectedPatient);
     if (text.trim()) formData.append("text", text);
-    if (media) formData.append("media", media);
+    if (media) formData.append("image", media);
 
     try {
       const res = await axios.post(
         "http://localhost:5001/api/chat/send",
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        { headers: { "Content-Type": "multipart/form-data" }}
       );
 
       // Emit the message to Socket.io
       socket.emit("sendMessage", res.data);
 
       // Append sent message to chat
-      setMessages((prev) => [...prev, res.data]);
+      setMessages(prev => [...prev, res.data]);
 
       // Clear input fields
       setText("");
       setMedia(null);
     } catch (err) {
       console.error("Error sending message:", err);
+      if (axios.isAxiosError(err)) {
+        console.error("Error details:", err.response?.data);
+      }
     }
   };
 
@@ -131,6 +239,27 @@ const DoctorChatPage: React.FC = () => {
     }
   };
 
+  const handleSelectPatient = (patientId: string) => {
+    setSelectedPatient(patientId);
+    
+    // Record the time of opening this chat
+    const now = new Date();
+    setUnreadInfo(prev => ({
+      ...prev,
+      [patientId]: {
+        ...prev[patientId] || { count: 0, lastOpened: null },
+        lastOpened: now
+      }
+    }));
+    
+    // Update the last opened timestamp in the database
+    axios.post(`http://localhost:5001/api/chat/updateLastOpened`, {
+      doctorId,
+      patientId,
+      createdAt: now
+    }).catch(err => console.error("Error updating last opened timestamp:", err));
+  };
+
   return (
     <div className="flex h-screen">
       {/* Chat List Sidebar */}
@@ -140,13 +269,22 @@ const DoctorChatPage: React.FC = () => {
           chatList.map((chat) => (
             <div
               key={chat._id}
-              onClick={() => setSelectedPatient(chat._id)}
-              className={`p-3 cursor-pointer border-b hover:bg-gray-200 transition-colors ${
+              onClick={() => handleSelectPatient(chat._id)}
+              className={`p-3 cursor-pointer border-b hover:bg-gray-200 transition-colors flex items-center justify-between ${
                 selectedPatient === chat._id ? "bg-blue-100" : ""
               }`}
             >
-              <h3 className="text-lg font-semibold">{chat.userDetails.name}</h3>
-              <p className="text-gray-600 truncate">{chat.lastMessage}</p>
+              <div className="flex-grow">
+                <h3 className="text-lg font-semibold">{chat.userDetails.name}</h3>
+                <p className="text-gray-600 truncate">{chat.lastMessage}</p>
+              </div>
+              {(unreadInfo[chat._id]?.count > 0) && (
+                <div className="flex-shrink-0 ml-2">
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium leading-none text-white bg-blue-600 rounded-full">
+                    {unreadInfo[chat._id].count}
+                  </span>
+                </div>
+              )}
             </div>
           ))
         ) : (
@@ -159,33 +297,39 @@ const DoctorChatPage: React.FC = () => {
         {selectedPatient ? (
           <>
             {/* Messages container with fixed height and scrolling */}
-            <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
+            <div className="flex-grow overflow-y-auto p-4 bg-gray-50 messages-container">
               {messages.map((msg, index) => (
                 <div 
                   key={index} 
-                  className={`p-2 my-2 flex ${msg.sender === doctorId ? "justify-end" : "justify-start"}`}
+                  className={`p-3 my-3 flex ${msg.sender === doctorId ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-3/4 ${msg.sender === doctorId ? "bg-blue-200" : "bg-gray-200"} rounded-lg p-3`}>
-                    {msg.text && <p className="break-words">{msg.text}</p>}
+                  <div 
+                    className={`w-1/5 ${msg.sender === doctorId ? "bg-blue-200" : "bg-gray-200"} rounded-lg p-3 message-bubble`}
+                    data-message-id={msg._id}
+                    data-sender={msg.sender === doctorId ? "self" : "other"}
+                  >
+                    {msg.text && <p className="break-words text-xl">{msg.text}</p>}
                     {msg.media && (
-                      <div className="mt-2">
-                        {msg.type === "video" ? (
-                          <video 
-                            controls 
-                            className="max-w-md max-h-64 object-contain rounded"
-                          >
-                            <source src={msg.media} type="video/mp4" />
-                            Your browser does not support the video tag.
-                          </video>
-                        ) : (
-                          <img 
-                            src={msg.media} 
-                            alt="Shared Media" 
-                            className="max-w-md max-h-64 object-contain rounded" 
-                          />
-                        )}
-                      </div>
-                    )}
+  <div className="media-container">
+    {msg.media.endsWith(".mp4") ? (
+      <video 
+        src={msg.media} 
+        controls 
+        className="w-64 h-48 object-cover rounded"
+      />
+    ) : (
+      <img 
+        src={msg.media} 
+        alt="Shared Media" 
+        className="w-64 h-48 object-cover rounded"
+      />
+    )}
+  </div>
+)}
+                  <span className="text-xs opacity-75 block text-right mt-1">
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+
                   </div>
                 </div>
               ))}

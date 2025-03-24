@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { userService } from "../../services/userService";
 import { setUser, setAccessToken } from "../../redux/slices/authSlice";
+import { toast } from "react-toastify";
 import CommonLogin from "../../components/common/login";
 
 const UserLogin: React.FC = () => {
@@ -29,11 +30,21 @@ const UserLogin: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Login Error:", error);
-      throw error; // Throw error to be handled by CommonLogin
+      toast.error("Invalid credentials.",error);
     }
   };
-
-  return <CommonLogin role="user" onSubmit={handleLogin} />;
+  return (
+    <div>
+      <CommonLogin role="user" onSubmit={handleLogin} />
+      
+      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+    <button onClick={() => navigate("/admin/login")}>Admin Login</button>
+    <button onClick={() => navigate("/doctors/login")}>Doctor Login</button>
+  </div>
+</div>    
+</div>
+  );
 };
 
 export default UserLogin;

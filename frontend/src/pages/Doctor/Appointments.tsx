@@ -37,6 +37,7 @@ interface Medicine {
 
 const AppointmentPage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -49,6 +50,10 @@ const AppointmentPage: React.FC = () => {
 
   const [diagnosis, setDiagnosis] = useState('');
   const [notes, setNotes] = useState('');
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const appointmentsPerPage = 5;
   const MySwal = withReactContent(Swal);
   const token = useSelector((state: RootState) => state.doctors.token);
   const doctorId = useSelector((state: RootState) => state.doctors.doctorId);
@@ -63,6 +68,8 @@ const AppointmentPage: React.FC = () => {
           },
         });
         setAppointments(response.data.appointments);
+        setFilteredAppointments(response.data.appointments);
+        setTotalPages(Math.ceil(response.data.appointments.length / appointmentsPerPage));
         setError(null);
       } catch (error) {
         console.error("Error fetching appointments:", error);
@@ -74,6 +81,32 @@ const AppointmentPage: React.FC = () => {
 
     if (doctorId) fetchAppointments();
   }, [doctorId, token]);
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredAppointments(appointments);
+    } else {
+      const query = searchTerm.toLowerCase().trim();
+      const filtered = appointments.filter((appointment) => {
+        const patientName = ((appointment.patientId as unknown as Patient)?.name || "").toLowerCase();
+        return patientName.includes(query);
+      });
+      setFilteredAppointments(filtered);
+    }
+    setCurrentPage(1); // Reset to first page when search changes
+  }, [searchTerm, appointments]);
+
+  // Update total pages when filtered appointments change
+  useEffect(() => {
+    setTotalPages(Math.ceil(filteredAppointments.length / appointmentsPerPage));
+  }, [filteredAppointments]);
+
+  // Get current page appointments
+  const getCurrentAppointments = () => {
+    const indexOfLastAppointment = currentPage * appointmentsPerPage;
+    const indexOfFirstAppointment = indexOfLastAppointment - appointmentsPerPage;
+    return filteredAppointments.slice(indexOfFirstAppointment, indexOfLastAppointment);
+  };
 
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -152,7 +185,7 @@ const handleGivePrescription = async (appointment: Appointment) => {
               <div class="border-t border-b border-gray-200 py-3 my-3">
                 <p className="mb-2"><strong>Patient:</strong> ${(appointment.patientId as unknown as Patient)?.name || "N/A"}</p>
                 <p class="mb-2"><strong>Appointment Date:</strong> ${new Date(appointment.date).toLocaleDateString()}</p>
-                <p class="mb-2"><strong>Amount Paid:</strong> ₹${(appointment.appointmentFee / 100).toFixed(2)}</p>
+<p className="mb-2"><strong>Amount Paid:</strong> ₹${appointment.appointmentFee.toLocaleString('en-IN')}</p>
                 <p class="mb-2"><strong>Payment ID:</strong> ${appointment.paymentId}</p>
               </div>
               <p class="mt-4 text-sm text-gray-600">A refund will be initiated to the original payment method.</p>
@@ -340,9 +373,94 @@ const handleGivePrescription = async (appointment: Appointment) => {
     setIsModalOpen(true);
   };
 
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
+  };
+
+  // Generate pagination numbers
+  const getPaginationNumbers = () => {
+    const pages = [];
+    const maxDisplayedPages = 5;
+    
+    if (totalPages <= maxDisplayedPages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i as never);
+      }
+    } else {
+      pages.push(1 as never);
+      
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      
+      if (currentPage <= 2) {
+        end = Math.min(totalPages - 1, 4);
+      } else if (currentPage >= totalPages - 1) {
+        start = Math.max(2, totalPages - 3);
+      }
+      
+      if (start > 2) {
+        pages.push('...' as never);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i as never);
+      }
+      
+      if (end < totalPages - 1) {
+        pages.push('...' as never);
+      }
+      
+      pages.push(totalPages as never);
+    }
+    
+    return pages;
+  };
+
   return (
     <div className="w-full px-1">
       <h1 className="text-2xl font-semibold mb-6">Appointments</h1>
+
+      <div className="mb-6 relative">
+        <div className="flex items-center border border-gray-300 rounded-md shadow-sm focus-within:ring-indigo-500 focus-within:border-indigo-500 overflow-hidden">
+          <div className="pl-4 pr-2 py-2">
+            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            className="flex-1 py-2.5 border-0 focus:ring-0 focus:outline-none"
+            placeholder="Search by patient name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button 
+              onClick={handleClearSearch} 
+              className="px-4 py-2 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <p className="mt-1 text-sm text-gray-500">
+          Search appointments by patient name
+        </p>
+      </div>
       
       {loading && (
         <div className="flex justify-center p-8">
@@ -356,14 +474,15 @@ const handleGivePrescription = async (appointment: Appointment) => {
         </div>
       )}
       
-      {!loading && !error && appointments.length === 0 && (
-        <div className="bg-gray-50 border border-gray-200 rounded p-8 text-center">
+      {!loading && !error && filteredAppointments.length === 0 && (
+          <div className="bg-gray-50 border border-gray-200 rounded p-8 text-center">
           <p className="text-gray-500 text-lg">No appointments found</p>
           <p className="text-gray-400 mt-1">New appointments will appear here</p>
         </div>
       )}
       
-      {!loading && appointments.length > 0 && (
+      {!loading && filteredAppointments.length > 0 && (
+       <>
         <div className="bg-white border border-gray-200 rounded overflow-x-auto">
           <table className="w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -377,7 +496,7 @@ const handleGivePrescription = async (appointment: Appointment) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {appointments.map((appointment) => (
+            {getCurrentAppointments().map((appointment) => (
                 <tr key={appointment._id} className="hover:bg-gray-50">
                   <td className="px-6 py-5 whitespace-nowrap">
                     <div className="text-lg font-medium text-gray-900">
@@ -432,6 +551,41 @@ const handleGivePrescription = async (appointment: Appointment) => {
             </tbody>
           </table>
         </div>
+           <div className="flex flex-col sm:flex-row items-center justify-center mt-6 gap-4">
+           <div className="flex items-center space-x-1">
+             <button
+               onClick={handlePrevPage}
+               disabled={currentPage === 1}
+               className={`px-3 py-1.5 rounded-md ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+             >
+               Previous
+             </button>
+             
+             {getPaginationNumbers().map((page, index) => (
+               <React.Fragment key={index}>
+                 {page === '...' ? (
+                   <span className="px-3 py-1.5">...</span>
+                 ) : (
+                   <button
+                     onClick={() => handlePageChange(page as number)}
+                     className={`px-3 py-1.5 rounded-md ${currentPage === page ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                   >
+                     {page}
+                   </button>
+                 )}
+               </React.Fragment>
+             ))}
+             
+             <button
+               onClick={handleNextPage}
+               disabled={currentPage === totalPages || totalPages === 0}
+               className={`px-3 py-1.5 rounded-md ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+             >
+               Next
+             </button>
+           </div>
+         </div>
+           </>
       )}
 
       <AppointmentDetailsModal
@@ -454,4 +608,3 @@ const handleGivePrescription = async (appointment: Appointment) => {
 };
 
 export default AppointmentPage;
-

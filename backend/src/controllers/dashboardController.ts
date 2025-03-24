@@ -47,8 +47,6 @@ export const getMonthlyStats = async (req: Request, res: Response) => {
   try {
     const { doctorId } = req.params;
     const { months } = req.query;
-    console.log("doctorid:",doctorId)
-    console.log("Months:",months)
     const stats = await fetchMonthlyStats(doctorId, parseInt(months as string));
     res.status(200).json(stats);
   } catch (error) {

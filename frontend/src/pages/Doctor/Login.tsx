@@ -16,7 +16,6 @@ const DoctorLogin: React.FC = () => {
     try {
       const response = await doctorService.login(email, password);
       const { token, doctor } = response;
-      console.log("token in doctor login:",token)
       const status = doctor?.status;  // ✅ Extract `status` from the `doctor` object
   
       if (token && doctor) {
@@ -31,12 +30,15 @@ const DoctorLogin: React.FC = () => {
             
 
   return (
-    <CommonLogin
-      role="doctor"
-      onSubmit={handleLogin}
-      signupLink="/doctors/signup" // Custom signup link
-      forgotPasswordLink="/doctor/forgot-password" // Custom forgot password link
-    />
+    <div>
+      <CommonLogin role="doctor" onSubmit={handleLogin} signupLink="/doctors/signup" forgotPasswordLink="/doctor/forgot-password" />
+      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+      <div style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
+        <button onClick={() => navigate("/admin/login")}>Admin Login</button>
+        <button onClick={() => navigate("/login")}>User Login</button>
+      </div>
+      </div>    
+      </div>
   );
 };
 

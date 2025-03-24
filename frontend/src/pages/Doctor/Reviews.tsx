@@ -32,10 +32,13 @@ const Reviews: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
   const [averageRating, setAverageRating] = useState(0);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const reviewsPerPage = 5;
 
   const doctorToken = useSelector((state: any) => state.doctors.token);
   const doctorId = useSelector((state: any) => state.doctors.doctorId);
-
 
   useEffect(() => {
     fetchReviews();
@@ -49,19 +52,23 @@ const Reviews: React.FC = () => {
   
       console.log("API Response:", response.data); // Log response to check its structure
   
+      let fetchedReviews: Review[] = [];
       if (Array.isArray(response.data)) {
-        setReviews(response.data);
-        calculateAverageRating(response.data);
+        fetchedReviews = response.data;
       } else if (response.data && Array.isArray(response.data.reviews)) {
         // If reviews are nested inside an object
-        setReviews(response.data.reviews);
-        calculateAverageRating(response.data.reviews);
+        fetchedReviews = response.data.reviews;
       } else {
         console.error("Unexpected API response:", response.data);
-        setReviews([]);
-        calculateAverageRating([]);
       }
   
+      // Sort reviews initially by newest
+      const sortedReviews = fetchedReviews.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+  
+      setReviews(sortedReviews);
+      calculateAverageRating(sortedReviews);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -95,7 +102,20 @@ const Reviews: React.FC = () => {
       );
     }
     setReviews(sortedReviews);
+    // Reset to first page when sorting
+    setCurrentPage(1);
   };
+
+  // Pagination logic
+  const indexOfLastReview = currentPage * reviewsPerPage;
+  const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
+  const currentReviews = reviews.slice(indexOfFirstReview, indexOfLastReview);
+
+  // Change page
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
 
   return (
     <div className="p-6 font-sans">
@@ -128,28 +148,63 @@ const Reviews: React.FC = () => {
           </div>
 
           {loading ? (
-  <div className="text-center py-8 text-gray-500">Loading reviews...</div>
-) : Array.isArray(reviews) && reviews.length > 0 ? (
-  <ul className="divide-y divide-gray-200">
-    {reviews.map((review) => (
-      <li key={review._id} className="py-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="font-semibold">{review.patientName}</p>
-            <StarRating rating={review.rating} />
-          </div>
-          <p className="text-gray-500 text-sm">
-            {new Date(review.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-        <p className="font-semibold">{review.userName || review.userId?.name || "Anonymous"}</p>
-        <p className="mt-2 text-gray-700">{review.comment}</p>
-      </li>
-    ))}
-  </ul>
-) : (
-  <div className="text-center py-8 text-gray-500">No reviews available</div>
-)}
+            <div className="text-center py-8 text-gray-500">Loading reviews...</div>
+          ) : Array.isArray(reviews) && reviews.length > 0 ? (
+            <>
+              <ul className="divide-y divide-gray-200">
+                {currentReviews.map((review) => (
+                  <li key={review._id} className="py-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold">{review.patientName}</p>
+                        <StarRating rating={review.rating} />
+                      </div>
+                      <p className="text-gray-500 text-sm">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="font-semibold">{review.userName || review.userId?.name || "Anonymous"}</p>
+                    <p className="mt-2 text-gray-700">{review.comment}</p>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center mt-6 space-x-2">
+                <button 
+                  onClick={() => paginate(currentPage - 1)} 
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                
+                {[...Array(totalPages)].map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => paginate(index + 1)}
+                    className={`px-4 py-2 border rounded ${
+                      currentPage === index + 1 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-white text-gray-700'
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+                
+                <button 
+                  onClick={() => paginate(currentPage + 1)} 
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No reviews available</div>
+          )}
         </div>
       </div>
     </div>

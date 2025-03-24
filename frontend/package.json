@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.0.0",
+    "@mui/material": "^6.4.8",
+    "@mui/styled-engine": "^6.4.8",
     "@reduxjs/toolkit": "^2.5.1",
     "@shadcn/ui": "^0.0.4",
     "antd": "^5.0.0",

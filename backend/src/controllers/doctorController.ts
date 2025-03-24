@@ -3,6 +3,7 @@ import { DoctorService } from "../services/DoctorService";
 import { IDoctor } from "../models/doctors";
 import { uploadFileToS3 } from "../middleware/uploadMiddleware";
 import Speciality from "../models/speciality";
+import notificationService from "../services/notificationService";
 
 export class DoctorController {
   constructor(
@@ -21,7 +22,15 @@ export class DoctorController {
         };
 
         const doctor = await this.doctorService.registerDoctor(doctorData);
-
+        
+        const notification = await notificationService.createNotification({
+          recipientId: doctor._id?.toString() || '',
+          recipientRole: "admin",
+          message: `New doctor ${doctor.name} signed up!`,
+        });
+    
+        // Emit the notification to the admin
+        (req as any).io.to("adminRoom").emit("newNotification", notification);
         res.status(201).json({
             message: "Doctor registered successfully. Please log in.",
             doctor

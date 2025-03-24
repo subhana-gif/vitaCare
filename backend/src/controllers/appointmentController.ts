@@ -5,6 +5,8 @@ import userService from "../services/userService";
 import emailService from "../services/emailService";
 import slotService from "../services/slotService";
 import AppointmentReminderService from "../services/appointmentReminderService";
+import notificationService from "../services/notificationService"; // Import Notification Service
+
 
 const appointmentService = new AppointmentService();
 
@@ -15,7 +17,7 @@ export class AppointmentController {
   
     async getAppointments(req: Request, res: Response): Promise<void> {
       try {
-        const userId = req.user?.id; // Extracted from token middleware
+        const userId = req.user?.id; 
         if (!userId) {
           res.status(401).json({ message: "Unauthorized: User ID missing." });
           return;
@@ -87,6 +89,16 @@ export class AppointmentController {
       // Schedule reminder emails
       await AppointmentReminderService.scheduleReminders(appointment);
 
+
+      const notification = await notificationService.createNotification({
+        recipientId: doctorId,
+        recipientRole: "doctor",
+        message: `New appointment booked with ${patient.name} on ${date} at ${time}.`,
+      });
+  
+      // ✅ Fix: Ensure `notification` exists before emitting
+      (req as any).io.to(doctorId).emit("newNotification", notification);
+
       res.status(201).json({
         message: "Appointment booked successfully!",
         appointment,
@@ -99,6 +111,7 @@ export class AppointmentController {
       });
     }
   }  
+
   // ✅ Update Appointment Status
   async updateStatus(req: Request, res: Response): Promise<void> {
     const { appointmentId } = req.params;
@@ -106,6 +119,17 @@ export class AppointmentController {
 
     try {
       const updatedAppointment = await appointmentService.updateAppointmentStatus(appointmentId, status);
+      const userId = updatedAppointment?.patientId.toString(); // Get the user's ID
+    
+      const notification = await notificationService.createNotification({
+        recipientId: userId || '',
+        recipientRole: "user",
+        message: `Your appointment status has been changed to ${status}`,
+      });
+    
+      if (userId && (req as any).io) {
+        (req as any).io.to(userId).emit("newNotification", notification);
+      }
 
       res.status(200).json({
         message: "Appointment updated successfully",
@@ -118,6 +142,8 @@ export class AppointmentController {
       });
     }
   }
+
+
   // ✅ Get Appointments for a Doctor
   async getDoctorAppointments(req: Request, res: Response): Promise<void> {
     const doctorId = req.user?.id as string;

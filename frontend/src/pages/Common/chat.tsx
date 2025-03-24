@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { Share2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
 import { RootState } from "../../redux/store"; // Adjust this import based on your store setup
@@ -10,10 +11,11 @@ const socket = io("http://localhost:5001"); // Change to your backend URL
 
 // Define the message type
 interface Message {
+  _id: string;
   sender: string;
   receiver: string;
   text: string;
-  timestamp: Date;
+  createdAt: Date;  
   media?: string; // For image messages
 }
 
@@ -51,14 +53,6 @@ const Chats: React.FC = () => {
     }
   }, [doctorId]);
 
-  // Auto-scroll to bottom whenever messages change
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   // Fetch chat history and set up Socket.IO listeners
   useEffect(() => {
@@ -79,13 +73,12 @@ const Chats: React.FC = () => {
           console.error("Error fetching messages:", err);
           setIsLoading(false);
         });
-
       // Listen for incoming messages
       const handleReceiveMessage = (msg: Message) => {
         console.log("Received message:", msg);
         setMessages((prev) => {
           // Check if the message already exists in the state to avoid duplicates
-          if (!prev.some((m) => m.text === msg.text && m.timestamp === msg.timestamp)) {
+          if (!prev.some(m => m._id === msg._id)) {
             return [...prev, msg];
           }
           return prev;
@@ -110,7 +103,6 @@ const Chats: React.FC = () => {
       const formData = new FormData();
       formData.append("sender", user._id);
       formData.append("receiver", receiverId!);
-      formData.append("timestamp", new Date().toISOString());
       if (message.trim()) formData.append("text", message);
       if (media) formData.append("image", media);
 
@@ -182,17 +174,25 @@ const Chats: React.FC = () => {
               >
                 {msg.text && <p>{msg.text}</p>}
                 {msg.media && (
-                  <div className="media-container">
-                    <img 
-                      src={msg.media} 
-                      alt="Shared Media" 
-                      className="w-64 h-48 object-cover rounded" 
-                    />
-                  </div>
-                )}
-                <span className="text-xs opacity-75 block text-right mt-1">
-                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+  <div className="media-container">
+    {msg.media.endsWith(".mp4") ? (
+      <video 
+        src={msg.media} 
+        controls 
+        className="w-64 h-48 object-cover rounded"
+      />
+    ) : (
+      <img 
+        src={msg.media} 
+        alt="Shared Media" 
+        className="w-64 h-48 object-cover rounded"
+      />
+    )}
+  </div>
+)}
+              <span className="text-xs opacity-75 block text-right mt-1">
+                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
               </div>
             ))
           )}
@@ -223,12 +223,12 @@ const Chats: React.FC = () => {
             </div>
           )}
           <div className="flex items-center gap-2">
-            <button 
-              onClick={handleAttachmentClick}
-              className="p-2 text-blue-500 hover:bg-blue-100 rounded-full"
-            >
-              📎
-            </button>
+          <button 
+            onClick={handleAttachmentClick}
+            className="p-2 text-blue-500 hover:bg-blue-100 rounded-full"
+          >
+            <Share2 size={20} />
+          </button>   
             <input
               type="file"
               ref={fileInputRef}

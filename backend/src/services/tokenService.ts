@@ -30,7 +30,6 @@ class TokenService implements ITokenService {
   verifyToken(token: string): DecodedToken {
     const jwtSecret = process.env.JWT_SECRET || "fallback_secret";
     const decoded = jwt.verify(token, jwtSecret) as DecodedToken;
-    console.log("Decoded token:", decoded);
 
     if ( !decoded.role) {
       throw new Error("Invalid token payload: Missing required fields");

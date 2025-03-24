@@ -2,6 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { adminService } from "../../services/adminSevice";
 import CommonLogin from "../../components/common/login";
+import { toast } from "react-toastify";
+
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -14,17 +16,18 @@ const AdminLogin: React.FC = () => {
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Admin Login Error:", error);
-      throw error; // `CommonLogin` will handle showing errors
+      toast.error("Invalid credentials.");
     }
   };
 
   return (
-    <CommonLogin
-      role="admin"
-      onSubmit={handleLogin}
-      showSignup={false} // Hide "Create Account"
-      showForgotPassword={false} // Hide "Forgot Password"
-    />
+    <div>
+    <CommonLogin role="admin" onSubmit={handleLogin} showSignup={false} showForgotPassword={false}/>
+    <div style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
+    <button onClick={() => navigate("/doctors/login")}>Doctor Login</button>
+    <button onClick={() => navigate("/login")}>User Login</button>
+    </div>
+    </div>
   );
 };
 

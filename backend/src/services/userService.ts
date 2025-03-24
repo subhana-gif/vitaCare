@@ -48,7 +48,7 @@ class UserService {
       throw new Error("If this email exists in our system, you will receive reset instructions");
     }
 
-    const resetToken = TokenService.generateToken({ email: user.email }, "1h");
+    const resetToken = TokenService.generateToken({ email: user.email,role:"user" }, "1h");
     const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
     await EmailService.sendPasswordResetEmail(email, resetLink);
     return { success: true, message: "Reset instructions sent to your email" };

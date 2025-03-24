@@ -18,7 +18,7 @@ const upload = multer({
       callback(new Error("Invalid file type. Only JPEG, JPG, and PNG are allowed.")as unknown as null, false);
     }
   },
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max file size
+  limits: { fileSize: 10 * 1024 * 1024 }, // 5MB max file size
 });
 
 // ✅ Upload to AWS S3

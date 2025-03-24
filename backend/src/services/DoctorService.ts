@@ -68,7 +68,6 @@ async addDoctor(doctorData: Partial<IDoctor>): Promise<IDoctor> {
     const hashedPassword = await bcrypt.hash(password, 10);
     await this.doctorRepository.updateDoctor(doctor._id.toString(), {
       password: hashedPassword,
-      resetToken: undefined,
     });
   }
 
@@ -76,26 +75,29 @@ async addDoctor(doctorData: Partial<IDoctor>): Promise<IDoctor> {
     const doctor = await this.doctorRepository.findDoctorByEmail(email);
     if (!doctor) throw new Error("Doctor not found");
 
-    const resetToken = TokenService.generateToken({ doctorId: doctor._id.toString(),email }, "30m");
-
-    await this.doctorRepository.updateDoctor(doctor._id.toString(), {
-        resetToken,
-        resetTokenExpires: new Date(Date.now() + 30 * 60 * 1000),
-    });
-
+    const resetToken = TokenService.generateToken({ doctorId: doctor._id.toString(),email ,role:"doctor"}, "1h");
     const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/doctor/resetPassword/${resetToken}`;
     await EmailService.sendPasswordResetEmail(email, resetLink);
 }
 
-  async resetPassword(token: string, newPassword: string): Promise<void> {
-    const decoded = TokenService.verifyToken(token) as unknown as { doctorId: string };
-    const doctor = await this.doctorRepository.findDoctorById(decoded.doctorId);
-    if (!doctor || doctor.resetToken !== token) throw new Error("Invalid or expired token");
+async resetPassword(token: string, newPassword: string): Promise<void> {
+  try {
+      const decoded = TokenService.verifyToken(token) as unknown as { doctorId: string };
+      if (!decoded || !decoded.doctorId) {
+          throw new Error("Invalid or expired token");
+      }
+      const doctor = await this.doctorRepository.findDoctorById(decoded.doctorId);
+      if (!doctor) {
+          throw new Error("Doctor not found");
+      }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.doctorRepository.updateDoctor(doctor._id.toString(), {
-      password: hashedPassword,
-      resetToken: undefined,
-    });
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await this.doctorRepository.updateDoctor(doctor._id.toString(), { password: hashedPassword });
+
+      console.log("Password reset successfully");
+  } catch (error) {
+      throw new Error("Invalid or expired token");
   }
+}
 }

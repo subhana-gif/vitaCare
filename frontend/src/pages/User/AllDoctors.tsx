@@ -91,7 +91,10 @@ for (const speciality of specialities) {
   }, []);              
   const filteredDoctors = doctors.filter((doctor) =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (selectedSpecialization === "" || doctor.speciality === selectedSpecialization)
+    (selectedSpecialization === "" || doctor.speciality === selectedSpecialization ||
+      (doctor.speciality && doctor.speciality.toLowerCase() === selectedSpecialization.toLowerCase())
+
+    )
   );
 
 
@@ -101,13 +104,19 @@ for (const speciality of specialities) {
   const currentDoctors = filteredDoctors.slice(indexOfFirstDoctor, indexOfLastDoctor);
   const totalPages = Math.ceil(filteredDoctors.length / doctorsPerPage);
 
+  useEffect(() => {
+    // Sync with URL parameters on initial load and navigation
+    const queryParams = new URLSearchParams(location.search);
+    const specialtyParam = queryParams.get("specialty") || "";
+    setSelectedSpecialization(specialtyParam);
+  }, [location.search]);
+  
   const handleSpecialtySelection = (specialization: string) => {
     const newSpecialization = specialization === selectedSpecialization ? "" : specialization;
-    setSelectedSpecialization(specialtyParam || "");
+    setSelectedSpecialization(newSpecialization); // Update state immediately
     setCurrentPage(1);
     navigate(`/doctors?specialty=${newSpecialization}`);
   };
-
   const handleViewProfile = (doctorId: string) => {
     navigate(`/doctors/${doctorId}`);
 };

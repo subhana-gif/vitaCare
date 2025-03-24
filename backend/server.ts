@@ -18,6 +18,14 @@ import reviews from "./src/routes/reviewRoutes"
 import prescription from "./src/routes/prescription.routes"
 import dashboard from "./src/routes/dashboard"
 
+// Extend Express Request to include `io`
+declare module "express-serve-static-core" {
+  interface Request {
+    io?: Server;
+  }
+}
+
+
 
 dotenv.config();
 
@@ -44,6 +52,21 @@ app.options("*", (req, res) => {
   res.sendStatus(200);
 });
 
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173", // ✅ Replace "*" with your frontend URL
+    credentials: true, // ✅ Allow credentials
+    methods: ["GET", "POST"], // ✅ Specify allowed methods
+  },
+});
+app.use((req, res, next) => {
+  req.io = io; // Attach `io` to request
+  next();
+});
+socketHandler(io);
+
+
 // Routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/user", authRoutes);
@@ -56,9 +79,6 @@ app.use("/api/reviews",reviews)
 app.use("/api/prescriptions",prescription)
 app.use("/api/dashboard",dashboard)
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
-socketHandler(io);
 
 // Start the server after DB connection
 const PORT = process.env.PORT || 5001;
@@ -73,4 +93,4 @@ connectDB()
     process.exit(1);
   });
 
-export default app;
+export default {app,io};

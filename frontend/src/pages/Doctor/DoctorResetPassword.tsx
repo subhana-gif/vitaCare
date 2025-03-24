@@ -119,7 +119,7 @@ const DoctorResetPassword: React.FC = () => {
 
         <div className="text-center mt-4">
           <p className="text-md">
-            Remember your password? <Link to="/doctor/login" className="font-medium text-blue-600 hover:text-blue-500">Sign in</Link>
+            Remember your password? <Link to="/doctors/login" className="font-medium text-blue-600 hover:text-blue-500">Sign in</Link>
           </p>
         </div>
       </div>

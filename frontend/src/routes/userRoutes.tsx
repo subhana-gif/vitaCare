@@ -16,6 +16,8 @@ import DoctorLogin from "../pages/Doctor/Login";
 import DoctorSignup from "../pages/Doctor/signup";
 import Chats from "../pages/Common/chat";
 import PrescriptionView from "../components/Prescription/PrescriptionView";
+import About from "../pages/User/about"
+import Contact from "../pages/User/contact"
 
 
 const UserRoutes: React.FC = () => {
@@ -33,6 +35,8 @@ const UserRoutes: React.FC = () => {
         <Route path="doctors/:id" element={<DoctorDetails />} />
         <Route path="chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="doctors" element={<AllDoctors />} />
+        <Route path="about" element={<About />} />
+        <Route path="contact" element={<Contact />} />
         <Route path="doctors/:specialty" element={<AllDoctors />} />
         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="myAppointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
