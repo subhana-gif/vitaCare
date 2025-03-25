@@ -125,7 +125,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     <tr className={`border-b border-gray-200 ${!isActive ? 'bg-gray-50' : ''} hover:bg-gray-50 transition`}>
       <td className="px-6 py-6">
         <div className="flex items-center">
-          {/* Doctor info with image */}
           <div className="flex-shrink-0 h-32 w-32 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
             <img
               src={appointment?.doctorId?.imageUrl || "/default-doctor.jpg"}

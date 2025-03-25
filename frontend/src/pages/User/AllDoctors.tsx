@@ -48,15 +48,12 @@ const AllDoctors: React.FC = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        console.log("Fetching all doctors...");
         const response = await doctorService.fetchAllDoctors();
         const activeDoctors = response.doctors.filter((doctor) => !doctor.isBlocked);
 
-        console.log("Fetched Doctors:", activeDoctors);
 
         // Extract unique specialities
         const specialities = [...new Set(activeDoctors.map((doctor) => doctor.speciality))];
-        console.log("Extracted Specialities:", specialities);
 
         // Check each speciality status in backend
         const activeSpecialities = new Set();
@@ -79,7 +76,6 @@ for (const speciality of specialities) {
           activeSpecialities.has(doctor.speciality.toLowerCase())
         );
 
-        console.log("Filtered Doctors:", filteredDoctors);
         setDoctors(filteredDoctors);
       } catch (error) {
         console.error("Error fetching doctors:", error);

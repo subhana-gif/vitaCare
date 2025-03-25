@@ -1,121 +1,81 @@
-import { UpdateQuery } from "mongoose";
-import appointment from "../models/appointment";
+import { IAppointmentRepository } from "./IAppointmentRepository";
 import Appointment, { IAppointment } from "../models/appointment";
+import { Types } from "mongoose";
 
-interface AppointmentData {
-  patientId: string;
-  doctorId: string;
-  date: string;
-  time: string;
-  status?: "pending" | "confirmed" | "cancelled" | "completed";
-  paymentStatus?: "pending" | "paid" | "refunded";
-  appointmentFee: number;
-}
+export class AppointmentRepository implements IAppointmentRepository {
+  async getById(id: string): Promise<IAppointment | null> {
+    return Appointment.findById(id).exec();
+  }
 
-export class AppointmentRepository {
-  async delete(appointmentId: string): Promise<void> {
-    await Appointment.findByIdAndDelete(appointmentId);
+  async findByDetails(doctorId: string, date: string, time: string): Promise<IAppointment | null> {
+    return Appointment.findOne({ doctorId, date, time }).exec();
   }
-  
-  async getAppointments({ patientId }: { patientId: string }) {
-    return await appointment.find({ patientId }).populate("doctorId") .sort({ createdAt: -1 })
-    .exec();
-  }
-  // ✅ Create Appointment
-  async create(appointmentData: AppointmentData): Promise<IAppointment> {
+
+  async create(appointmentData: Omit<IAppointment, "_id">): Promise<IAppointment> {
     const appointment = new Appointment(appointmentData);
-    return await appointment.save();
+    return appointment.save();
   }
 
-  // ✅ Find Appointment by Details (to avoid duplicate bookings)
-  async findByDetails(
-    doctorId: string,
-    date: string,
-    time: string
-  ): Promise<IAppointment | null> {
-    return await Appointment.findOne({ doctorId, date, time });
+  async update(id: string, updateData: Partial<IAppointment>): Promise<IAppointment | null> {
+    return Appointment.findByIdAndUpdate(id, updateData, { new: true }).exec();
   }
 
+  async delete(id: string): Promise<void> {
+    await Appointment.findByIdAndDelete(id).exec();
+  }
 
-    async updateStatus(appointmentId: string, updateData: Partial<IAppointment>) {
-      return await Appointment.findByIdAndUpdate(
-        appointmentId,
-        { $set: updateData }, // ✅ Ensures correct data structure
-        { new: true }
-      );
-    }
-  
-    async getById(appointmentId: string) {
-      return await Appointment.findById(appointmentId);
-    }
-  
-  
-    async updatePaymentStatus(appointmentId: string, paymentStatus: string, paymentId?: string): Promise<IAppointment | null> {
-      const updateData: { paymentStatus: string; paymentId?: string } = { paymentStatus };
-      if (paymentId) {
-          updateData.paymentId = paymentId;
-      }
-  
-      const updatedAppointment = await Appointment.findByIdAndUpdate(
-        appointmentId,
-        updateData,
-        { new: true } // ✅ Ensures the updated data is returned
-      );
-  
-      console.log("✅ Updated Appointment:", updatedAppointment);
-      
-      if (!updatedAppointment) {
-          console.error(`❌ Appointment not found for ID: ${appointmentId}`);
-      }
-  
-      return updatedAppointment;
-  }
-  
-  async findAll(): Promise<IAppointment[]> {
-    return await Appointment.find().populate("patientId doctorId", "name email");
-  }
-  
-  // ✅ Get Appointments by Doctor
   async getAppointmentsByDoctor(doctorId: string): Promise<IAppointment[]> {
-    return await Appointment.find({ doctorId }).populate({
-      path: 'patientId', // Assuming `patientId` is the field that references the Patient model
-      select: 'name email phone gender dob', // Select relevant patient details
-    });
-  }
-  
-  // ✅ Get Appointments by Patient
-  async getAppointmentsByPatient(patientId: string): Promise<IAppointment[]> {
-    return await Appointment.find({ patientId });
+    return Appointment.find({ doctorId })
+      .populate("patientId", "name email phone")
+      .exec();
   }
 
-  async updateAppointmentStatus(
-    appointmentId: string, 
-    updateData: UpdateQuery<any>
-  ) {
-    return  Appointment.findByIdAndUpdate(
-      appointmentId,
-      { $set: updateData }, // Set only the provided fields
-      { new: true } // Return the updated document
-    );
-  }
-
-  async findById(appointmentId: string) {
-    return await Appointment.findById(appointmentId);
-  }
-
-  async findByDoctorId(doctorId: string): Promise<IAppointment[]> {
-    return await Appointment.find({ doctorId }).populate("patientId", "name");
-  }
-
-  async findByPatientId(patientId: string): Promise<IAppointment[]> {
-    return await Appointment.find({ patientId }).populate("doctorId", "name");
-  }
-
-  async updateAppointment(appointmentId: string, updateData: Partial<IAppointment>): Promise<IAppointment | null> {
-    return await Appointment.findByIdAndUpdate(appointmentId, updateData, { new: true }).exec();
+async getAppointmentsByPatient(patientId: string): Promise<IAppointment[]> {
+  return Appointment.find({ patientId })
+    .populate({
+      path: 'doctorId',
+      select: 'name specialty imageUrl' // Add imageUrl here
+    })
+    .exec();
 }
 
-async getAllAppointments(): Promise<IAppointment[]> {
-  return await Appointment.find().populate("doctorId").populate("patientId");
+  async getAllAppointments(): Promise<IAppointment[]> {
+    return Appointment.find()
+      .populate("patientId", "name email")
+      .populate("doctorId", "name specialty")
+      .exec();
+  }
+
+async updatePaymentStatus(
+  appointmentId: string | Types.ObjectId,
+  paymentStatus: 'pending' | 'paid' | 'refunded',
+  paymentId?: string
+): Promise<IAppointment | null> {
+  const appointmentIdStr = appointmentId.toString();
+  
+  const updateData: {
+    paymentStatus: 'pending' | 'paid' | 'refunded';
+    paymentId?: string;
+    paidAt?: Date;
+  } = { 
+    paymentStatus,
+    ...(paymentStatus === 'paid' && { paidAt: new Date() })
+  };
+
+  if (paymentId) {
+    updateData.paymentId = paymentId;
+  }
+
+  const updatedAppointment = await Appointment.findByIdAndUpdate(
+    appointmentIdStr,
+    updateData,
+    { new: true }
+  ).exec();
+
+  if (!updatedAppointment) {
+    throw new Error(`Appointment not found for ID: ${appointmentIdStr}`);
+  }
+
+  return updatedAppointment;
 }
 }

@@ -1,113 +1,147 @@
-import { AppointmentRepository } from "../repositories/appointmentRepository";
+import { IAppointmentService } from "../services/IAppointmentService";
+import { IAppointmentRepository } from "../repositories/IAppointmentRepository";
 import { IAppointment } from "../models/appointment";
-import PaymentService from "./paymentService";
+import { DoctorService } from "./DoctorService";
+import userService from "./userService";
+import emailService from "./emailService";
+import slotService from "./slotService";
+import AppointmentReminderService from "./appointmentReminderService";
+import notificationService from "./notificationService";
+import { sendCallReminder } from "../config/twilioCall";
+import schedule from "node-schedule";
+import logger from "../utils/logger";
 
-interface AppointmentData {
-  patientId: string;
-  doctorId: string;
-  date: string;
-  time: string;
-  appointmentFee: number;
-}
 
-export class AppointmentService {
-  private appointmentRepository = new AppointmentRepository();
-  private paymentService: typeof PaymentService = PaymentService;
-  static appointmentRepository: any;
+export class AppointmentService implements IAppointmentService {
+  constructor(
+    private readonly appointmentRepository: IAppointmentRepository,
+    private readonly doctorService: DoctorService
+  ) {}
 
-  async bookAppointment(appointmentData: AppointmentData): Promise<IAppointment> {
-    const { doctorId, date, time } = appointmentData;
+  async bookAppointment(appointmentData: Omit<IAppointment, "_id">): Promise<IAppointment> {
+    const { doctorId, date, time, patientId } = appointmentData;
 
-    const existingAppointment = await this.appointmentRepository.findByDetails(
-      doctorId,
-      date,
-      time
+    const slot = await slotService.getSlotByDetails(doctorId.toString(), date, time);
+    if (!slot) {
+      throw new Error("Slot not found or unavailable");
+    }
+
+    const existingAppointment = await this.appointmentRepository.findByDetails(doctorId.toString(), date, time);
+    if (existingAppointment) {
+      throw new Error("This slot is already booked");
+    }
+
+    const appointment = await this.appointmentRepository.create({
+      ...appointmentData,
+      appointmentFee: slot.price
+    });
+
+    await this.sendConfirmationAndReminders(appointment);
+    return appointment;
+  }
+
+  private async sendConfirmationAndReminders(appointment: IAppointment): Promise<void> {
+    const [doctor, patient] = await Promise.all([
+      this.doctorService.getDoctorById(appointment.doctorId.toString()),
+      userService.getUserProfile(appointment.patientId.toString())
+    ]);
+
+    if (!doctor || !patient) {
+      throw new Error("Doctor or patient not found");
+    }
+
+    // Send confirmation email
+    await emailService.sendAppointmentConfirmationEmail(
+      patient.email,
+      {
+        patientName: patient.name,
+        doctorName: doctor.name,
+        date: appointment.date,
+        time: appointment.time,
+        appointmentFee: appointment.appointmentFee,
+        location: doctor.address
+      }
     );
 
-    if (existingAppointment) {
-      throw new Error("This slot is already booked. Please choose another time.");
+    // Schedule reminders
+    await AppointmentReminderService.scheduleReminders(appointment);
+
+    // Schedule call reminder
+    if (patient.phone) {
+      const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
+      const reminderTime = new Date(appointmentDateTime.getTime() - 30 * 60000);
+      
+      schedule.scheduleJob(reminderTime, () => {
+        sendCallReminder(
+          patient.phone as string,
+          `Hello ${patient.name}, this is a reminder for your appointment with Dr. ${doctor.name} at ${appointment.time}.`
+        );
+      });
     }
 
-    return await this.appointmentRepository.create(appointmentData);
+    // Send notification to doctor
+    await notificationService.createNotification({
+      recipientId: appointment.doctorId.toString(),
+      recipientRole: "doctor",
+      message: `New appointment booked with ${patient.name} on ${appointment.date} at ${appointment.time}.`,
+    });
   }
 
-  async getAppointmentsByUserId(userId: string) {
-    return await this.appointmentRepository.getAppointments({ patientId: userId });
+  async getAppointmentsByUserId(userId: string): Promise<IAppointment[]> {
+    logger.info(`Appointment get request for userid: ${userId}`);
+
+    return this.appointmentRepository.getAppointmentsByPatient(userId);
   }
 
-  async updateAppointmentStatus(
-    appointmentId: string,
-    status: IAppointment["status"]
-  ) {
+  async updateAppointmentStatus(appointmentId: string, status: IAppointment["status"]): Promise<IAppointment> {
     if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
-      throw new Error("Invalid status value.");
+      throw new Error("Invalid status value");
     }
-  
-    const appointment = await this.appointmentRepository.findById(appointmentId);
-  
-    if (!appointment) {
-      throw new Error("Appointment not found.");
-    }
-  
-    const updatedData: Partial<IAppointment> = {
+
+    const updateData: Partial<IAppointment> = {
       status,
       ...(status === 'completed' && { paymentStatus: 'paid' })
     };
-  
-    return await this.appointmentRepository.updateStatus(appointmentId, updatedData);
-  }
-  
-  async getAppointmentsByDoctor(doctorId: string) {
-    return await this.appointmentRepository.getAppointmentsByDoctor(doctorId);
+
+    const updatedAppointment = await this.appointmentRepository.update(appointmentId, updateData);
+    if (!updatedAppointment) {
+      throw new Error("Appointment not found");
+    }
+
+    await this.sendStatusUpdateNotification(updatedAppointment);
+    return updatedAppointment;
   }
 
-  async getAppointmentsByPatient(patientId: string) {
-    return await this.appointmentRepository.getAppointmentsByPatient(patientId);
-  }
-
-  static markAsPaid(appointmentId: string) {
-    return this.appointmentRepository.updatePaymentStatus(appointmentId, {
-      paymentStatus: "Paid",
-      paid: true,
+  private async sendStatusUpdateNotification(appointment: IAppointment): Promise<void> {
+    await notificationService.createNotification({
+      recipientId: appointment.patientId.toString(),
+      recipientRole: "user",
+      message: `Your appointment status has been changed to ${appointment.status}`
     });
   }
 
-  async cancelAppointment(appointmentId: string) {
-    const appointment = await this.appointmentRepository.findById(appointmentId);
-    
+  async getAppointmentsByDoctor(doctorId: string): Promise<IAppointment[]> {
+    return this.appointmentRepository.getAppointmentsByDoctor(doctorId);
+  }
+
+  async getAppointmentsByPatient(patientId: string): Promise<IAppointment[]> {
+    return this.appointmentRepository.getAppointmentsByPatient(patientId);
+  }
+
+  async cancelAppointment(appointmentId: string): Promise<void> {
+    const appointment = await this.appointmentRepository.getById(appointmentId);
     if (!appointment) {
-      throw new Error("Appointment not found.");
+      throw new Error("Appointment not found");
     }
 
     if (appointment.status === 'cancelled') {
-      throw new Error("Appointment is already cancelled.");
+      throw new Error("Appointment is already cancelled");
     }
 
-    // Check if payment status is paid and process refund
-    if (appointment.paymentStatus === 'paid') {
-      try {
-        // Get payment details from the appointment and process refund
-        const refundSuccess = await this.paymentService.processRefund(
-          appointmentId,
-          appointment.paymentId // Access paymentId directly from appointment
-        );
-
-        if (!refundSuccess) {
-          throw new Error("Failed to process refund");
-        }
-      } catch (error) {
-        console.error("Refund Error:", error);
-        throw new Error("Failed to process refund. Please try again later.");
-      }
-    }
-
-    // Update appointment status to cancelled
-    return await this.appointmentRepository.updateStatus(appointmentId, {
-      status: 'cancelled'
-    });
+    await this.appointmentRepository.update(appointmentId, { status: 'cancelled' });
   }
 
   async getAllAppointments(): Promise<IAppointment[]> {
-    return await this.appointmentRepository.getAllAppointments();
+    return this.appointmentRepository.getAllAppointments();
   }
 }

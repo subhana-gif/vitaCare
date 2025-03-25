@@ -13,12 +13,10 @@ export const adminService = {
 
   checkSpecialityStatus: async (specialityName: string) => {
     try {
-      console.log(`Checking status for speciality: ${specialityName}`);
       const response = await axios.get(`${API_BASE_URL}/specialities/status`, {
         params: { name: specialityName },
       });
   
-      console.log(`Speciality status response for "${specialityName}":`, response.data);
       return response.data;
     } catch (error) {
       console.error(`Error in checkSpecialityStatus for "${specialityName}":`, error);
