@@ -1,33 +1,22 @@
 import razorpay from "../utils/razorpay";
+import { IPaymentRepository, IPaymentOrder, IRefundParams } from "../interfaces/IPayment";
 
-interface OrderParams {
-  amount: number;
-  currency: string;
-  receipt: string;
-}
-
-interface RefundParams {
-  paymentId: string;
-  amount?: number;
-  notes?: Record<string, string>;
-}
-
-class PaymentRepository {
-  async createOrder(params: OrderParams) {
+class PaymentRepository implements IPaymentRepository {
+  async createOrder(params: IPaymentOrder) {
     return await razorpay.orders.create(params);
   }
 
-  async verifyPayment({ order_id, payment_id, signature }: any) {
+  async verifyPayment({ order_id, payment_id, signature }: { order_id: string; payment_id: string; signature: string }) {
     const crypto = require("crypto");
     const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET as string)
       .update(`${order_id}|${payment_id}`)
       .digest("hex");
 
     return generatedSignature === signature;
   }
 
-  async createRefund({ paymentId, amount, notes }: RefundParams) {
+  async createRefund({ paymentId, amount, notes }: IRefundParams) {
     return await razorpay.payments.refund(paymentId, {
       amount,
       notes,
@@ -40,4 +29,4 @@ class PaymentRepository {
   }
 }
 
-export default new PaymentRepository();
+export default PaymentRepository;

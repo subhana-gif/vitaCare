@@ -1,57 +1,43 @@
 import { Request, Response } from "express";
-import { DoctorService } from "../services/DoctorService";
-import { IDoctor } from "../models/doctors";
+import { IDoctorService } from "../services/IDoctorService";
 import { uploadFileToS3 } from "../middleware/uploadMiddleware";
 import Speciality from "../models/speciality";
 import notificationService from "../services/notificationService";
 
 export class DoctorController {
-  constructor(
-    private readonly doctorService: DoctorService,
-  ) {}
+  constructor(private doctorService: IDoctorService) {}
+
+  private handleError(res: Response, error: unknown, defaultMessage: string): void {
+    const message = error instanceof Error ? error.message : defaultMessage;
+    res.status(500).json({ message });
+  }
 
   async registerDoctor(req: Request, res: Response): Promise<void> {
     try {
-        const { name, email, password } = req.body;
+      const { name, email, password } = req.body;
+      const doctor = await this.doctorService.registerDoctor({ name, email, password });
 
-        const doctorData: Partial<IDoctor> = {
-            name,
-            email,
-            password,
-            status: "pending"
-        };
+      await notificationService.createNotification({
+        recipientId: doctor._id?.toString() || "",
+        recipientRole: "admin",
+        message: `New doctor ${doctor.name} signed up!`,
+      });
 
-        const doctor = await this.doctorService.registerDoctor(doctorData);
-        
-        const notification = await notificationService.createNotification({
-          recipientId: doctor._id?.toString() || '',
-          recipientRole: "admin",
-          message: `New doctor ${doctor.name} signed up!`,
-        });
-    
-        // Emit the notification to the admin
-        (req as any).io.to("adminRoom").emit("newNotification", notification);
-        res.status(201).json({
-            message: "Doctor registered successfully. Please log in.",
-            doctor
-        });
+      (req as any).io.to("adminRoom").emit("newNotification");
+      res.status(201).json({ message: "Doctor registered successfully", doctor });
     } catch (error) {
-        res.status(500).json({
-            message: "Error registering doctor",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
+      this.handleError(res, error, "Error registering doctor");
     }
   }
 
-
   async loginDoctor(req: Request, res: Response): Promise<void> {
-  try {
+    try {
       const { email, password } = req.body;
       const result = await this.doctorService.loginDoctor(email, password);
 
       if (!result) {
-          res.status(401).json({ message: "Invalid credentials" });
-          return;
+        res.status(401).json({ message: "Invalid credentials" });
+        return;
       }
 
       res.status(200).json({
@@ -60,98 +46,146 @@ export class DoctorController {
           _id: result.doctor._id,
           name: result.doctor.name,
           email: result.doctor.email,
-          status: result.doctor.status, // ✅ Ensure this is included
+          status: result.doctor.status,
         },
         token: result.token,
       });
-  } catch (error) {
-      res.status(500).json({ message: "Error logging in", error });
+    } catch (error) {
+      this.handleError(res, error, "Error logging in");
+    }
   }
+
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const { email } = req.body;
+      await this.doctorService.sendResetLink(email);
+      res.status(200).json({ message: "Password reset link sent successfully" });
+    } catch (error) {
+      this.handleError(res, error, "Error sending reset link");
+    }
   }
 
   async getAllDoctors(req: Request, res: Response): Promise<void> {
     try {
-   
       const doctors = await this.doctorService.getAllDoctors();
       res.json({ doctors });
     } catch (error) {
-      res.status(500).json({ message: error instanceof Error ? error.message : "Unknown error" });
+      this.handleError(res, error, "Error fetching doctors");
     }
   }
 
   async getDoctorById(req: Request, res: Response): Promise<void> {
     try {
-      const id = req.query.doctorId as string;
+      const id = req.params.id || req.query.doctorId;
       if (!id) {
         res.status(400).json({ message: "Doctor ID is required" });
         return;
       }
 
-      const doctor = await this.doctorService.getDoctorById(id);
-      doctor ? res.status(200).json({ data: doctor }) : res.status(404).json({ message: "Doctor not found" });
+      const doctor = await this.doctorService.getDoctorById(id.toString());
+      if (!doctor) {
+        res.status(404).json({ message: "Doctor not found" });
+        return;
+      }
+
+      res.status(200).json({ doctor });
     } catch (error) {
-      res.status(500).json({ message: "Error fetching doctor", error: error instanceof Error ? error.message : "Unknown error" });
+      this.handleError(res, error, "Error fetching doctor");
     }
   }
 
-  async getDoctorsById(req: Request, res: Response): Promise<void> {
+  async addDoctor(req: Request, res: Response): Promise<void> {
     try {
-        const { id } = req.params;
+      const doctorData = req.body;
+      const speciality = await Speciality.findOne({ name: doctorData.speciality });
+      if (!speciality) {
+        res.status(400).json({ message: "Speciality not found" });
+        return;
+      }
 
-        if (!id || id.length !== 24) {
-            res.status(400).json({ message: "Invalid doctor ID format" });
-            return;
-        }
+      if (req.file) {
+        const uploadedFile = await uploadFileToS3(req.file);
+        doctorData.imageUrl = uploadedFile.fileUrl;
+      }
 
-        const doctor = await this.doctorService.getDoctorById(id);
-
-        if (!doctor) {
-            res.status(404).json({ message: "Doctor not found" });
-            return;
-        }
-
-        res.status(200).json({ doctor });
+      const doctor = await this.doctorService.addDoctor(doctorData);
+      res.status(201).json({
+        message: "Doctor added successfully",
+        doctor,
+      });
     } catch (error) {
-        console.error("Error fetching doctor details:", error);
-        res.status(500).json({ message: "Failed to fetch doctor details", error: error instanceof Error ? error.message : "Unknown error" });
+      this.handleError(res, error, "Error adding doctor");
     }
   }
 
   async updateDoctor(req: Request, res: Response): Promise<void> {
     try {
-        const { id } = req.params;
-        const updateData: Partial<IDoctor> = req.body;
+      const { id } = req.params;
+      const updateData = req.body;
 
-        // 🔹 Handle image upload
-        if (req.file) {
-            const uploadedFile = await uploadFileToS3(req.file);
-            updateData.imageUrl = uploadedFile.fileUrl;
+      if (req.file) {
+        const uploadedFile = await uploadFileToS3(req.file);
+        updateData.imageUrl = uploadedFile.fileUrl;
+      }
+
+      if (updateData.speciality) {
+        const speciality = await Speciality.findOne({ name: updateData.speciality });
+        if (!speciality) {
+          res.status(400).json({ message: "Invalid speciality" });
+          return;
         }
+        updateData.speciality = speciality.name;
+      }
 
-        // 🔹 Handle speciality conversion
-        if (updateData.speciality) {
-            const speciality = await Speciality.findOne({ name: updateData.speciality });
-            if (!speciality) {
-                res.status(400).json({ message: "Invalid speciality provided" });
-                return;
-            }
-            updateData.speciality = speciality.name;   
-          }
+      const doctor = await this.doctorService.updateDoctor(id, updateData);
+      if (!doctor) {
+        res.status(404).json({ message: "Doctor not found" });
+        return;
+      }
 
-        const doctor = await this.doctorService.updateDoctor(id, updateData);
-
-        if (doctor) {
-            res.status(200).json({ message: "Doctor updated successfully", doctor });
-        } else {
-            res.status(404).json({ message: "Doctor not found" });
-        }
+      res.status(200).json({ message: "Doctor updated successfully", doctor });
     } catch (error) {
-        res.status(500).json({
-            message: "Error updating doctor",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
+      this.handleError(res, error, "Error updating doctor");
     }
-}
+  }
+
+
+  async getDoctorProfile(req: Request, res: Response): Promise<void> {
+    try {
+      // Get doctor ID from the token (more secure than query params)
+      const doctorId = (req as any).user.id;
+      
+      if (!doctorId) {
+        res.status(400).json({ message: "Doctor ID not found in token" });
+        return;
+      }
+  
+      const doctor = await this.doctorService.getDoctorById(doctorId);
+      if (!doctor) {
+        res.status(404).json({ message: "Doctor not found" });
+        return;
+      }
+  
+      // Return only necessary doctor data (don't expose sensitive info)
+      const doctorProfile = {
+        _id: doctor._id,
+        name: doctor.name,
+        email: doctor.email,
+        speciality: doctor.speciality,
+        degree: doctor.degree,
+        experience: doctor.experience,
+        address: doctor.address,
+        about: doctor.about,
+        imageUrl: doctor.imageUrl,
+        available: doctor.available,
+        status: doctor.status,
+      };
+  
+      res.status(200).json(doctorProfile); // Changed to return directly
+    } catch (error) {
+      this.handleError(res, error, "Error fetching doctor profile");
+    }
+  }
 
   async deleteDoctor(req: Request, res: Response): Promise<void> {
     try {
@@ -159,104 +193,42 @@ export class DoctorController {
       await this.doctorService.deleteDoctor(id);
       res.status(200).json({ message: "Doctor deleted successfully" });
     } catch (error) {
-      res.status(500).json({ message: "Error deleting doctor", error: error instanceof Error ? error.message : "Unknown error" });
+      this.handleError(res, error, "Error deleting doctor");
     }
   }
 
   async approveDoctor(req: Request, res: Response): Promise<void> {
     try {
-        const { doctorId, status } = req.body;
-        const updatedDoctor = await this.doctorService.updateDoctorStatus(doctorId, status);
+      const { doctorId, status } = req.body;
+      const doctor = await this.doctorService.approveDoctor(doctorId, status);
+      if (!doctor) {
+        res.status(404).json({ message: "Doctor not found" });
+        return;
+      }
 
-        if (!updatedDoctor) {
-            res.status(404).json({ message: "Doctor not found" });
-            return;
-        }
-
-        res.status(200).json({
-            message: `Doctor status updated to ${status}`,
-            doctor: updatedDoctor // ✅ Return updated doctor details
-        });
+      res.status(200).json({ message: `Doctor ${status}`, doctor });
     } catch (error) {
-        res.status(500).json({ 
-            message: "Error approving/rejecting doctor", 
-            error: error instanceof Error ? error.message : "Unknown error" 
-        });
+      this.handleError(res, error, "Error approving doctor");
     }
-  }
-
-  async forgotPassword(req: Request, res: Response): Promise<void> {
-  try {
-      const { email } = req.body;
-      await this.doctorService.sendResetLink(email);
-      res.status(200).json({ message: "Password reset link sent successfully." });
-  } catch (error) {
-      res.status(500).json({ error: "Failed to send password reset link." });
-  }
   }
 
   async resetPassword(req: Request, res: Response): Promise<void> {
-    console.log("hit")
-    const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
-      res.status(400).json({ error: "Token and new password are required" });
-      return;
-    }
-
     try {
+      const { token, newPassword } = req.body;
       await this.doctorService.resetPassword(token, newPassword);
       res.status(200).json({ message: "Password reset successful" });
     } catch (error) {
-      console.log("error reset password:",error)
-      res.status(500).json({ error: "Failed to reset password" });
-    }
-  }
-
-  async addDoctor(req: Request, res: Response): Promise<void> {
-    try {
-        const doctorData: Partial<IDoctor> = req.body;
-        const speciality = await Speciality.findOne({ name: doctorData.speciality });
-        if (!speciality) {
-           res.status(400).json({ message: "Speciality not found." });
-           return 
-        }
-        doctorData.speciality = speciality.name;  // ✅ Correct Type Assignment
-
-        if (req.file) {
-            const uploadedFile = await uploadFileToS3(req.file);
-            doctorData.imageUrl = uploadedFile.fileUrl;
-        }
-
-        const doctor = await this.doctorService.addDoctor(doctorData);
-
-        res.status(201).json({
-            message: "Doctor added successfully. Password setup email has been sent.",
-            doctor
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: "Error adding doctor",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
+      this.handleError(res, error, "Error resetting password");
     }
   }
 
   async setPassword(req: Request, res: Response): Promise<void> {
     try {
       const { token, password } = req.body;
-
-      if (!token || !password) {
-        res.status(400).json({ message: "Token and password are required" });
-        return;
-      }
-
       await this.doctorService.setPassword(token, password);
       res.status(200).json({ message: "Password set successfully" });
     } catch (error) {
-      res.status(500).json({
-        message: "Error setting password",
-        error: error instanceof Error ? error.message : "An unknown error occurred"
-      });
+      this.handleError(res, error, "Error setting password");
     }
   }
 }

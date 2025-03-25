@@ -2,8 +2,6 @@ import mongoose, { Document, Schema, Model } from "mongoose";
 import bcrypt from "bcryptjs";
 
 export interface IDoctor extends Document {
-  resetToken?: string;
-  resetTokenExpires?: Date;
   _id: mongoose.Types.ObjectId;
   name: string;
   email: string;

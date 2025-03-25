@@ -39,7 +39,6 @@ const createDoctor = async (formData: FormData) => {
   return response.data;
 };
 const setPassword = async (token: string, password: string): Promise<string> => {
-  console.log("Token Sent to API:", token); 
   const response = await axios.post<{ message: string }>(
       `${API_BASE_URL}/set-password`,
       { token, password }
@@ -144,17 +143,23 @@ const setPassword = async (token: string, password: string): Promise<string> => 
     
     const fetchDoctor = async () => {
       const token = localStorage.getItem("doctortoken");
-      const doctorId = localStorage.getItem("doctorId");  // ✅ Correctly fetching doctorId
+      
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
     
-      if (!token) throw new Error("Authentication token not found");
-      if (!doctorId) throw new Error("Doctor ID not found");
-    
-      const response = await axios.get(`${API_BASE_URL}/profile?doctorId=${doctorId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    
-      return response.data;
+      try {
+        const response = await axios.get(`${API_BASE_URL}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        return response.data; // Now returns the profile object directly
+      } catch (error) {
+        console.error("Error fetching doctor profile:", error);
+        throw error;
+      }
     };
+
 
     const fetchAllDoctors = async () => {
       const response = await axios.get(`${API_BASE_URL}`);

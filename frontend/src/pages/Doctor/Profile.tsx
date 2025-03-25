@@ -81,8 +81,9 @@ const DoctorProfile: React.FC = () => {
       setIsLoading(true);
       try {
         const response = await doctorService.fetchDoctor();
-        setDoctor(response.data);
-        setFormData(response.data);
+        console.log("doctor profile:",response)
+        setDoctor(response);
+        setFormData(response);
       } catch (error) {
         console.error("Error fetching doctor:", error);
         setError("Could not load your profile. Please try again later.");

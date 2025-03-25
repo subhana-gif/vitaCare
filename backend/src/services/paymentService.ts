@@ -1,82 +1,66 @@
-import { AppointmentRepository } from "../repositories/appointmentRepository";
+import { IPaymentOrder, IPaymentVerification, IRefundResult } from "../interfaces/IPayment";
 import PaymentRepository from "../repositories/paymentRepository";
-import crypto from "crypto";
+import {AppointmentRepository} from "../repositories/appointmentRepository";
 
 class PaymentService {
-  private appointmentRepository = new AppointmentRepository();
+  private paymentRepository: PaymentRepository;
+  private appointmentRepository: AppointmentRepository;
+
+  constructor(
+    paymentRepository: PaymentRepository,
+    appointmentRepository: AppointmentRepository
+  ) {
+    this.paymentRepository = paymentRepository;
+    this.appointmentRepository = appointmentRepository;
+  }
 
   async createOrder(amount: number) {
-    const order = await PaymentRepository.createOrder({
+    const orderParams: IPaymentOrder = {
       amount: amount * 100, // Razorpay expects amount in paise
       currency: "INR",
       receipt: `order_rcptid_${Date.now()}`,
-    });
-    return order;
+    };
+    return this.paymentRepository.createOrder(orderParams);
   }
 
-  async verifyPayment(data: {
-    order_id: string;
-    payment_id: string;
-    signature: string;
-    appointmentId: string;
-  }): Promise<boolean> {
-    const { order_id, payment_id, signature } = data;
+  async verifyPayment(data: IPaymentVerification): Promise<boolean> {
+    const { order_id, payment_id, signature, appointmentId } = data;
 
-    const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET as string)
-      .update(`${order_id}|${payment_id}`)
-      .digest("hex");
+    const isValid = await this.paymentRepository.verifyPayment({ order_id, payment_id, signature });
 
-    if (generatedSignature !== signature) return false;
+    if (!isValid) return false;
 
-    // ✅ Update appointment status and payment ID in the database
-    await this.appointmentRepository.updatePaymentStatus(data.appointmentId, "paid", payment_id);
-
+    await this.appointmentRepository.updatePaymentStatus(appointmentId, "paid", payment_id);
     return true;
   }
 
+  async processRefund(appointmentId: string, paymentId: string): Promise<IRefundResult | null> {
+    const paymentDetails = await this.paymentRepository.getPaymentDetails(paymentId);
+    if (!paymentDetails) return null;
 
-  async processRefund(
-    appointmentId: string,
-    paymentId: string
-  ): Promise<{
-    refundId: string;
-    amount: number;
-    createdAt: Date;   // ✅ Corrected to reflect current date/time
-  } | null> {
-    try {
-      const paymentDetails = await PaymentRepository.getPaymentDetails(paymentId);
-      if (!paymentDetails) return null;
-  
-      const refundAmount = Number(paymentDetails.amount) ?? 0;
-      if (!refundAmount || refundAmount <= 0) return null;
-  
-      const refund = await PaymentRepository.createRefund({
-        paymentId,
-        amount: refundAmount,
-        notes: {
-          appointmentId,
-          reason: "Appointment Cancellation"
-        }
-      });
-  
-      if (!refund) return null;
-  
-      await this.appointmentRepository.updatePaymentStatus(appointmentId, "refunded");
-  
-      return {
-        refundId: refund.id,
-        amount: refund.amount ?? 0,
-        createdAt: new Date()  // ✅ Sets current date for accurate timestamp
-      };
-    } catch (error) {
-      console.error("Refund processing error:", error);
-      throw new Error("Failed to process refund");
-    }
-  }
-      
+    const refundAmount = Number(paymentDetails.amount) ?? 0;
+    if (refundAmount <= 0) return null;
 
+    const refund = await this.paymentRepository.createRefund({
+      paymentId,
+      amount: refundAmount,
+      notes: { appointmentId, reason: "Appointment Cancellation" }
+    });
 
+    if (!refund) return null;
+
+    await this.appointmentRepository.updatePaymentStatus(appointmentId, "refunded");
+
+    return {
+      refundId: refund.id,
+      amount: refund.amount ?? 0,
+      createdAt: new Date()
+    };
   }
 
-export default new PaymentService();
+  async getAppointmentById(appointmentId: string) {
+    return this.appointmentRepository.getById(appointmentId);
+  }
+}
+
+export default PaymentService;

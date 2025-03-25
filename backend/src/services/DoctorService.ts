@@ -1,103 +1,106 @@
 import { IDoctor } from "../models/doctors";
-import { DoctorRepository } from "../repositories/doctorRepository";
+import { IDoctorRepository } from "../repositories/IDoctorRepository";
+import { IDoctorService } from "../services/IDoctorService";
 import EmailService from "./emailService";
 import TokenService from "./tokenService";
 import bcrypt from "bcrypt";
 
-export class DoctorService {
-  constructor(
-    private doctorRepository: DoctorRepository,
-    ) { }
+export class DoctorService implements IDoctorService {
+  constructor(private repository: IDoctorRepository) {}
 
-    async registerDoctor(doctorData: Partial<IDoctor>): Promise<IDoctor> {
-      doctorData.status = "pending";
-  
-      const doctor = await this.doctorRepository.createDoctor(doctorData);  
-      return doctor;
+  async registerDoctor(doctorData: Partial<IDoctor>): Promise<IDoctor> {
+    doctorData.status = "pending";
+    return this.repository.create(doctorData);
   }
-  
-async loginDoctor(email: string, password: string): Promise<{ doctor: IDoctor; token: string } | null> {
-  const result = await this.doctorRepository.loginDoctor(email, password);
 
-  if (!result) return null;
+  async loginDoctor(
+    email: string,
+    password: string
+  ): Promise<{ doctor: IDoctor; token: string } | null> {
+    const doctor = await this.repository.findByEmail(email);
+    if (!doctor || !doctor.password) return null;
 
-  const { doctor } = result;
-  if (doctor.isBlocked) throw new Error("Your account has been blocked. Please contact support.");
-  return result;
-}
+    const isPasswordValid = await bcrypt.compare(password, doctor.password);
+    if (!isPasswordValid) return null;
 
-  async getAllDoctors() {
-    return await this.doctorRepository.findAll();
+    if (doctor.isBlocked) throw new Error("Your account has been blocked");
+
+    const token = TokenService.generateToken({
+      id: doctor._id,
+      email: doctor.email,
+      role: "doctor",
+    });
+
+    return { doctor, token };
+  }
+
+  async getAllDoctors(): Promise<IDoctor[]> {
+    return this.repository.findAll();
   }
 
   async getDoctorById(id: string): Promise<IDoctor | null> {
-    return await this.doctorRepository.findDoctorById(id);
+    return this.repository.findById(id);
   }
 
-  async updateDoctor(id: string, updateData: Partial<IDoctor>): Promise<IDoctor | null> {
-    return await this.doctorRepository.updateDoctor(id, updateData);
+  async addDoctor(doctorData: Partial<IDoctor>): Promise<IDoctor> {
+    doctorData.status = "approved";
+    const doctor = await this.repository.create(doctorData);
+
+    const resetToken = TokenService.generateToken(
+      { id: doctor._id, email: doctor.email },
+      "24h"
+    );
+    const resetLink = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/doctors/set-password/${resetToken}`;
+    await EmailService.sendPasswordResetEmail(doctor.email, resetLink);
+
+    return doctor;
+  }
+
+  async updateDoctor(
+    id: string,
+    updateData: Partial<IDoctor>
+  ): Promise<IDoctor | null> {
+    return this.repository.update(id, updateData);
   }
 
   async deleteDoctor(id: string): Promise<void> {
-    await this.doctorRepository.deleteDoctor(id);
+    await this.repository.delete(id);
   }
 
-  async updateDoctorStatus(doctorId: string, status: "approved" | "rejected"): Promise<IDoctor | null> {
-    const updatedDoctor = await this.doctorRepository.updateDoctor(doctorId, { status });
-
-    if (!updatedDoctor) throw new Error("Doctor not found");
-    return updatedDoctor;
-}
-
-async addDoctor(doctorData: Partial<IDoctor>): Promise<IDoctor> {
-  doctorData.status = "approved";
-  const doctor = await this.doctorRepository.createDoctor(doctorData);
-
-  const resetToken = TokenService.generateToken({ id: doctor._id ,email: doctor.email}, "24h");
-  const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/doctors/set-password/${resetToken}`;
-  await EmailService.sendPasswordResetEmail(doctor.email, resetLink);
-
-  return doctor;
-}
-
-  async setPassword(token: string, password: string): Promise<void> {
-    const decoded = TokenService.verifyToken(token) as unknown as { id: string;email:string };
-    const doctor = await this.doctorRepository.findDoctorById(decoded.id);
-    if (!doctor) throw new Error("Invalid token or doctor not found");
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await this.doctorRepository.updateDoctor(doctor._id.toString(), {
-      password: hashedPassword,
-    });
+  async approveDoctor(
+    doctorId: string,
+    status: "approved" | "rejected"
+  ): Promise<IDoctor | null> {
+    return this.repository.updateStatus(doctorId, status);
   }
 
   async sendResetLink(email: string): Promise<void> {
-    const doctor = await this.doctorRepository.findDoctorByEmail(email);
+    const doctor = await this.repository.findByEmail(email);
     if (!doctor) throw new Error("Doctor not found");
 
-    const resetToken = TokenService.generateToken({ doctorId: doctor._id.toString(),email ,role:"doctor"}, "1h");
-    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/doctor/resetPassword/${resetToken}`;
+    const resetToken = TokenService.generateToken(
+      { doctorId: doctor._id.toString(), email, role: "doctor" },
+      "1h"
+    );
+    const resetLink = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/doctor/resetPassword/${resetToken}`;
     await EmailService.sendPasswordResetEmail(email, resetLink);
-}
-
-async resetPassword(token: string, newPassword: string): Promise<void> {
-  try {
-      const decoded = TokenService.verifyToken(token) as unknown as { doctorId: string };
-      if (!decoded || !decoded.doctorId) {
-          throw new Error("Invalid or expired token");
-      }
-      const doctor = await this.doctorRepository.findDoctorById(decoded.doctorId);
-      if (!doctor) {
-          throw new Error("Doctor not found");
-      }
-
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await this.doctorRepository.updateDoctor(doctor._id.toString(), { password: hashedPassword });
-
-      console.log("Password reset successfully");
-  } catch (error) {
-      throw new Error("Invalid or expired token");
   }
-}
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const decoded = TokenService.verifyToken(token) as unknown as { doctorId: string };
+    if (!decoded?.doctorId) throw new Error("Invalid token");
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.repository.update(decoded.doctorId, { password: hashedPassword });
+  }
+
+  async setPassword(token: string, password: string): Promise<void> {
+    const decoded = TokenService.verifyToken(token) as { id: string };
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await this.repository.update(decoded.id, { password: hashedPassword });
+  }
 }
