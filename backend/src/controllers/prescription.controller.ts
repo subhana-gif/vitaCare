@@ -4,6 +4,8 @@ import PDFDocument = require('pdfkit');
 import { Types } from 'mongoose';
 import Appointment from "../models/appointment"
 import notificationService from '../services/notificationService';
+import Doctor from '../models/doctors';
+import User from '../models/user';
 
 export const createPrescription = async (req: Request, res: Response) => {
   try {
@@ -100,52 +102,124 @@ export const getPrescriptionByAppointment = async (req: Request, res: Response) 
   }
 };
 
-export const downloadPrescription = async (req: Request, res: Response) => {
-  try {
-    const { appointmentId } = req.params;
+export const downloadPrescription = async (req: Request, res: Response) => { 
+  try { 
+    const { appointmentId } = req.params; 
+ 
+    if (!Types.ObjectId.isValid(appointmentId)) { 
+      return res.status(400).json({ message: 'Invalid appointment ID' }); 
+    } 
+ 
+    // Find prescription and populate it differently
+    const prescription = await Prescription.findOne({ appointmentId })
+      .populate({
+        path: 'appointmentId',
+        populate: [
+          { path: 'doctorId', model: 'Doctor' },
+          { path: 'patientId', model: 'User' }
+        ]
+      });
 
-    if (!Types.ObjectId.isValid(appointmentId)) {
-      return res.status(400).json({ message: 'Invalid appointment ID' });
+    if (!prescription) { 
+      return res.status(404).json({ message: 'Prescription not found' }); 
+    } 
+
+    // Safely access doctor and patient information
+    const appointment = prescription.appointmentId as any;
+    const doctor = await Doctor.findById(appointment.doctorId);
+    const patient = await User.findById(appointment.patientId);
+
+    if (!doctor || !patient) {
+      return res.status(404).json({ message: 'Doctor or Patient information not found' }); 
     }
+ 
+    const doc = new PDFDocument({ 
+      size: 'A4',
+      margins: {
+        top: 50,
+        bottom: 50,
+        left: 50,
+        right: 50
+      }
+    }); 
+    res.setHeader('Content-Type', 'application/pdf'); 
+    res.setHeader('Content-Disposition', `attachment; filename=prescription_${appointmentId}.pdf`); 
+ 
+    doc.pipe(res); 
 
-    const prescription = await Prescription.findOne({ appointmentId });
-    if (!prescription) {
-      return res.status(404).json({ message: 'Prescription not found' });
-    }
+    // Track the starting Y position
+    const startY = doc.y;
+    const pageHeight = doc.page.height;
+    const pageWidth = doc.page.width;
 
-    const doc = new PDFDocument();
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=prescription_${appointmentId}.pdf`);
+    // Prescription Header
+    doc.font('Helvetica-Bold')
+       .fontSize(24)
+       .text('Medical Prescription', { align: 'center' })
+       .moveDown(0.5);
 
-    doc.pipe(res);
+    // Doctor Details
+    doc.font('Helvetica-Bold')
+       .fontSize(14)
+       .text('Prescribed By:', { underline: true });
+    doc.font('Helvetica')
+       .fontSize(12)
+       .text(`Dr. ${doctor.name}`)
+       .text(`Specialization: ${doctor.speciality}`)
+       .moveDown();
 
-    // Add content to PDF
-    doc.fontSize(20).text('Prescription', { align: 'center' });
-    doc.moveDown();
+    // Prescription Details
+    doc.font('Helvetica-Bold')
+       .fontSize(14)
+       .text('Diagnosis:', { underline: true });
+    doc.font('Helvetica')
+       .fontSize(12)
+       .text(prescription.diagnosis)
+       .moveDown();
 
-    doc.fontSize(14).text('Diagnosis:', { underline: true });
-    doc.fontSize(12).text(prescription.diagnosis);
-    doc.moveDown();
-
-    doc.fontSize(14).text('Medicines:', { underline: true });
-    prescription.medicines.forEach((medicine, index) => {
-      doc.fontSize(12).text(`${index + 1}. ${medicine.name}`);
-      doc.fontSize(10)
-        .text(`   Dosage: ${medicine.dosage}`)
-        .text(`   Duration: ${medicine.duration}`)
-        .text(`   Timing: ${medicine.timing}`);
-      doc.moveDown(0.5);
+    // Medicines
+    doc.font('Helvetica-Bold')
+       .fontSize(14)
+       .text('Prescribed Medicines:', { underline: true });
+    
+    prescription.medicines.forEach((medicine, index) => { 
+      doc.font('Helvetica-Bold')
+         .fontSize(12)
+         .text(`${index + 1}. ${medicine.name}`);
+      
+      doc.font('Helvetica')
+         .fontSize(10)
+         .text(`   Dosage: ${medicine.dosage}`)
+         .text(`   Duration: ${medicine.duration}`)
+         .text(`   Timing: ${medicine.timing}`)
+         .text(`   Instructions: ${medicine.instructions || 'No special instructions'}`)
+         .moveDown(0.5); 
     });
 
-    if (prescription.notes) {
-      doc.moveDown();
-      doc.fontSize(14).text('Additional Notes:', { underline: true });
-      doc.fontSize(12).text(prescription.notes);
+    // Additional Notes
+    if (prescription.notes) { 
+      doc.font('Helvetica-Bold')
+         .fontSize(14)
+         .text('Additional Notes:', { underline: true });
+      
+      doc.font('Helvetica')
+         .fontSize(12)
+         .text(prescription.notes)
+         .moveDown(); 
     }
 
-    doc.end();
-  } catch (error) {
-    console.error('Error generating prescription PDF:', error);
-    res.status(500).json({ message: 'Failed to generate prescription PDF' });
-  }
+    // Footer
+    const footerText = `Prescription Generated: ${new Date().toLocaleString()}`;
+    const textWidth = doc.widthOfString(footerText);
+    
+    // Move to bottom of page
+    doc.fontSize(8)
+       .text(footerText,
+         { width: textWidth, align: 'left' });
+
+    doc.end(); 
+  } catch (error) { 
+    console.error('Error generating prescription PDF:', error); 
+    res.status(500).json({ message: 'Failed to generate prescription PDF' }); 
+  } 
 };

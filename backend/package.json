@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@types/node": "^22.13.13",
+    "@types/twilio": "^3.19.3",
+    "dotenv": "^16.4.7",
+    "node-schedule": "^2.1.1",
+    "twilio": "^5.5.1"
+  },
+  "devDependencies": {
+    "@types/node-schedule": "^2.1.7"
+  }
+}

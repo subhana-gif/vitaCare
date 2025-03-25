@@ -5,7 +5,9 @@ import userService from "../services/userService";
 import emailService from "../services/emailService";
 import slotService from "../services/slotService";
 import AppointmentReminderService from "../services/appointmentReminderService";
-import notificationService from "../services/notificationService"; // Import Notification Service
+import notificationService from "../services/notificationService"; 
+import schedule from "node-schedule";
+import { sendCallReminder } from "../config/twilioCall";
 
 
 const appointmentService = new AppointmentService();
@@ -89,6 +91,20 @@ export class AppointmentController {
       // Schedule reminder emails
       await AppointmentReminderService.scheduleReminders(appointment);
 
+      const appointmentDateTime = new Date(`${date}T${time}`);
+      const reminderTime = new Date(appointmentDateTime.getTime() - 30 * 60000);
+  
+      if (!patient.phone) {
+        console.error(`❌ Error: Patient ${patient.name} does not have a phone number.`);
+      } else {
+        schedule.scheduleJob(reminderTime, () => {
+          return sendCallReminder(
+            patient.phone as string, // ✅ TypeScript safe
+            `Hello ${patient.name}, this is a reminder for your appointment with Doctor. ${doctor.name} at ${time}.`
+          );
+        });      
+        console.log(`📞 Call reminder scheduled for: ${reminderTime}`);
+      }
 
       const notification = await notificationService.createNotification({
         recipientId: doctorId,

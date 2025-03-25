@@ -46,34 +46,47 @@ const SpecialityManagement: React.FC = () => {
         }
 
         try {
-            await axios.post("http://localhost:5001/api/admin/specialities", { name: newSpeciality });
+            await axios.post(
+                "http://localhost:5001/api/admin/specialities",
+                { name: newSpeciality },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             toast.success("Speciality added successfully!");
             setNewSpeciality("");
-            const updatedResponse = await axios.get("http://localhost:5001/api/admin/specialities"); 
+        
+            const updatedResponse = await axios.get("http://localhost:5001/api/admin/specialities", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             setSpecialities(updatedResponse.data);
         } catch (error) {
             toast.error("Error adding speciality. It may already exist.");
         }
+        
     };
 
     // Toggle Speciality Status
     const handleToggleStatus = async (id: string) => {
         try {
-            const response = await axios.put(`http://localhost:5001/api/admin/specialities/${id}/toggle`);
+            const response = await axios.put(
+                `http://localhost:5001/api/admin/specialities/${id}/toggle`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             const updatedSpeciality = response.data;
-
+    
             setSpecialities((prevSpecialities) =>
                 prevSpecialities.map((spec) =>
                     spec._id === id ? { ...spec, isActive: updatedSpeciality.isActive } : spec
                 )
             );
-
+    
             toast.success(`Speciality ${updatedSpeciality.isActive ? "activated" : "deactivated"} successfully!`);
         } catch (error) {
             toast.error("Error toggling speciality status.");
         }
     };
-
+    
+    
     // Filter specialities based on search term and active status
     const filteredSpecialities = specialities.filter(spec => 
         spec.name.toLowerCase().includes(searchTerm.toLowerCase()) && 

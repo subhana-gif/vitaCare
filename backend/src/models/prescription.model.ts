@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 interface IMedicine {
+  instructions: string;
   name: string;
   dosage: string;
   duration: string;
