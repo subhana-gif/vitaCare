@@ -1,13 +1,35 @@
-import ChatRepository from "../repositories/chatdpRepository";
+// src/services/chatService.ts
+import { IChatRepository, IMessage,IMessageDocument  } from "../repositories/IChatdpRepository";
 
-class ChatService {
-  async sendMessage(sender: string, receiver: string, text: string, media: string | null) {
-    return await ChatRepository.saveMessage(sender, receiver, text, media);
+export class ChatdpService {
+  constructor(private readonly chatRepository: IChatRepository) {}
+
+  async sendMessage(sender: string, receiver: string, text?: string, media?: string): Promise<IMessageDocument> {
+    if (!sender || !receiver ) {
+      throw new Error("Sender, receiver are required");
+    }
+
+    const message: Partial<IMessage> = {
+      sender,
+      receiver,
+      ...(text && { text }),
+      ...(media && { media })
+    };
+
+    return this.chatRepository.saveMessage(message as IMessage);
   }
 
-  async getChatHistory(userId: string, doctorId: string) {
-    return await ChatRepository.getMessages(userId, doctorId);
+  async getChatHistory(userId: string, doctorId: string): Promise<IMessageDocument[]> {
+    if (!userId || !doctorId) {
+      throw new Error("Both user ID and doctor ID are required");
+    }
+    return this.chatRepository.getMessages(userId, doctorId);
+  }
+
+  async getDoctorChatList(doctorId: string): Promise<any[]> {
+    if (!doctorId) {
+      throw new Error("Doctor ID is required");
+    }
+    return this.chatRepository.getDoctorChatList(doctorId);
   }
 }
-
-export default new ChatService();

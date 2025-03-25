@@ -124,7 +124,6 @@ const Chats: React.FC = () => {
           formData,  // Send formData directly as the request body
           {
             headers: {
-              "Content-Type": "multipart/form-data" ,
               Authorization: `Bearer ${token}`,
             },
           }

@@ -1,11 +1,15 @@
-import mongoose from "mongoose";
+// src/models/message.ts
+import mongoose, { Document, Schema } from "mongoose";
+import { IMessage } from "../repositories/IChatdpRepository";
 
-const messageSchema = new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  text: String,
-  media: String, // Stores media file URL
+interface IMessageDocument extends IMessage, Document {}
+
+const messageSchema = new Schema<IMessageDocument>({
+  sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  receiver: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  text: { type: String},
+  media: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
-export default mongoose.model("Message", messageSchema);
+export default mongoose.model<IMessageDocument>("Message", messageSchema);

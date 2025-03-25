@@ -1,27 +1,43 @@
+// src/controllers/chatController.ts
 import { Request, Response } from "express";
-import ChatService from "../services/chatdpservices";
-import chatdpRepository from "../repositories/chatdpRepository";
+import { ChatdpService } from "../services/chatdpservices";
 
-class ChatController {
-  async sendMessage(req: Request, res: Response) {
-    const { sender, receiver, text } = req.body;
-    const media = req.body.imageUrl || null; 
 
-    const message = await ChatService.sendMessage(sender, receiver, text, media);
-    res.status(201).json(message);
-}
+export class ChatdpController {
+  constructor(private readonly chatService: ChatdpService) {}
 
-  async getChatHistory(req: Request, res: Response) {
-    const { userId, doctorId } = req.params;
-    const messages = await ChatService.getChatHistory(userId, doctorId);
-    res.status(200).json(messages);
+  async sendMessage(req: Request, res: Response): Promise<void> {
+    try {
+      const { sender, receiver, text } = req.body;
+      const imageUrl = req.body.imageUrl; 
+      if (!sender || !receiver) {
+        throw new Error("Sender and receiver IDs are required");
+      }
+      const message = await this.chatService.sendMessage(sender,receiver,text,imageUrl);
+      res.status(201).json(message);
+    } catch (error: any) {
+      console.error("Controller error:", error);
+      res.status(400).json({ error: error.message });
+    }
   }
 
-  async getDoctorChatList(req: Request, res: Response) {
-    const { doctorId } = req.params;
-    const chatList = await chatdpRepository.getDoctorChatList(doctorId);
-    res.status(200).json(chatList);
+  async getChatHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, doctorId } = req.params;
+      const messages = await this.chatService.getChatHistory(userId, doctorId);
+      res.status(200).json(messages);
+    } catch (error:any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async getDoctorChatList(req: Request, res: Response): Promise<void> {
+    try {
+      const { doctorId } = req.params;
+      const chatList = await this.chatService.getDoctorChatList(doctorId);
+      res.status(200).json(chatList);
+    } catch (error:any) {
+      res.status(400).json({ error: error.message });
+    }
   }
 }
-
-export default new ChatController();

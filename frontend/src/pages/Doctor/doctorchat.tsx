@@ -47,16 +47,14 @@ const DoctorChatPage: React.FC = () => {
     axios
       .get<Chat[]>(`http://localhost:5001/api/chat/doctor/${doctorId}/chats`, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => setChatList(res.data))
       .catch((err) => console.error("Error fetching chat list:", err));
   
-  }, [doctorId, token]);  // Include token as dependency
+  }, [doctorId, token]);  
   
-  // Fetch messages when a patient is selected
   useEffect(() => {
     if (!selectedPatient || !doctorId) return;
   
@@ -93,11 +91,6 @@ const DoctorChatPage: React.FC = () => {
         if (entry.isIntersecting) {
           const messageId = entry.target.getAttribute('data-message-id');
           if (messageId) {
-            // Mark message as read in the database
-            axios.post(`http://localhost:5001/api/chat/markAsRead`, {
-              messageId,
-              doctorId
-            }).catch(err => console.error("Error marking message as read:", err));
             
             // Update unread count when messages are actually viewed
             if (selectedPatient && viewedMessages.has(messageId)) {
@@ -251,12 +244,6 @@ const DoctorChatPage: React.FC = () => {
       }
     }));
     
-    // Update the last opened timestamp in the database
-    axios.post(`http://localhost:5001/api/chat/updateLastOpened`, {
-      doctorId,
-      patientId,
-      createdAt: now
-    }).catch(err => console.error("Error updating last opened timestamp:", err));
   };
 
   return (

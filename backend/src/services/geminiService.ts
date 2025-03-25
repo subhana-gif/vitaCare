@@ -1,24 +1,18 @@
-import GeminiRepository from "../repositories/geminiRepository";
+// src/services/geminiService.ts
+import { IAIRepository } from "../repositories/IAIRepository";
 
-class GeminiService {
-  private geminiRepo: GeminiRepository;
-
-  constructor() {
-    const apiKey = process.env.GEMINI_API_KEY as string;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is required");
-    }
-    this.geminiRepo = new GeminiRepository(apiKey);
-  }
+export class GeminiService {
+  constructor(private readonly aiRepository: IAIRepository) {}
 
   async generateResponse(message: string): Promise<string> {
     try {
-      return await this.geminiRepo.getResponse(message);
+      if (!message.trim()) {
+        throw new Error("Message cannot be empty");
+      }
+      return await this.aiRepository.getResponse(message);
     } catch (error) {
-      console.error("Gemini Service Error:", error);
+      console.error("GeminiService Error:", error);
       return "I'm sorry, I couldn't process that request.";
     }
   }
 }
-
-export default new GeminiService();
