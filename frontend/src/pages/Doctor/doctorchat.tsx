@@ -30,6 +30,7 @@ interface UnreadInfo {
 
 const DoctorChatPage: React.FC = () => {
   const doctorId = useSelector((state: any) => state.doctors.doctorId);
+  const token = useSelector((state: any) => state.doctors.token);
   const [chatList, setChatList] = useState<Chat[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -42,47 +43,40 @@ const DoctorChatPage: React.FC = () => {
   // Fetch chat list
   useEffect(() => {
     if (!doctorId) return;
-    
+  
     axios
-      .get<Chat[]>(`http://localhost:5001/api/chat/doctor/${doctorId}/chats`)
+      .get<Chat[]>(`http://localhost:5001/api/chat/doctor/${doctorId}/chats`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => setChatList(res.data))
       .catch((err) => console.error("Error fetching chat list:", err));
-      
-    // Also fetch unread counts for all chats
-    axios
-      .get(`http://localhost:5001/api/chat/doctor/${doctorId}/unread`)
-      .then((res) => {
-        const unreadData = res.data;
-        const initialUnreadInfo: { [key: string]: UnreadInfo } = {};
-        
-        unreadData.forEach((item: any) => {
-          initialUnreadInfo[item.patientId] = {
-            count: item.count,
-            lastOpened: item.lastOpened ? new Date(item.lastOpened) : null
-          };
-        });
-        
-        setUnreadInfo(initialUnreadInfo);
-      })
-      .catch((err) => console.error("Error fetching unread counts:", err));
-  }, [doctorId]);
-
+  
+  }, [doctorId, token]);  // Include token as dependency
+  
   // Fetch messages when a patient is selected
   useEffect(() => {
     if (!selectedPatient || !doctorId) return;
-    
+  
     axios
-      .get<Message[]>(`http://localhost:5001/api/chat/${selectedPatient}/${doctorId}`)
+      .get<Message[]>(`http://localhost:5001/api/chat/${selectedPatient}/${doctorId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         setMessages(res.data);
-        
+  
         // Mark messages as being viewed (but not yet read)
         const messageIds = new Set(res.data.map(msg => msg._id));
         setViewedMessages(messageIds);
       })
       .catch((err) => console.error("Error fetching messages:", err));
-  }, [selectedPatient, doctorId]);
-
+  }, [selectedPatient, doctorId, token]);  // Include token as dependency
+  
   // Track when messages are actually viewed (scrolled into view)
   useEffect(() => {
     if (!selectedPatient) return;
@@ -208,11 +202,16 @@ const DoctorChatPage: React.FC = () => {
     if (media) formData.append("image", media);
 
     try {
-      const res = await axios.post(
-        "http://localhost:5001/api/chat/send",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" }}
-      );
+    const res = await axios.post(
+      "http://localhost:5001/api/chat/send",
+      formData,  // Send formData directly as the request body
+      {
+        headers: {
+          "Content-Type": "multipart/form-data" ,
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
       // Emit the message to Socket.io
       socket.emit("sendMessage", res.data);

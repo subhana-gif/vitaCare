@@ -9,9 +9,6 @@ export interface IUser {
   gender?: string;
   dob?: Date;
   isBlocked?: boolean;
-  otp?: string;
-  otpExpiry?: Date;
-  otpAttempts?: number;
 }
 
 export interface IUserDocument extends IUser, Document {

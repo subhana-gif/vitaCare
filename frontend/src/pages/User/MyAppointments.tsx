@@ -161,7 +161,7 @@ const AppointmentsWithToast: React.FC = () => {
 
   const handlePayment = async (appointment: Appointment) => {
     try {
-      const paymentResult = await handlePaymentProcess(appointment, user);
+      const paymentResult = await handlePaymentProcess(appointment, user,token||"");
       
       if (paymentResult.success) {
         // Update the appointment list

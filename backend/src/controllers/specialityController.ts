@@ -48,6 +48,7 @@ class SpecialityController {
 
             res.status(201).json({ message: "Speciality added successfully!", speciality });
         } catch (error) {
+            console.error(error)
             res.status(500).json({ message: "Error adding speciality.", error });
         }
     }
@@ -58,6 +59,7 @@ class SpecialityController {
             const specialities = await Speciality.find();
             res.status(200).json(specialities);
         } catch (error) {
+            console.log("error getting speciality:",error)
             res.status(500).json({ message: "Failed to fetch specialities.", error });
         }
     }
@@ -79,6 +81,7 @@ class SpecialityController {
 
             res.status(200).json(speciality);
         } catch (error) {
+            console.log("error toggling speciality:",error)
             res.status(500).json({ message: "Error toggling speciality status.", error });
         }
     }

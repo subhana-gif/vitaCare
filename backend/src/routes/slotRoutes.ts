@@ -7,9 +7,9 @@ const router = express.Router();
 router.post("/create",verifyToken(["doctor"]), slotController.addSlot);
 router.get("/:doctorId",verifyToken(["doctor"]), slotController.getSlotsByDoctorId);
 router.put("/:slotId", verifyToken(["doctor"]), slotController.updateSlot);
-router.put("/:slotId/unavailable", slotController.markSlotUnavailable);
-router.put("/:slotId/available", slotController.markSlotAvailable);
-router.get("/:doctorId/date/:date", slotController.getSlotsByDoctorAndDate);
-router.put("/:slotId/book", verifyToken(["patient"]), slotController.markSlotAsBooked);
+router.put("/:slotId/unavailable",verifyToken(["doctor"]), slotController.markSlotUnavailable);
+router.put("/:slotId/available", verifyToken(["doctor"]),slotController.markSlotAvailable);
+router.get("/:doctorId/date/:date", verifyToken(["user"]),slotController.getSlotsByDoctorAndDate);
+router.put("/:slotId/book", verifyToken(["user"]), slotController.markSlotAsBooked);
 
 export default router;

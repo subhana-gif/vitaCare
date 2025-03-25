@@ -56,9 +56,7 @@ import {
     months: number
   ): Promise<MonthlyData[]> => {
     try {
-      console.log('Fetching monthly stats from repo:', { doctorId, months }); // Log input
       const stats = await getMonthlyStatsFromRepo(doctorId, months);
-      console.log('Monthly stats from repo:', stats); // Log the result
       return stats;
     } catch (error) {
       console.error('Error in fetchMonthlyStats:', error); // Log the error

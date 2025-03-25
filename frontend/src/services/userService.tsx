@@ -137,5 +137,27 @@ p0: string, profileData: {
       console.error("Error toggling user block status:", error);
       throw new Error("Failed to update user status.");
     }
-  }
+  },
+
+ sendMessage: async (message:string, token:string) => {
+    try {
+        const response = await fetch("http://localhost:5001/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ message: message.trim() }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to send message.");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw new Error(error.message);
+    }
+}
+
   };

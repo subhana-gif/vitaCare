@@ -34,7 +34,6 @@ interface ProcessedTimeSlot {
   price: number;
   originalSlotId: string;
 }
-
 const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
   doctorId,
   token,
@@ -47,6 +46,7 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [availableTimeSlots, setAvailableTimeSlots] = useState<ProcessedTimeSlot[]>([]);
   const [originalSlots, setOriginalSlots] = useState<Slot[]>([]);
+  console.log("token here in user:",token)
 
   useEffect(() => {
     const fetchDoctorSlots = async () => {

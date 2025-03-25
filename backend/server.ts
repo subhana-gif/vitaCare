@@ -5,6 +5,7 @@ import connectDB from "./src/config/db";
 import http from "http";
 import { Server } from "socket.io";
 import socketHandler from "./src/socket/socket";
+import errorHandler from "./src/middleware/errorHandler"
 
 
 import adminRoutes from "./src/routes/adminRoutes";
@@ -79,6 +80,8 @@ app.use("/api/reviews",reviews)
 app.use("/api/prescriptions",prescription)
 app.use("/api/dashboard",dashboard)
 
+
+app.use(errorHandler)
 
 // Start the server after DB connection
 const PORT = process.env.PORT || 5001;

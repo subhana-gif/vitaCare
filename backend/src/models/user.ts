@@ -11,9 +11,6 @@ const UserSchema: Schema<IUserDocument> = new Schema(
     gender: { type: String },
     dob: { type: Date },
     isBlocked: { type: Boolean, default: false },
-    otp: { type: String },
-    otpExpiry: { type: Date },
-    otpAttempts: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

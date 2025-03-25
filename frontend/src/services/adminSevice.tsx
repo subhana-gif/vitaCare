@@ -25,6 +25,15 @@ export const adminService = {
       return { isActive: false }; // Default to false if there's an error
     }
   },
+
+  fetchSpecialities: async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/specialities`);
+        return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+        throw new Error("Failed to fetch specialities.");
+    }
+},
     
 };
 

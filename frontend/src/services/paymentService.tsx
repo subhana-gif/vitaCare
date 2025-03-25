@@ -1,5 +1,7 @@
 import { Appointment } from "../types/appointment";
 import { toast } from 'react-toastify';
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store"; 
 import 'react-toastify/dist/ReactToastify.css';
 
 interface PaymentResult {
@@ -13,7 +15,7 @@ export const loadRazorpayScript = (): Promise<boolean> => {
       resolve(true);
       return;
     }
-
+    
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
@@ -26,7 +28,8 @@ export const loadRazorpayScript = (): Promise<boolean> => {
 
 export const handlePaymentProcess = async (
   appointment: Appointment, 
-  user: any
+  user: any,
+  token:string
 ): Promise<PaymentResult> => {
   try {
     const scriptLoaded = await loadRazorpayScript();
@@ -38,12 +41,14 @@ export const handlePaymentProcess = async (
     const amount = appointment.appointmentFee;
     const response = await fetch("http://localhost:5001/api/payment/payonline", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ amount, currency: "INR" }),
     });
-
+    
     const orderData = await response.json();
-    console.log("order data:",orderData)
     if (!orderData || !orderData.id) 
       throw new Error("Invalid order data received.");
 

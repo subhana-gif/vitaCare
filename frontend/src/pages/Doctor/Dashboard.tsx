@@ -57,6 +57,7 @@ interface MonthlyData {
 
 const DoctorDashboard: React.FC = () => {
   const doctorId = useSelector((state: any) => state.doctors.doctorId)  
+  const token = useSelector((state: any) => state.doctors.token)  
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [appointmentSummary, setAppointmentSummary] = useState<AppointmentSummary>({
     pending: 0,
@@ -82,7 +83,12 @@ const DoctorDashboard: React.FC = () => {
         setIsLoading(true);
 
         // Fetch today's appointments
-        const todayAppointmentsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/today`);
+        const todayAppointmentsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/today`,{
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        });
         setTodayAppointments(todayAppointmentsRes.data);
 
         setIsLoading(false);
@@ -107,19 +113,39 @@ const DoctorDashboard: React.FC = () => {
         setIsLoading(true);
         
         // Fetch appointment summary
-        const appointmentRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/summary?range=${dateRange}`);
+        const appointmentRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/summary?range=${dateRange}`,{
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        });
         setAppointmentSummary(appointmentRes.data);
         
         // Fetch payment summary
-        const paymentRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/payments/summary?range=${dateRange}`);
+        const paymentRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/payments/summary?range=${dateRange}`,{
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        });
         setPaymentSummary(paymentRes.data);
         
         // Fetch popular time slots
-        const timeSlotsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/time-slots?range=${dateRange}`);
+        const timeSlotsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/time-slots?range=${dateRange}`,{
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        });
         setPopularTimeSlots(timeSlotsRes.data);
         
         // Fetch monthly stats
-        const monthlyStatsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/monthly-stats?months=6`);
+        const monthlyStatsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/monthly-stats?months=6`,{
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        });
         setMonthlyStats(monthlyStatsRes.data);
         
         setIsLoading(false);

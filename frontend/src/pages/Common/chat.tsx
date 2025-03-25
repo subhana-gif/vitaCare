@@ -32,11 +32,11 @@ const Chats: React.FC = () => {
   const [message, setMessage] = useState<string>("");
   const [media, setMedia] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [doctor, setDoctor] = useState<Doctor | null>(null); // State to store doctor details
+  const [doctor, setDoctor] = useState<Doctor | null>(null);
   const user = useSelector((state: RootState) => state.auth.user);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const token = useSelector((state: RootState) => state.auth.accessToken);
   // Fetch doctor details using the service
   useEffect(() => {
     if (doctorId) {
@@ -63,10 +63,21 @@ const Chats: React.FC = () => {
       socket.emit("joinRoom", { userId, doctorId });
 
       // Fetch previous chat history
-      fetch(`http://localhost:5001/api/chat/${userId}/${doctorId}`)
-        .then((res) => res.json())
+      fetch(`http://localhost:5001/api/chat/${userId}/${doctorId}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,  // Attach token
+          "Content-Type": "application/json"
+        }
+      })
+      .then((res) => res.json())
         .then((data) => {
-          setMessages(data); // Load old messages from DB
+          if (Array.isArray(data)) {
+            setMessages(data);
+          } else {
+            setMessages([]); // Ensure it's an array
+            console.error("Invalid messages format:", data);
+          }
           setIsLoading(false);
         })
         .catch((err) => {
@@ -107,11 +118,17 @@ const Chats: React.FC = () => {
       if (media) formData.append("image", media);
 
       try {
+
         const res = await axios.post(
           "http://localhost:5001/api/chat/send",
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
+          formData,  // Send formData directly as the request body
+          {
+            headers: {
+              "Content-Type": "multipart/form-data" ,
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );        
 
         socket.emit("sendMessage", res.data);
         setMessages((prev) => [...prev, res.data]);

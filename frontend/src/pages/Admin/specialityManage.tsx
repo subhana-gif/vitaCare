@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from 'react-toastify';
 import { Search, Plus, CheckCircle, XCircle } from "lucide-react";
 import Pagination from "../Common/Pagination";
+import { adminService } from "../../services/adminSevice";
 
 interface Speciality {
     _id: string;
@@ -20,14 +21,14 @@ const SpecialityManagement: React.FC = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5); // Increased for better use of full width
-
+    const token = localStorage.getItem("adminToken")
     // Fetch Specialities
     useEffect(() => {
         const fetchSpecialities = async () => {
             setIsLoading(true);
             try {
-                const response = await axios.get("http://localhost:5001/api/admin/specialities");
-                setSpecialities(Array.isArray(response.data) ? response.data : []);
+                const data = await adminService.fetchSpecialities();
+                setSpecialities(data);
             } catch (error) {
                 toast.error("Failed to fetch specialities.");
             } finally {

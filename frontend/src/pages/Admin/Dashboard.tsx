@@ -113,6 +113,7 @@ const AdminDashboard: React.FC = () => {
   const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
   const [topDoctors, setTopDoctors] = useState<TopEntityData[]>([]);
   const [topPatients, setTopPatients] = useState<TopEntityData[]>([]);
+  const token = localStorage.getItem("adminToken")
   
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -120,27 +121,57 @@ const AdminDashboard: React.FC = () => {
         setIsLoading(true);
         
         // Fetch summary statistics
-        const summaryRes = await axios.get(`http://localhost:5001/api/dashboard/summary?range=${dateRange}`);
+        const summaryRes = await axios.get(`http://localhost:5001/api/dashboard/summary?range=${dateRange}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setSummaryStats(summaryRes.data);
         
         // Fetch appointment status distribution
-        const appointmentStatusRes = await axios.get(`http://localhost:5001/api/dashboard/appointment-status?range=${dateRange}`);
+        const appointmentStatusRes = await axios.get(`http://localhost:5001/api/dashboard/appointment-status?range=${dateRange}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setAppointmentStatusDistribution(appointmentStatusRes.data);
         
         // Fetch payment status distribution
-        const paymentStatusRes = await axios.get(`http://localhost:5001/api/dashboard/payment-status?range=${dateRange}`);
+        const paymentStatusRes = await axios.get(`http://localhost:5001/api/dashboard/payment-status?range=${dateRange}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setPaymentStatusDistribution(paymentStatusRes.data);
         
         // Fetch time series data
-        const timeSeriesRes = await axios.get(`http://localhost:5001/api/dashboard/time-series?range=${dateRange}`);
+        const timeSeriesRes = await axios.get(`http://localhost:5001/api/dashboard/time-series?range=${dateRange}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setTimeSeriesData(timeSeriesRes.data);
         
         // Fetch top doctors by appointments
-        const topDoctorsRes = await axios.get(`http://localhost:5001/api/dashboard/top-doctors?range=${dateRange}&limit=5`);
+        const topDoctorsRes = await axios.get(`http://localhost:5001/api/dashboard/top-doctors?range=${dateRange}&limit=5`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setTopDoctors(topDoctorsRes.data);
         
         // Fetch top patients by appointments
-        const topPatientsRes = await axios.get(`http://localhost:5001/api/dashboard/top-patients?range=${dateRange}&limit=5`);
+        const topPatientsRes = await axios.get(`http://localhost:5001/api/dashboard/top-patients?range=${dateRange}&limit=5`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setTopPatients(topPatientsRes.data);
         
         setIsLoading(false);

@@ -56,7 +56,6 @@ export const uploadAndSaveToS3 = (req: Request, res: Response, next: NextFunctio
     if (err) {
       return res.status(400).json({ error: err.message });
     }
-
     if (req.file) {
       try {
         const { fileUrl } = await uploadFileToS3(req.file);

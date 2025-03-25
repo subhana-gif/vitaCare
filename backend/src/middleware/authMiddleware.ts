@@ -22,7 +22,7 @@ export const verifyToken = (roles: string[]) => {
     // ✅ Ensure token is in "Bearer <token>" format
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
      res.status(401).json({ message: "Access Denied. No token provided." });
-     return;
+     return;  
     }
 
     const token = authHeader.split(" ")[1]; 
@@ -32,7 +32,6 @@ export const verifyToken = (roles: string[]) => {
     }
     try {
       const decoded = TokenService.verifyToken(token) as DecodedToken;
-    
       if (!decoded.role || !roles.includes(decoded.role)) {
         res.status(403).json({ message: "Forbidden: Insufficient permissions." });
         return;

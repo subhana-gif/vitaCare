@@ -6,3 +6,10 @@ declare module "express-serve-static-core" {
     user?: JwtPayload & { id: string };
   }
 }
+
+export type ErrorRequestHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => void;

@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store"; 
+import { userService } from "../../services/userService";
 
 interface ChatMessage {
   sender: "user" | "bot";
@@ -11,7 +14,7 @@ const Chat: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const token = useSelector((state: RootState) => state.auth.accessToken); 
   // Focus input field when component mounts
   useEffect(() => {
     inputRef.current?.focus();
@@ -30,41 +33,29 @@ const Chat: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5001/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message.trim() }),
-      });
+      const data = await userService.sendMessage(message, token || ""); 
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      console.log("API Response:", data); // Debugging
 
-      const data: { response: string } = await response.json();
+      setChatHistory((prevChat) => [
+          ...prevChat,
+          { sender: "bot", text: data.response, timestamp: new Date() },
+      ]);
+  } catch (error) {
+      console.error("Chat API error:", error);
       
       setChatHistory((prevChat) => [
-        ...prevChat,
-        { 
-          sender: "bot", 
-          text: data.response,
-          timestamp: new Date()
-        },
+          ...prevChat,
+          { 
+              sender: "bot", 
+              text: "Sorry, I'm having trouble connecting. Please try again in a moment.",
+              timestamp: new Date()
+          },
       ]);
-    } catch (error) {
-      console.error("Chat API error:", error);
-      setChatHistory((prevChat) => [
-        ...prevChat,
-        { 
-          sender: "bot", 
-          text: "Sorry, I'm having trouble connecting. Please try again in a moment.",
-          timestamp: new Date()
-        },
-      ]);
-    } finally {
+  } finally {
       setIsLoading(false);
       setMessage(""); // Clear input field
-    }
-  };
+  }  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

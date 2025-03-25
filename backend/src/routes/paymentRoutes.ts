@@ -4,7 +4,7 @@ import { verifyToken } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
-router.post("/payonline", async (req: Request, res: Response) => {
+router.post("/payonline", verifyToken(["user"]),async (req: Request, res: Response) => {
     await PaymentController.createOrder(req, res);
 });
 
