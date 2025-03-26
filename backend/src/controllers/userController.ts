@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { userServiceInstance } from "../services/userService";
-import { IUserService } from "../interfaces/IUserservice";
+import { IUserService } from "../interfaces/user/IUserservice";
 
 class UserController {
   constructor(private userService: IUserService) {}  

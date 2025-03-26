@@ -1,16 +1,16 @@
-import { IPrescriptionService } from "../interfaces/IPrescriptionService";
-import { IPrescription } from "../interfaces/IPriscription";
+import { IPrescriptionService } from "../interfaces/prescription/IPrescriptionService";
+import { IPrescription } from "../interfaces/prescription/IPriscription";
 import { PrescriptionRepository } from "../repositories/priscriptionRepository";
 import { AppointmentService } from "../services/appointmentService";
 import { DoctorService } from "../services/DoctorService";
-import  {IUserService}  from "../interfaces/IUserservice";
+import  {IUserService}  from "../interfaces/user/IUserservice";
 import {UserService} from "./userService";
 import PDFDocument from "pdfkit";
 import UserRepository from "../repositories/userRepository";
 import { AppointmentRepository } from "../repositories/appointmentRepository";
 import { DoctorRepository } from "../repositories/doctorRepository";
-import { IAppointmentRepository } from "../repositories/IAppointmentRepository";
-import { IDoctorRepository } from "../repositories/IDoctorRepository";
+import { IAppointmentRepository } from "../interfaces/appointment/IAppointmentRepository";
+import { IDoctorRepository } from "../interfaces/doctor/IDoctorRepository";
 
 export class PrescriptionService implements IPrescriptionService {
   private prescriptionRepository: PrescriptionRepository;

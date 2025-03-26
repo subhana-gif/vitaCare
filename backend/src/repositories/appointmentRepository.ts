@@ -1,4 +1,4 @@
-import { IAppointmentRepository } from "./IAppointmentRepository";
+import { IAppointmentRepository } from "../interfaces/appointment/IAppointmentRepository";
 import Appointment, { IAppointment } from "../models/appointment";
 import { Types } from "mongoose";
 
@@ -34,7 +34,7 @@ async getAppointmentsByPatient(patientId: string): Promise<IAppointment[]> {
   return Appointment.find({ patientId })
     .populate({
       path: 'doctorId',
-      select: 'name specialty imageUrl' // Add imageUrl here
+      select: 'name specialty imageUrl address'
     })
     .exec();
 }

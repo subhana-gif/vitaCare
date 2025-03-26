@@ -1,6 +1,6 @@
 import { IDoctor } from "../models/doctors";
 import Doctor from "../models/doctors";
-import { IDoctorRepository } from "../repositories/IDoctorRepository";
+import { IDoctorRepository } from "../interfaces/doctor/IDoctorRepository";
 
 export class DoctorRepository implements IDoctorRepository {
   async create(doctorData: Partial<IDoctor>): Promise<IDoctor> {

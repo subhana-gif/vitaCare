@@ -1,6 +1,6 @@
 // src/interfaces/IUserRepository.ts
-import { IUserDocument } from "../interfaces/IUser";
-import {IUser} from "../interfaces/IUser"
+import { IUserDocument } from "./IUser";
+import {IUser} from "./IUser"
 
 export interface IUserRepository {
   updateUser(userId: string, updatedData: Partial<IUser>): Promise<IUserDocument | null>;

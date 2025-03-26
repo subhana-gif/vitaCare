@@ -1,5 +1,5 @@
 // src/services/geminiService.ts
-import { IAIRepository } from "../repositories/IAIRepository";
+import { IAIRepository } from "../interfaces/gemini/IAIRepository";
 
 export class GeminiService {
   constructor(private readonly aiRepository: IAIRepository) {}

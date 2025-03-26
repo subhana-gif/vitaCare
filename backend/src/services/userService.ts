@@ -1,11 +1,11 @@
-import { IUserRepository } from "../interfaces/IUserRepository";
+import { IUserRepository } from "../interfaces/user/IUserRepository";
 import UserRepository from "../repositories/userRepository";
 import bcrypt from "bcrypt";
 import TokenService from "../services/tokenService";
 import EmailService from "../services/emailService";
-import { IUser } from "../interfaces/IUser";
+import { IUser } from "../interfaces/user/IUser";
 import logger from "../utils/logger";
-import { IUserService } from "../interfaces/IUserservice";
+import { IUserService } from "../interfaces/user/IUserservice";
 
 export class UserService implements IUserService {
     constructor(private userRepository: IUserRepository) {}

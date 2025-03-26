@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { PrescriptionService } from '../services/priscriptionService';
-import  {INotificationService}  from '../interfaces/INotification';
+import  {INotificationService}  from '../interfaces/notification/INotification';
 import { Types } from 'mongoose';
 import { AppointmentService } from '../services/appointmentService';
 import notificationService from '../services/notificationService';
 import { AppointmentRepository } from '../repositories/appointmentRepository';
 import { DoctorRepository } from '../repositories/doctorRepository';
-import { IAppointmentRepository } from '../repositories/IAppointmentRepository';
-import { IDoctorRepository } from '../repositories/IDoctorRepository';
+import { IAppointmentRepository } from '../interfaces/appointment/IAppointmentRepository';
+import { IDoctorRepository } from '../interfaces/doctor/IDoctorRepository';
 import { DoctorService } from '../services/DoctorService';
 
 export class PrescriptionController {

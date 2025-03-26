@@ -1,5 +1,5 @@
-import { IAppointmentService } from "../services/IAppointmentService";
-import { IAppointmentRepository } from "../repositories/IAppointmentRepository";
+import { IAppointmentService } from "../interfaces/appointment/IAppointmentService";
+import { IAppointmentRepository } from "../interfaces/appointment/IAppointmentRepository";
 import { IAppointment } from "../models/appointment";
 import { DoctorService } from "./DoctorService";
 import {UserService} from "./userService";
@@ -11,7 +11,7 @@ import notificationService from "./notificationService";
 import { sendCallReminder } from "../config/twilioCall";
 import schedule from "node-schedule";
 import logger from "../utils/logger";
-import { IUserService } from "../interfaces/IUserservice";
+import { IUserService } from "../interfaces/user/IUserservice";
 
 
 export class AppointmentService implements IAppointmentService {

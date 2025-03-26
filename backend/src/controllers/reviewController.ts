@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { IReviewService } from '../interfaces/IReviewService';
-import { IUserService } from '../interfaces/IUserservice';
+import { IReviewService } from '../interfaces/review/IReviewService';
+import { IUserService } from '../interfaces/user/IUserservice';
 
 export class ReviewController {
   constructor(

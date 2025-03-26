@@ -1,8 +1,8 @@
 // src/services/pdf.service.ts
 import PDFDocument from 'pdfkit';
-import { IPrescription } from '../interfaces/IPriscription';
+import { IPrescription } from '../interfaces/prescription/IPriscription';
 import {IDoctor} from '../models/doctors';
-import {IUser} from '../interfaces/IUser';
+import {IUser} from '../interfaces/user/IUser';
 
 export class PdfService {
   static async generatePrescriptionPdf(

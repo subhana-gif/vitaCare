@@ -1,6 +1,6 @@
 import { Model } from 'mongoose';
-import { IReview, IReviewDocument } from '../interfaces/IReview';
-import { IReviewRepository } from '../interfaces/IReviewRepository';
+import { IReview, IReviewDocument } from '../interfaces/review/IReview';
+import { IReviewRepository } from '../interfaces/review/IReviewRepository';
 import { PaginationResult } from '../types/pagination';
 
 export class ReviewRepository implements IReviewRepository {

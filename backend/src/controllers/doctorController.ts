@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { IDoctorService } from "../services/IDoctorService";
+import { IDoctorService } from "../interfaces/doctor/IDoctorService";
 import { uploadFileToS3 } from "../middleware/uploadMiddleware";
 import Speciality from "../models/speciality";
 import notificationService from "../services/notificationService";

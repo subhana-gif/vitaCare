@@ -1,5 +1,5 @@
 // src/services/chatService.ts
-import { IChatRepository, IMessage,IMessageDocument  } from "../repositories/IChatdpRepository";
+import { IChatRepository, IMessage,IMessageDocument  } from "../interfaces/chat/IChatdpRepository";
 
 export class ChatdpService {
   constructor(private readonly chatRepository: IChatRepository) {}

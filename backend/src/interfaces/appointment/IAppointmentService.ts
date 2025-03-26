@@ -1,4 +1,4 @@
-import { IAppointment } from "../models/appointment";
+import { IAppointment } from "../../models/appointment";
 
 export interface IAppointmentService {
   bookAppointment(appointmentData: Omit<IAppointment, "_id">): Promise<IAppointment>;

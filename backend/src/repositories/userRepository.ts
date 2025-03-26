@@ -1,5 +1,5 @@
-import { IUser } from "../interfaces/IUser";
-import { IUserRepository } from "../interfaces/IUserRepository";
+import { IUser } from "../interfaces/user/IUser";
+import { IUserRepository } from "../interfaces/user/IUserRepository";
 import User from "../models/user";
 
 export default class UserRepository implements IUserRepository {

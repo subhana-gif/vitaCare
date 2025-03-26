@@ -1,6 +1,6 @@
 import { IDoctor } from "../models/doctors";
-import { IDoctorRepository } from "../repositories/IDoctorRepository";
-import { IDoctorService } from "../services/IDoctorService";
+import { IDoctorRepository } from "../interfaces/doctor/IDoctorRepository";
+import { IDoctorService } from "../interfaces/doctor/IDoctorService";
 import EmailService from "./emailService";
 import TokenService from "./tokenService";
 import bcrypt from "bcrypt";

@@ -1,5 +1,5 @@
 import razorpay from "../utils/razorpay";
-import { IPaymentRepository, IPaymentOrder, IRefundParams } from "../interfaces/IPayment";
+import { IPaymentRepository, IPaymentOrder, IRefundParams } from "../interfaces/payment/IPayment";
 
 class PaymentRepository implements IPaymentRepository {
   async createOrder(params: IPaymentOrder) {

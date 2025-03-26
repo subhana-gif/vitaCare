@@ -1,4 +1,4 @@
-import { PaginationResult } from '../types/pagination';
+import { PaginationResult } from '../../types/pagination';
 import { IReview } from './IReview';
 
 export interface IReviewRepository {

@@ -1,6 +1,6 @@
 // src/models/message.ts
 import mongoose, { Document, Schema } from "mongoose";
-import { IMessage } from "../repositories/IChatdpRepository";
+import { IMessage } from "../interfaces/chat/IChatdpRepository";
 
 interface IMessageDocument extends IMessage, Document {}
 

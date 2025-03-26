@@ -1,12 +1,35 @@
 import { Request, Response } from "express";
-import { IAppointmentService } from "../services/IAppointmentService";
+import { IAppointmentService } from "../interfaces/appointment/IAppointmentService";
+import { INotificationService } from "../interfaces/notification/INotification";
+import { DoctorService } from "../services/DoctorService";
+import { IDoctorRepository } from "../interfaces/doctor/IDoctorRepository";
+import { DoctorRepository } from "../repositories/doctorRepository";
+import notificationService from "../services/notificationService";
 
 export class AppointmentController {
-  constructor(private readonly appointmentService: IAppointmentService) {}
+  constructor(
+    private readonly appointmentService: IAppointmentService,
+    private readonly notificationService: INotificationService,
+    private readonly doctorService: DoctorService = new DoctorService(new DoctorRepository())
+  ) {}
 
   async bookAppointment(req: Request, res: Response): Promise<void> {
     try {
       const appointment = await this.appointmentService.bookAppointment(req.body);
+      
+      // Send notification to doctor
+      const doctor = await this.doctorService.getDoctorById(appointment.doctorId.toString());
+      if (doctor) {
+        const notification = await this.notificationService.createNotification({
+          recipientId: appointment.doctorId.toString(),
+          recipientRole: "doctor",
+          message: `New appointment booked with you by ${req.user?.name || 'a patient'} on ${appointment.date} at ${appointment.time}`
+        });
+
+        // Emit socket event to doctor
+        (req as any).io.to(appointment.doctorId.toString()).emit("newNotification", notification);
+      }
+
       res.status(201).json({
         message: "Appointment booked successfully!",
         appointment

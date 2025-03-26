@@ -5,15 +5,15 @@ import { verifyToken } from "../middleware/authMiddleware";
 import { DoctorRepository } from "../repositories/doctorRepository";
 import { AppointmentRepository } from "../repositories/appointmentRepository";
 import { AppointmentService } from "../services/appointmentService";
+import notificationService from "../services/notificationService";
 
 const router = express.Router();
 
-// Initialize dependencies
 const doctorRepository = new DoctorRepository();
 const doctorService = new DoctorService(doctorRepository);
 const appointmentRepository = new AppointmentRepository();
 const appointmentService = new AppointmentService(appointmentRepository, doctorService);
-const appointmentController = new AppointmentController(appointmentService);
+const appointmentController = new AppointmentController(appointmentService,notificationService);
 
 // Routes
 router.post("/book", verifyToken(["user"]), (req, res) => appointmentController.bookAppointment(req, res));

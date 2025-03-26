@@ -1,4 +1,4 @@
-import { IPrescription, IPrescriptionRepository } from "../interfaces/IPriscription";
+import { IPrescription, IPrescriptionRepository } from "../interfaces/prescription/IPriscription";
 import Prescription from "../models/prescription.model";
 import { Types } from "mongoose";
 

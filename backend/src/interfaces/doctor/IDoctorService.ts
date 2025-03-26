@@ -1,4 +1,4 @@
-import { IDoctor } from "../models/doctors";
+import { IDoctor } from "../../models/doctors";
 
 export interface IDoctorService {
   registerDoctor(doctorData: Partial<IDoctor>): Promise<IDoctor>;

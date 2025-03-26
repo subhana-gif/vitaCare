@@ -12,7 +12,6 @@ export const fetchAppointmentsApi = async (token: string): Promise<Appointment[]
   if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
 
   const data: Appointment[] = await res.json();
-  
   return data.filter((appt) => appt.doctorId)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };

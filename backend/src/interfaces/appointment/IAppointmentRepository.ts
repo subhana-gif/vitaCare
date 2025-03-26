@@ -1,5 +1,4 @@
-import { Types } from "mongoose";
-import { IAppointment } from "../models/appointment";
+import { IAppointment } from "../../models/appointment";
 
 export interface IAppointmentReader {
   getById(id: string): Promise<IAppointment | null>;

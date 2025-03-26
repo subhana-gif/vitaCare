@@ -1,4 +1,4 @@
-import { IPaymentOrder, IPaymentVerification, IRefundResult } from "../interfaces/IPayment";
+import { IPaymentOrder, IPaymentVerification, IRefundResult } from "../interfaces/payment/IPayment";
 import PaymentRepository from "../repositories/paymentRepository";
 import {AppointmentRepository} from "../repositories/appointmentRepository";
 

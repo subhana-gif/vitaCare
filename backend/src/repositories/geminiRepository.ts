@@ -1,6 +1,6 @@
 // src/repositories/geminiRepository.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { IAIRepository } from "../repositories/IAIRepository";
+import { IAIRepository } from "../interfaces/gemini/IAIRepository";
 import config from "../config/gemini";
 
 export class GeminiRepository implements IAIRepository {

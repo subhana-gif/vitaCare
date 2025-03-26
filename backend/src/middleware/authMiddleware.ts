@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import TokenService from "../services/tokenService";
 import User from "../models/user";
-import { IUserDocument } from "../interfaces/IUser";
+import { IUserDocument } from "../interfaces/user/IUser";
 
 interface DecodedToken {
   id: string;

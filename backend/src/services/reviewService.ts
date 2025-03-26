@@ -1,6 +1,6 @@
-import { IReviewService } from '../interfaces/IReviewService';
-import { IReviewRepository } from '../interfaces/IReviewRepository';
-import { IReview } from '../interfaces/IReview';
+import { IReviewService } from '../interfaces/review/IReviewService';
+import { IReviewRepository } from '../interfaces/review/IReviewRepository';
+import { IReview } from '../interfaces/review/IReview';
 import { PaginationResult } from '../types/pagination';
 
 export class ReviewService implements IReviewService {
