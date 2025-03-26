@@ -3,7 +3,6 @@ import { Request, Response, NextFunction } from 'express';
 export const validateAppointmentData = (req: Request, res: Response, next: NextFunction) => {
   const { patientId, doctorId, date, time } = req.body;
 
-  // Check if all required fields are present
   if (!patientId || !doctorId || !date || !time) {
     return res.status(400).json({
       message: 'Missing required fields',
@@ -16,7 +15,6 @@ export const validateAppointmentData = (req: Request, res: Response, next: NextF
     });
   }
 
-  // Validate date format (YYYY-MM-DD)
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(date)) {
     return res.status(400).json({
@@ -25,7 +23,6 @@ export const validateAppointmentData = (req: Request, res: Response, next: NextF
     });
   }
 
-  // Validate time format (HH:mm)
   const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
   if (!timeRegex.test(time)) {
     return res.status(400).json({
@@ -34,7 +31,6 @@ export const validateAppointmentData = (req: Request, res: Response, next: NextF
     });
   }
 
-  // Validate that the date is not in the past
   const appointmentDate = new Date(date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -46,6 +42,5 @@ export const validateAppointmentData = (req: Request, res: Response, next: NextF
     });
   }
 
-  // If all validations pass, proceed to the next middleware
   next();
 };

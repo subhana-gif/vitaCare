@@ -1,4 +1,3 @@
-// src/services/INotificationService.ts
 export interface INotificationService {
     createNotification(data: {
       recipientId: string;

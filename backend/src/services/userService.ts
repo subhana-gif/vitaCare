@@ -72,7 +72,6 @@ export class UserService implements IUserService {
   }
 
   async verifyOTP(email: string, otp: string) {
-    // Implement OTP verification logic here
     return { success: true, message: "OTP verified successfully" };
   }
 

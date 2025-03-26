@@ -2,9 +2,7 @@ import { Request, Response } from "express";
 import { IAppointmentService } from "../interfaces/appointment/IAppointmentService";
 import { INotificationService } from "../interfaces/notification/INotification";
 import { DoctorService } from "../services/DoctorService";
-import { IDoctorRepository } from "../interfaces/doctor/IDoctorRepository";
 import { DoctorRepository } from "../repositories/doctorRepository";
-import notificationService from "../services/notificationService";
 
 export class AppointmentController {
   constructor(
@@ -26,7 +24,6 @@ export class AppointmentController {
           message: `New appointment booked with you by ${req.user?.name || 'a patient'} on ${appointment.date} at ${appointment.time}`
         });
 
-        // Emit socket event to doctor
         (req as any).io.to(appointment.doctorId.toString()).emit("newNotification", notification);
       }
 

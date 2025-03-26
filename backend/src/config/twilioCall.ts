@@ -9,11 +9,6 @@ const twilioNumber: string = process.env.TWILIO_PHONE_NUMBER as string;
 
 const client = twilio(accountSid, authToken);
 
-/**
- * Sends an automated call reminder
- * @param phoneNumber - Recipient's phone number
- * @param message - Message to be spoken during the call
- */
 export const sendCallReminder = async (phoneNumber: string, message: string) => {
   try {
     const call = await client.calls.create({
@@ -28,8 +23,8 @@ export const sendCallReminder = async (phoneNumber: string, message: string) => 
       from: twilioNumber,
     });
 
-    console.log(`✅ Call scheduled successfully: ${call.sid}`);
+    console.log(`Call scheduled successfully: ${call.sid}`);
   } catch (error) {
-    console.error(`❌ Error sending call reminder: ${(error as Error).message}`);
+    console.error(` Error sending call reminder: ${(error as Error).message}`);
   }
 };

@@ -1,11 +1,6 @@
-import {
-  getSummaryStatsRepository,
-  getAppointmentStatusDistributionRepository,
-  getPaymentStatusDistributionRepository,
-  getTimeSeriesDataRepository,
-  getTopDoctorsRepository,
-  getTopPatientsRepository,
-} from '../repositories/adminDashboardRepository';
+import {getSummaryStatsRepository,getAppointmentStatusDistributionRepository,getPaymentStatusDistributionRepository,
+  getTimeSeriesDataRepository,getTopDoctorsRepository,getTopPatientsRepository,}
+   from '../repositories/adminDashboardRepository';
 import { DateRangeHelper } from '../utils/dateRangeHelper';
 
 export interface SummaryStats {

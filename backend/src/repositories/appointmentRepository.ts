@@ -42,7 +42,7 @@ async getAppointmentsByPatient(patientId: string): Promise<IAppointment[]> {
   async getAllAppointments(): Promise<IAppointment[]> {
     return Appointment.find()
       .populate("patientId", "name email")
-      .populate("doctorId", "name specialty")
+      .populate("doctorId", "name speciality")
       .exec();
   }
 

@@ -1,4 +1,3 @@
-// services/AuthService.ts
 import { IAuthService } from "../interfaces/IAuthService";
 import { ITokenService } from "../interfaces/ITokenService";
 import TokenService from "./tokenService";

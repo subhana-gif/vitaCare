@@ -15,7 +15,6 @@ const appointmentRepository = new AppointmentRepository();
 const appointmentService = new AppointmentService(appointmentRepository, doctorService);
 const appointmentController = new AppointmentController(appointmentService,notificationService);
 
-// Routes
 router.post("/book", verifyToken(["user"]), (req, res) => appointmentController.bookAppointment(req, res));
 router.put("/:appointmentId/status", verifyToken(["doctor"]), (req, res) => appointmentController.updateStatus(req, res));
 router.get("/doctor", verifyToken(["doctor", "user"]), (req, res) => appointmentController.getDoctorAppointments(req, res));

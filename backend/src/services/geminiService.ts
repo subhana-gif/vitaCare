@@ -1,4 +1,3 @@
-// src/services/geminiService.ts
 import { IAIRepository } from "../interfaces/gemini/IAIRepository";
 
 export class GeminiService {

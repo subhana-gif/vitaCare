@@ -4,22 +4,18 @@ import Speciality from "../models/speciality";
 class SpecialityController {
 
     async specialityStatus(req: Request, res: Response): Promise<void> {
-    
         try {
             const { name } = req.query;
-        
             if (!name){
                 res.status(400).json({ error: "Speciality name is required" }) 
                  return
             }
-        
             const speciality = await Speciality.findOne({ name });
-        
             if (!speciality) {
              res.json({ isActive: false });
              return 
-            }
-                    res.json({ isActive: speciality.isActive });
+            }                    
+            res.json({ isActive: speciality.isActive });
           } catch (error) {
             console.error("Error checking speciality status:", error);
             res.status(500).json({ error: "Internal Server Error" });
@@ -76,7 +72,7 @@ class SpecialityController {
                 return 
             }
 
-            speciality.isActive = !speciality.isActive; // ✅ Toggle status
+            speciality.isActive = !speciality.isActive; 
             await speciality.save();
 
             res.status(200).json(speciality);

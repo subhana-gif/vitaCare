@@ -1,4 +1,3 @@
-// services/TokenService
 import jwt, { SignOptions, JwtPayload } from "jsonwebtoken";
 import { ITokenService } from "../interfaces/ITokenService";
 
@@ -11,7 +10,6 @@ class TokenService implements ITokenService {
 
   private constructor() {}
 
-  // Singleton Implementation
   public static getInstance(): TokenService {
     if (!TokenService.instance) {
       TokenService.instance = new TokenService();

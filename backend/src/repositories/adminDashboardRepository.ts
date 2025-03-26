@@ -1,4 +1,3 @@
-import { Types } from 'mongoose';
 import Appointment from '../models/appointment';
 import Doctor from '../models/doctors';
 import Patient from '../models/user';

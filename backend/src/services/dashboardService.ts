@@ -1,10 +1,5 @@
-import {
-  getAppointmentSummaryRepository,
-  getPaymentSummaryRepository,
-  getPopularTimeSlotsRepository,
-  getMonthlyStatsRepository,
-  getTodayAppointmentsRepository
-} from '../repositories/dashboardRepository';
+import {getAppointmentSummaryRepository,getPaymentSummaryRepository,getPopularTimeSlotsRepository,
+  getMonthlyStatsRepository,getTodayAppointmentsRepository} from '../repositories/dashboardRepository';
 import { DateRangeHelper } from '../utils/dateRangeHelper';
 import { Types } from 'mongoose';
 

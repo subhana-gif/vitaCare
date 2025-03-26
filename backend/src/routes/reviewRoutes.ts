@@ -9,14 +9,12 @@ import UserRepository from '../repositories/userRepository';
 
 const router = express.Router();
 
-// Initialize dependencies
 const reviewRepository = new ReviewRepository(Review);
 const userRepository = UserRepository.getInstance()
 const reviewService = new ReviewService(reviewRepository);
 const userService = new UserService(userRepository)
 const reviewController = new ReviewController(reviewService,userService);
 
-// Create a new review
 router.post('/', verifyToken(['user']), reviewController.createReview);
 router.get('/:doctorId', verifyToken(['doctor', 'user']), reviewController.getDoctorReviews);
 router.get('/:doctorId/rating',verifyToken(['user', 'doctor']),reviewController.getDoctorRating);

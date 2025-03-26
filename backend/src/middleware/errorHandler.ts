@@ -1,4 +1,3 @@
-// src/middleware/errorHandler.ts
 import { Request, Response, NextFunction } from 'express';
 
 const errorHandler = (
@@ -9,7 +8,6 @@ const errorHandler = (
 ): void => {
   console.error(err.stack);
   
-  // Handle specific error types
   if (err.name === 'ValidationError') {
     res.status(400).json({ 
       success: false,
@@ -18,7 +16,6 @@ const errorHandler = (
     return;
   }
 
-  // Generic error response
   res.status(500).json({ 
     success: false,
     error: process.env.NODE_ENV === 'production' 

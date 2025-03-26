@@ -1,4 +1,3 @@
-// src/repositories/chatRepository.ts
 import mongoose from "mongoose";
 import Message from "../models/message";
 import {IChatRepository, IMessage, IMessageDocument } from "../interfaces/chat/IChatdpRepository";
@@ -7,7 +6,6 @@ export class ChatdpRepository implements IChatRepository {
   async saveMessage(message: IMessage): Promise<IMessageDocument> {
     const newMessage = new Message(message);
     const savedMessage = await newMessage.save();
-    // Convert to plain object and then cast to IMessageDocument
     return savedMessage.toObject() as unknown as IMessageDocument;
   }
 
@@ -17,7 +15,7 @@ export class ChatdpRepository implements IChatRepository {
         { sender: userId, receiver: doctorId },
         { sender: doctorId, receiver: userId }
       ]
-    }).lean(); // Use lean() to get plain JavaScript objects
+    }).lean(); 
     
     return messages as unknown as IMessageDocument[];
   }

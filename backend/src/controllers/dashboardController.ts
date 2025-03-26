@@ -1,11 +1,6 @@
 import { Request, Response } from 'express';
-import {
-  getAppointmentSummaryService,
-  getPaymentSummaryService,
-  getPopularTimeSlotsService,
-  getMonthlyStatsService,
-  getTodayAppointmentsService
-} from '../services/dashboardService';
+import {getAppointmentSummaryService,getPaymentSummaryService,getPopularTimeSlotsService,getMonthlyStatsService,
+  getTodayAppointmentsService} from '../services/dashboardService';
 import { handleErrorResponse } from '../utils/errorHandler';
 
 export const getAppointmentSummary = async (req: Request, res: Response) => {

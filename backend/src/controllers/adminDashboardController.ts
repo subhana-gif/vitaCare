@@ -1,12 +1,6 @@
 import { Request, Response } from 'express';
-import {
-  getSummaryStatsService,
-  getAppointmentStatusDistributionService,
-  getPaymentStatusDistributionService,
-  getTimeSeriesDataService,
-  getTopDoctorsService,
-  getTopPatientsService,
-} from '../services/adminDashboardService';
+import {getSummaryStatsService,getAppointmentStatusDistributionService,getPaymentStatusDistributionService,
+  getTimeSeriesDataService,getTopDoctorsService,getTopPatientsService,} from '../services/adminDashboardService';
 import { handleErrorResponse } from '../utils/errorHandler';
 
 export const getSummaryStats = async (req: Request, res: Response) => {

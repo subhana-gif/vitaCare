@@ -54,4 +54,3 @@ export default class UserRepository implements IUserRepository {
   }
 }
 
-// Export the singleton instance as the default export

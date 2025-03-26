@@ -4,6 +4,7 @@
     "@types/twilio": "^3.19.3",
     "dotenv": "^16.4.7",
     "node-schedule": "^2.1.1",
+    "redis": "^4.7.0",
     "twilio": "^5.5.1"
   },
   "devDependencies": {

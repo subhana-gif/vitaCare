@@ -1,4 +1,3 @@
-// src/controllers/chatController.ts
 import { Request, Response } from "express";
 import { ChatdpService } from "../services/chatdpservices";
 

@@ -1,4 +1,3 @@
-// src/interfaces/IUserRepository.ts
 import { IUserDocument } from "./IUser";
 import {IUser} from "./IUser"
 

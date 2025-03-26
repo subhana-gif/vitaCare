@@ -33,7 +33,6 @@ const reviewSchema = new Schema<IReview>(
   { timestamps: true }
 );
 
-// Add index for faster queries
 reviewSchema.index({ doctorId: 1, createdAt: -1 });
 
 export default mongoose.model<IReview & Document>('Review', reviewSchema);

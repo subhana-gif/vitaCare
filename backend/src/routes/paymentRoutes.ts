@@ -7,7 +7,6 @@ import {AppointmentRepository} from "../repositories/appointmentRepository";
 
 const router = express.Router();
 
-// Initialize dependencies
 const paymentRepository = new PaymentRepository();
 const appointmentRepository = new AppointmentRepository();
 const paymentService = new PaymentService(paymentRepository, appointmentRepository);
