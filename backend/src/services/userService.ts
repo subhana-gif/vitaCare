@@ -5,9 +5,10 @@ import TokenService from "../services/tokenService";
 import EmailService from "../services/emailService";
 import { IUser } from "../interfaces/IUser";
 import logger from "../utils/logger";
+import { IUserService } from "../interfaces/IUserservice";
 
-class UserService {
-  constructor(private userRepository: IUserRepository) {}
+export class UserService implements IUserService {
+    constructor(private userRepository: IUserRepository) {}
   async register(userData: IUser) {
     const existingUser = await this.userRepository.findByEmail(userData.email);
     if (existingUser) {
@@ -54,6 +55,8 @@ class UserService {
     return { success: true, message: "Reset instructions sent to your email" };
   }
 
+
+
   async resetPassword(token: string, newPassword: string) {
     const decoded = TokenService.verifyToken(token) as unknown as { email: string };
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -83,8 +86,12 @@ class UserService {
     return await this.userRepository.findAllUsers();
   }
 
-  async toggleBlockUser(userId: string) {
-    return await this.userRepository.toggleBlockStatus(userId);
+  async toggleBlockUser(userId: string): Promise<IUser> {
+    const user = await this.userRepository.toggleBlockStatus(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user;
   }
 
   async getUserProfile(userId: string) {
@@ -94,6 +101,10 @@ class UserService {
   async updateUserProfile(userId: string, data: Partial<IUser>) {
     return await this.userRepository.updateUser(userId, data);
   }
+
+  async getUserById(id: string): Promise<IUser | null> {
+    return this.userRepository.findById(id);
+  }
 }
 
-export default new UserService(UserRepository.getInstance());
+export const userServiceInstance = new UserService(UserRepository.getInstance());

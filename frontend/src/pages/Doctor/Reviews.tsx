@@ -53,13 +53,15 @@ const Reviews: React.FC = () => {
       console.log("API Response:", response.data); // Log response to check its structure
   
       let fetchedReviews: Review[] = [];
-      if (Array.isArray(response.data)) {
+      if (response.data && Array.isArray(response.data.data)) {
+        // Correct structure based on your API response
+        fetchedReviews = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        // Fallback for different structure
         fetchedReviews = response.data;
-      } else if (response.data && Array.isArray(response.data.reviews)) {
-        // If reviews are nested inside an object
-        fetchedReviews = response.data.reviews;
       } else {
         console.error("Unexpected API response:", response.data);
+        throw new Error("Invalid reviews data format");
       }
   
       // Sort reviews initially by newest
@@ -77,7 +79,7 @@ const Reviews: React.FC = () => {
       setLoading(false);
     }
   };
-    
+
   const calculateAverageRating = (reviewData: Review[]) => {
     if (!Array.isArray(reviewData) || reviewData.length === 0) {
       setAverageRating(0);

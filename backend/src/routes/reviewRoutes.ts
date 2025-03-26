@@ -1,19 +1,24 @@
 import express from 'express';
-import { reviewController } from '../controllers/reviewController';
 import { verifyToken } from '../middleware/authMiddleware';
+import { ReviewController } from '../controllers/reviewController';
+import { ReviewService } from '../services/reviewService';
+import { ReviewRepository } from '../repositories/reviewRepository';
+import Review from '../models/Review';
+import { UserService } from '../services/userService';
+import UserRepository from '../repositories/userRepository';
 
 const router = express.Router();
 
-// Create a new review
-router.post('/', verifyToken(["user"]), async (req, res, next) => {
-    try {
-        await reviewController.createReview(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
+// Initialize dependencies
+const reviewRepository = new ReviewRepository(Review);
+const userRepository = UserRepository.getInstance()
+const reviewService = new ReviewService(reviewRepository);
+const userService = new UserService(userRepository)
+const reviewController = new ReviewController(reviewService,userService);
 
-router.get('/:doctorId', verifyToken(["doctor","user"]), reviewController.getDoctorReviews);
-router.get('/:doctorId/rating', verifyToken(["user","doctor"]), reviewController.getDoctorRating);
+// Create a new review
+router.post('/', verifyToken(['user']), reviewController.createReview);
+router.get('/:doctorId', verifyToken(['doctor', 'user']), reviewController.getDoctorReviews);
+router.get('/:doctorId/rating',verifyToken(['user', 'doctor']),reviewController.getDoctorRating);
 
 export default router;

@@ -1,52 +1,54 @@
-import slotRepository from "../repositories/slotRepository";
-import { ISlot } from "../models/slot";
+import { ISlotDTO } from "../interfaces/ISlot";
+import {ISlotRepository} from "../interfaces/ISlotRepository"
+import { ISlotService } from "../interfaces/ISlotService";
 
-class SlotService {
-  // ✅ Add Slot
-  async addSlot(slotData: Partial<ISlot>): Promise<ISlot> {
-    return await slotRepository.createSlot(slotData);
+class SlotService implements ISlotService {
+  constructor(private slotRepository: ISlotRepository) {}
+
+  async createSlot(slotData: ISlotDTO): Promise<ISlotDTO> {
+    return await this.slotRepository.create(slotData);
   }
 
-  // ✅ Fetch Slots by Doctor ID
-  async getSlotsByDoctorId(doctorId: string): Promise<ISlot[]> {
-    return await slotRepository.getSlotsByDoctorId(doctorId);
+  async getSlotsByDoctorId(doctorId: string): Promise<ISlotDTO[]> {
+    return await this.slotRepository.findByDoctorId(doctorId);
   }
 
-  // ✅ Update Slot Price
-  async updateSlot(slotId: string, updatedData: Partial<ISlot>): Promise<ISlot | null> {
-    const slot = await slotRepository.updateSlot(slotId, updatedData);
+  async updateSlot(slotId: string, updatedData: Partial<ISlotDTO>): Promise<ISlotDTO | null> {
+    const slot = await this.slotRepository.update(slotId, updatedData);
     if (!slot) {
       throw new Error("Slot not found.");
     }
     return slot;
   }
-  // ✅ Delete Slot
-  async markSlotUnavailable(slotId: string): Promise<ISlot | null> {
-    return await slotRepository.markSlotUnavailable(slotId);
+
+  async getSlotsByDoctorAndDate(doctorId: string, date: string): Promise<ISlotDTO[]> {
+    return await this.slotRepository.findByDoctorAndDate(doctorId, date);
   }
 
-  // ✅ Mark Slot as Available
-  async markSlotAvailable(slotId: string): Promise<ISlot | null> {
-    return await slotRepository.markSlotAvailable(slotId);
+  async markSlotUnavailable(slotId: string): Promise<ISlotDTO | null> {
+    return await this.slotRepository.markUnavailable(slotId);
   }
 
-  async getSlotsByDoctorAndDate(doctorId: string, date: string): Promise<ISlot[]> {
-    return await slotRepository.getSlotsByDoctorAndDate(doctorId, date);
+  async markSlotAvailable(slotId: string): Promise<ISlotDTO | null> {
+    return await this.slotRepository.markAvailable(slotId);
   }
 
-  // ✅ Mark Slot as Booked
-  async markSlotAsBooked(slotId: string): Promise<ISlot | null> {
-    const slot = await slotRepository.markSlotAsBooked(slotId);
-    if (!slot) throw new Error("Slot not found.");
+  async markSlotAsBooked(slotId: string): Promise<ISlotDTO | null> {
+    const slot = await this.slotRepository.markBooked(slotId);
+    if (!slot) {
+      throw new Error("Slot not found.");
+    }
     return slot;
   }
 
-  // ✅ Get Slot by Doctor ID, Date, and Time
-async getSlotByDetails(doctorId: string, date: string, time: string): Promise<ISlot | null> {
-  return await slotRepository.getSlotByDetails(doctorId, date, time);
+  async getSlotByDetails(doctorId: string, date: string, time: string): Promise<ISlotDTO | null> {
+    return await this.slotRepository.findByDetails(doctorId, date, time);
+  }
 }
 
+// Create an instance with the repository
+import slotRepository from "../repositories/slotRepository";
 
-}
+const slotServiceInstance = new SlotService(slotRepository);
 
-export default new SlotService();
+export default slotServiceInstance;

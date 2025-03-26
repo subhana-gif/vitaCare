@@ -1,20 +1,20 @@
 import express from "express";
-import UserController from "../controllers/userController";
+import {userController} from "../controllers/userController";
 import {verifyToken} from "../middleware/authMiddleware";
 
 const router = express.Router();
 
-router.post("/login", UserController.login);
-router.post("/signup", UserController.register);
-router.post("/forgot-password", UserController.forgotPassword);
-router.post("/reset-password", UserController.resetPassword);
-router.post("/send-otp", UserController.sendOTP);
-router.post("/verify-otp", UserController.verifyOTP);
-router.post("/resend-otp", UserController.resendOTP);
+router.post('/login', userController.login.bind(userController));
+router.post("/signup", userController.register.bind(userController));
+router.post("/forgot-password", userController.forgotPassword.bind(userController));
+router.post("/reset-password", userController.resetPassword.bind(userController));
+router.post("/send-otp", userController.sendOTP.bind(userController));
+router.post("/verify-otp", userController.verifyOTP.bind(userController));
+router.post("/resend-otp", userController.resendOTP.bind(userController));
 
-router.get("/", verifyToken(["admin"]),UserController.getAllUsers);
-router.put("/block/:userId",verifyToken(["admin"]), UserController.toggleBlockUser);
-router.get("/profile",verifyToken(["admin","user"]), UserController.getUserProfile);
-router.put("/profile", verifyToken(["admin","user"]),UserController.updateUserProfile);
+router.get("/", verifyToken(["admin"]),userController.getAllUsers.bind(userController));
+router.put("/block/:userId",verifyToken(["admin"]), userController.toggleBlockUser.bind(userController));
+router.get("/profile",verifyToken(["admin","user"]), userController.getUserProfile.bind(userController));
+router.put("/profile", verifyToken(["admin","user"]),userController.updateUserProfile.bind(userController));
 
 export default router;

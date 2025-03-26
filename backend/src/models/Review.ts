@@ -1,24 +1,15 @@
 import mongoose, { Schema, Document } from 'mongoose';
-
-export interface IReview extends Document {
-  doctorId: mongoose.Types.ObjectId;
-  userId: mongoose.Types.ObjectId;
-  rating: number;
-  comment: string;
-  userName: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { IReview } from '../interfaces/IReview';
 
 const reviewSchema = new Schema<IReview>(
   {
     doctorId: {
-      type: Schema.Types.ObjectId,
+      type: String,
       ref: 'Doctor',
       required: true,
     },
     userId: {
-      type: Schema.Types.ObjectId,
+      type: String,
       ref: 'User',
       required: true,
     },
@@ -45,4 +36,4 @@ const reviewSchema = new Schema<IReview>(
 // Add index for faster queries
 reviewSchema.index({ doctorId: 1, createdAt: -1 });
 
-export default mongoose.model<IReview>('Review', reviewSchema);
+export default mongoose.model<IReview & Document>('Review', reviewSchema);

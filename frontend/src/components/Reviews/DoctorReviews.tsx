@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStar } from 'react-icons/fa';
+import { FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 interface Review {
@@ -18,31 +18,29 @@ interface DoctorReviewsProps {
 const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [newReview, setNewReview] = useState({
     rating: 0,
     comment: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchReviews = async (page: number) => {
+  const fetchReviews = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/reviews/${doctorId}?page=${page}&limit=5`,
+        `http://localhost:5001/api/reviews/${doctorId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
       const data = await response.json();
-      setReviews(data.reviews);
-      setTotalPages(data.pagination.pages);
+      setReviews(data.data);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching reviews:', error);
       toast.error('Failed to load reviews');
-    } finally {
       setLoading(false);
     }
   };
@@ -64,9 +62,21 @@ const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
   };
 
   useEffect(() => {
-    fetchReviews(currentPage);
+    fetchReviews();
     fetchAverageRating();
-  }, [currentPage, doctorId]);
+  }, [doctorId]);
+
+  const handleNextReview = () => {
+    setCurrentReviewIndex((prev) => 
+      prev === reviews.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const handlePrevReview = () => {
+    setCurrentReviewIndex((prev) => 
+      prev === 0 ? reviews.length - 1 : prev - 1
+    );
+  };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,9 +110,9 @@ const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
 
       toast.success('Review submitted successfully');
       setNewReview({ rating: 0, comment: '' });
-      fetchReviews(1);
+      fetchReviews();
       fetchAverageRating();
-      setCurrentPage(1);
+      setCurrentReviewIndex(0);
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit review');
     } finally {
@@ -127,12 +137,17 @@ const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-xl p-8 mb-10">
+    <div className="bg-white rounded-xl shadow-xl p-8 mb-10 relative">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-2xl font-bold text-gray-800">Patient Reviews</h3>
+        {reviews.length > 0 && (
+          <div className="text-gray-600">
+            Average Rating: {averageRating.toFixed(1)} ({totalReviews} reviews)
+          </div>
+        )}
       </div>
 
-      {/* Review Form */}
+      {/* Review Submission Form */}
       <form onSubmit={handleSubmitReview} className="mb-8 bg-gray-50 p-6 rounded-lg">
         <h4 className="text-xl font-semibold mb-4">Write a Review</h4>
         <div className="mb-4">
@@ -161,37 +176,54 @@ const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
         </button>
       </form>
 
-      {/* Reviews List */}
-      <div className="space-y-6">
-        {reviews.map((review) => (
-          <div key={review._id} className="border-b pb-6">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h5 className="font-semibold text-lg">{review.userName}</h5>
-                <StarRating rating={review.rating} />
-              </div>
-              <span className="text-gray-500 text-sm">
-                {new Date(review.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            <p className="text-gray-700 mt-2">{review.comment}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-6">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 rounded ${currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+      {/* Reviews Carousel */}
+      {reviews.length > 0 ? (
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={handlePrevReview} 
+              className="text-gray-600 hover:text-gray-900"
             >
-              {page}
+              <FaChevronLeft size={24} />
             </button>
-          ))}
+            
+            <div className="w-full max-w-xl mx-4">
+              <div className="text-center">
+                <h5 className="font-semibold text-lg">{reviews[currentReviewIndex].userName}</h5>
+                <div className="flex justify-center my-2">
+                  <StarRating rating={reviews[currentReviewIndex].rating} />
+                </div>
+                <p className="text-gray-700 mt-2 mb-2">{reviews[currentReviewIndex].comment}</p>
+                <span className="text-gray-500 text-sm">
+                  {new Date(reviews[currentReviewIndex].createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleNextReview} 
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <FaChevronRight size={24} />
+            </button>
+          </div>
+          
+          {/* Pagination Dots */}
+          <div className="flex justify-center mt-4">
+            {reviews.map((_, index) => (
+              <span
+                key={index}
+                className={`h-2 w-2 rounded-full mx-1 ${
+                  index === currentReviewIndex 
+                    ? 'bg-blue-600' 
+                    : 'bg-gray-300'
+                }`}
+              />
+            ))}
+          </div>
         </div>
+      ) : (
+        <div className="text-center text-gray-500">No reviews yet. Be the first to review!</div>
       )}
     </div>
   );

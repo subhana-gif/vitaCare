@@ -2,7 +2,8 @@ import { IAppointmentService } from "../services/IAppointmentService";
 import { IAppointmentRepository } from "../repositories/IAppointmentRepository";
 import { IAppointment } from "../models/appointment";
 import { DoctorService } from "./DoctorService";
-import userService from "./userService";
+import {UserService} from "./userService";
+import UserRepository from "../repositories/userRepository";
 import emailService from "./emailService";
 import slotService from "./slotService";
 import AppointmentReminderService from "./appointmentReminderService";
@@ -10,13 +11,18 @@ import notificationService from "./notificationService";
 import { sendCallReminder } from "../config/twilioCall";
 import schedule from "node-schedule";
 import logger from "../utils/logger";
+import { IUserService } from "../interfaces/IUserservice";
 
 
 export class AppointmentService implements IAppointmentService {
+  userService: IUserService;
   constructor(
     private readonly appointmentRepository: IAppointmentRepository,
-    private readonly doctorService: DoctorService
-  ) {}
+    private readonly doctorService: DoctorService,
+    userService?: IUserService 
+  ) {
+    this.userService = userService || new UserService(UserRepository.getInstance());
+  }
 
   async bookAppointment(appointmentData: Omit<IAppointment, "_id">): Promise<IAppointment> {
     const { doctorId, date, time, patientId } = appointmentData;
@@ -43,7 +49,7 @@ export class AppointmentService implements IAppointmentService {
   private async sendConfirmationAndReminders(appointment: IAppointment): Promise<void> {
     const [doctor, patient] = await Promise.all([
       this.doctorService.getDoctorById(appointment.doctorId.toString()),
-      userService.getUserProfile(appointment.patientId.toString())
+      this.userService.getUserProfile(appointment.patientId.toString())
     ]);
 
     if (!doctor || !patient) {
@@ -74,7 +80,7 @@ export class AppointmentService implements IAppointmentService {
       schedule.scheduleJob(reminderTime, () => {
         sendCallReminder(
           patient.phone as string,
-          `Hello ${patient.name}, this is a reminder for your appointment with Dr. ${doctor.name} at ${appointment.time}.`
+          `Hello ${patient.name}, this is a reminder for your appointment with doctor. ${doctor.name} at ${appointment.time}.`
         );
       });
     }
@@ -91,6 +97,10 @@ export class AppointmentService implements IAppointmentService {
     logger.info(`Appointment get request for userid: ${userId}`);
 
     return this.appointmentRepository.getAppointmentsByPatient(userId);
+  }
+
+  async getAppointmentById(id: string): Promise<IAppointment | null> {
+    return this.appointmentRepository.getById(id);
   }
 
   async updateAppointmentStatus(appointmentId: string, status: IAppointment["status"]): Promise<IAppointment> {

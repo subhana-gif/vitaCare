@@ -1,50 +1,88 @@
-import Slot, { ISlot } from "../models/slot";
+import SlotModel from "../models/slot";
+import { ISlotDTO } from "../interfaces/ISlot";
+import {ISlotRepository} from "../interfaces/ISlotRepository"
 
-class SlotRepository {
-  // ✅ Create Slot
-  async createSlot(slotData: Partial<ISlot>): Promise<ISlot> {
-    return await Slot.create(slotData);
+class SlotRepository implements ISlotRepository {
+  async create(slotData: ISlotDTO): Promise<ISlotDTO> {
+    const slot = await SlotModel.create(slotData);
+    return this.toDTO(slot);
   }
 
-  // ✅ Get Slots by Doctor ID
-  async getSlotsByDoctorId(doctorId: string): Promise<ISlot[]> {
-    return await Slot.find({ doctorId });
+  async findById(id: string): Promise<ISlotDTO | null> {
+    const slot = await SlotModel.findById(id);
+    return slot ? this.toDTO(slot) : null;
   }
 
-  // ✅ Update Slot Price
-  async updateSlot(slotId: string, updatedData: Partial<ISlot>): Promise<ISlot | null> {
-    return await Slot.findByIdAndUpdate(slotId, updatedData, { new: true });
-  }
-  // ✅ Delete Slot
-  async markSlotUnavailable(slotId: string): Promise<ISlot | null> {
-    return await Slot.findByIdAndUpdate(slotId, { isAvailable: false }, { new: true });
+  async findByDoctorId(doctorId: string): Promise<ISlotDTO[]> {
+    const slots = await SlotModel.find({ doctorId });
+    return slots.map(slot => this.toDTO(slot));
   }
 
-  // ✅ Mark Slot as Available (Restore Soft Deleted Slot)
-  async markSlotAvailable(slotId: string): Promise<ISlot | null> {
-    return await Slot.findByIdAndUpdate(slotId, { isAvailable: true }, { new: true });
-  }
-
-  async getSlotsByDoctorAndDate(doctorId: string, date: string): Promise<ISlot[]> {
-    return await Slot.find({ doctorId, date, isAvailable: true });
-  }
-
-  // ✅ Mark Slot as Booked
-  async markSlotAsBooked(slotId: string): Promise<ISlot | null> {
-    return await Slot.findByIdAndUpdate(slotId, { status: "booked", isAvailable: false }, { new: true });
-  }
-
-  // ✅ Get Slot by Doctor ID, Date, and Time
-  async getSlotByDetails(doctorId: string, date: string, time: string): Promise<ISlot | null> {
-    return await Slot.findOne({ 
-        doctorId, 
-        date,
-        startTime: { $lte: time },   // ✅ Time should be greater than or equal to startTime
-        endTime: { $gt: time },      // ✅ Time should be less than endTime
-        isAvailable: true 
+  async findByDoctorAndDate(doctorId: string, date: string): Promise<ISlotDTO[]> {
+    const slots = await SlotModel.find({ 
+      doctorId, 
+      date, 
+      isAvailable: true 
     });
-}
+    return slots.map(slot => this.toDTO(slot));
+  }
 
+  async findByDetails(doctorId: string, date: string, time: string): Promise<ISlotDTO | null> {
+    const slot = await SlotModel.findOne({ 
+      doctorId, 
+      date,
+      startTime: { $lte: time },
+      endTime: { $gt: time },
+      isAvailable: true 
+    });
+    return slot ? this.toDTO(slot) : null;
+  }
+
+  async update(id: string, updatedData: Partial<ISlotDTO>): Promise<ISlotDTO | null> {
+    const slot = await SlotModel.findByIdAndUpdate(id, updatedData, { new: true });
+    return slot ? this.toDTO(slot) : null;
+  }
+
+  async markUnavailable(id: string): Promise<ISlotDTO | null> {
+    const slot = await SlotModel.findByIdAndUpdate(
+      id, 
+      { isAvailable: false }, 
+      { new: true }
+    );
+    return slot ? this.toDTO(slot) : null;
+  }
+
+  async markAvailable(id: string): Promise<ISlotDTO | null> {
+    const slot = await SlotModel.findByIdAndUpdate(
+      id, 
+      { isAvailable: true }, 
+      { new: true }
+    );
+    return slot ? this.toDTO(slot) : null;
+  }
+
+  async markBooked(id: string): Promise<ISlotDTO | null> {
+    const slot = await SlotModel.findByIdAndUpdate(
+      id, 
+      { status: "booked", isAvailable: false }, 
+      { new: true }
+    );
+    return slot ? this.toDTO(slot) : null;
+  }
+
+  // Utility method to convert Mongoose document to DTO
+  private toDTO(slot: any): ISlotDTO {
+    return {
+      id: slot._id.toString(),
+      doctorId: slot.doctorId.toString(),
+      date: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      price: slot.price,
+      status: slot.status,
+      isAvailable: slot.isAvailable
+    };
+  }
 }
 
 export default new SlotRepository();
