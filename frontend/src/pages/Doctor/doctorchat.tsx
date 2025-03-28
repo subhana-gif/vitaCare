@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import io, { Socket } from "socket.io-client";
+import { MoreVertical, Trash2 } from "lucide-react";
 
 const socket: Socket = io("http://localhost:5001");
 
@@ -39,6 +40,103 @@ const DoctorChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [unreadInfo, setUnreadInfo] = useState<{ [key: string]: UnreadInfo }>({});
   const [viewedMessages, setViewedMessages] = useState<Set<string>>(new Set());
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+
+  const handleDelete = async (messageId: string) => {
+    try {
+      await axios.delete(`http://localhost:5001/api/chat/message/${messageId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+      socket.emit("messageDeleted", { messageId, selectedPatient, doctorId });
+      setShowConfirm(false);
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+  
+  const MessageDropdown = ({ 
+    onDelete,
+    isOwnMessage
+  }: {
+    onDelete: () => void;
+    isOwnMessage: boolean;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+  
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+  
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+  
+    if (!isOwnMessage) return null;
+  
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 rounded-full hover:bg-gray-200 text-gray-700 hover:text-gray-900"
+        >
+          <MoreVertical size={18} />
+        </button>
+        
+        {isOpen && (
+          <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+            <div className="py-1">
+              <button
+                onClick={onDelete}
+                className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+              >
+                <Trash2 size={16} className="mr-2" />
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  const ConfirmationDialog = () => {
+    if (!showConfirm) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+          <p className="text-gray-800 mb-4">Are you sure you want to delete this message?</p>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (messageToDelete) {
+                  handleDelete(messageToDelete);
+                }
+              }}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
   
   // Fetch chat list
   useEffect(() => {
@@ -57,7 +155,16 @@ const DoctorChatPage: React.FC = () => {
   
   useEffect(() => {
     if (!selectedPatient || !doctorId) return;
-  
+
+    // Join the room when a patient is selected
+    socket.emit("joinRoom", { userId: selectedPatient, doctorId });
+
+    // Listen for message deletion events
+    const handleMessageDeleted = ({ messageId }: { messageId: string }) => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+    };
+    socket.on("messageDeleted", handleMessageDeleted);
+
     axios
       .get<Message[]>(`http://localhost:5001/api/chat/${selectedPatient}/${doctorId}`, {
         headers: {
@@ -66,76 +173,23 @@ const DoctorChatPage: React.FC = () => {
         },
       })
       .then((res) => {
-        setMessages(res.data);
+        // Sort messages by createdAt timestamp
+        const sortedMessages = res.data.sort((a, b) => 
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        setMessages(sortedMessages);
   
         // Mark messages as being viewed (but not yet read)
-        const messageIds = new Set(res.data.map(msg => msg._id));
+        const messageIds = new Set(sortedMessages.map(msg => msg._id));
         setViewedMessages(messageIds);
       })
       .catch((err) => console.error("Error fetching messages:", err));
-  }, [selectedPatient, doctorId, token]);  // Include token as dependency
-  
-  // Track when messages are actually viewed (scrolled into view)
-  useEffect(() => {
-    if (!selectedPatient) return;
-    
-    // Create an intersection observer to detect when messages are in view
-    const options = {
-      root: document.querySelector('.messages-container'),
-      rootMargin: '0px',
-      threshold: 0.5
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const messageId = entry.target.getAttribute('data-message-id');
-          if (messageId) {
-            
-            // Update unread count when messages are actually viewed
-            if (selectedPatient && viewedMessages.has(messageId)) {
-              setUnreadInfo(prev => {
-                const currentInfo = prev[selectedPatient] || { count: 0, lastOpened: null };
-                if (currentInfo.count > 0) {
-                  return {
-                    ...prev,
-                    [selectedPatient]: {
-                      ...currentInfo,
-                      count: Math.max(0, currentInfo.count - 1)
-                    }
-                  };
-                }
-                return prev;
-              });
-            }
-          }
-          
-          // Stop observing this message
-          observer.unobserve(entry.target);
-        }
-      });
-    }, options);
-    
-    // Observe all message elements from the other user
-    const messageElements = document.querySelectorAll('.message-bubble[data-sender="other"]');
-    messageElements.forEach(el => observer.observe(el));
-    
+
+    // Cleanup function to remove event listeners
     return () => {
-      observer.disconnect();
+      socket.off("messageDeleted");
     };
-  }, [messages, selectedPatient, doctorId]);
-
-  // Scroll to bottom of messages
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
-
-  // Auto-scroll when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  }, [selectedPatient, doctorId, token]);
 
   // Listen for incoming messages and update state dynamically
   useEffect(() => {
@@ -163,7 +217,11 @@ const DoctorChatPage: React.FC = () => {
             if (message.sender === selectedPatient) {
               setViewedMessages(prev => new Set(prev).add(message._id));
             }
-            return [...prev, message];
+            // Sort messages after adding new one
+            const newMessages = [...prev, message].sort((a, b) => 
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+            return newMessages;
           }
           return prev;
         });
@@ -290,32 +348,44 @@ const DoctorChatPage: React.FC = () => {
                   className={`p-3 my-3 flex ${msg.sender === doctorId ? "justify-end" : "justify-start"}`}
                 >
                   <div 
-                    className={`w-1/5 ${msg.sender === doctorId ? "bg-blue-200" : "bg-gray-200"} rounded-lg p-3 message-bubble`}
+                    className={`w-1/5 ${msg.sender === doctorId ? "bg-blue-200" : "bg-gray-200"} rounded-lg p-3 message-bubble relative flex flex-col`}
                     data-message-id={msg._id}
                     data-sender={msg.sender === doctorId ? "self" : "other"}
                   >
-                    {msg.text && <p className="break-words text-xl">{msg.text}</p>}
-                    {msg.media && (
-  <div className="media-container">
-    {msg.media.endsWith(".mp4") ? (
-      <video 
-        src={msg.media} 
-        controls 
-        className="w-64 h-48 object-cover rounded"
-      />
-    ) : (
-      <img 
-        src={msg.media} 
-        alt="Shared Media" 
-        className="w-64 h-48 object-cover rounded"
-      />
-    )}
-  </div>
-)}
-                  <span className="text-xs opacity-75 block text-right mt-1">
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-
+                    <div className="flex justify-between items-start">
+                      <div className="flex-grow">
+                        {msg.text && <p className="break-words text-xl">{msg.text}</p>}
+                        {msg.media && (
+                          <div className="media-container">
+                            {msg.media.endsWith(".mp4") ? (
+                              <video 
+                                src={msg.media} 
+                                controls 
+                                className="w-64 h-48 object-cover rounded"
+                              />
+                            ) : (
+                              <img 
+                                src={msg.media} 
+                                alt="Shared Media" 
+                                className="w-64 h-48 object-cover rounded"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {msg.sender === doctorId && (
+                        <MessageDropdown
+                          onDelete={() => {
+                            setMessageToDelete(msg._id);
+                            setShowConfirm(true);
+                          }}
+                          isOwnMessage={msg.sender === doctorId}
+                        />
+                      )}
+                    </div>
+                    <span className="text-xs opacity-75 block text-right mt-1">
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -379,6 +449,8 @@ const DoctorChatPage: React.FC = () => {
             </div>
           </div>
         )}
+            <ConfirmationDialog />
+
       </div>
     </div>
   );

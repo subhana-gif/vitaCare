@@ -31,4 +31,11 @@ export class ChatdpService {
     }
     return this.chatRepository.getDoctorChatList(doctorId);
   }
+
+  async deleteMessage(messageId: string): Promise<boolean> {
+    if (!messageId) {
+      throw new Error("Message ID is required");
+    }
+    return this.chatRepository.deleteMessage(messageId);
+  }
 }

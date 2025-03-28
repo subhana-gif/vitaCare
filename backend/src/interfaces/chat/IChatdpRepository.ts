@@ -16,4 +16,5 @@ export interface IChatRepository {
   saveMessage(message: IMessage): Promise<IMessageDocument>;
   getMessages(userId: string, doctorId: string): Promise<IMessageDocument[]>;
   getDoctorChatList(doctorId: string): Promise<any[]>;
+  deleteMessage(messageId: string): Promise<boolean>;
 }

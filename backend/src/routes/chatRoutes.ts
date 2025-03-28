@@ -24,6 +24,7 @@ router.post("/", verifyToken(["user"]), chatController.handleChatRequest.bind(ch
 router.post("/send",verifyToken(["user", "doctor"]),uploadAndSaveToS3,chatdpController.sendMessage.bind(chatdpController));
 router.get("/:userId/:doctorId",verifyToken(["user", "doctor"]),chatdpController.getChatHistory.bind(chatdpController));
 router.get("/doctor/:doctorId/chats",verifyToken(["doctor"]),chatdpController.getDoctorChatList.bind(chatdpController));
+router.delete("/message/:messageId", verifyToken(["user", "doctor"]), chatdpController.deleteMessage.bind(chatdpController));
   
 export default router;
 

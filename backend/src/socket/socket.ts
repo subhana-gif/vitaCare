@@ -26,6 +26,11 @@ export default (io: Server) => {
       socket.join(doctorId);
     });
 
+    socket.on("messageDeleted", async ({ messageId, userId, doctorId }) => {
+      const roomId = [userId, doctorId].sort().join("_");
+      io.to(roomId).emit("messageDeleted", { messageId });
+    });
+
     socket.on("disconnect", () => {
     });
   });

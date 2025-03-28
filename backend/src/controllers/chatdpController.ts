@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { ChatdpService } from "../services/chatdpservices";
 
-
 export class ChatdpController {
   constructor(private readonly chatService: ChatdpService) {}
 
@@ -36,6 +35,20 @@ export class ChatdpController {
       const chatList = await this.chatService.getDoctorChatList(doctorId);
       res.status(200).json(chatList);
     } catch (error:any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  async deleteMessage(req: Request, res: Response): Promise<void> {
+    try {
+      const { messageId } = req.params;
+      const result = await this.chatService.deleteMessage(messageId);
+      if (result) {
+        res.status(200).json({ message: "Message deleted successfully" });
+      } else {
+        res.status(404).json({ error: "Message not found" });
+      }
+    } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
   }

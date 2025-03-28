@@ -46,4 +46,13 @@ export class ChatdpRepository implements IChatRepository {
       throw new Error(`Failed to get doctor chat list: ${error.message}`);
     }
   }
+
+  async deleteMessage(messageId: string): Promise<boolean> {
+    try {
+      const result = await Message.findByIdAndDelete(messageId);
+      return result !== null;
+    } catch (error: any) {
+      throw new Error(`Failed to delete message: ${error.message}`);
+    }
+  }
 }
