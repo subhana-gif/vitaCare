@@ -3,10 +3,11 @@ import AuthController from "../controllers/AdminController";
 import SpecialityController from "../controllers/specialityController";
 import specialityController from "../controllers/specialityController";
 import { verifyToken } from "../middleware/authMiddleware";
+import {validate} from "../middleware/validationMiddleware"
 
 const router = Router();
 
-router.post("/login", AuthController.login);
+router.post("/login", validate(),AuthController.login);
 router.get("/specialities",SpecialityController.getAllSpecialities);
 router.get("/specialities/status",specialityController.specialityStatus);
 

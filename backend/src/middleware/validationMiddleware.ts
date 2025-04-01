@@ -1,46 +1,35 @@
-import { Request, Response, NextFunction } from 'express';
+import { body, ValidationChain } from "express-validator";
 
-export const validateAppointmentData = (req: Request, res: Response, next: NextFunction) => {
-  const { patientId, doctorId, date, time } = req.body;
+export const validate = (): ValidationChain[] => [
+  body("name")
+    .optional()
+    .isString()
+    .withMessage("Name must be a string")
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage("Name must be at least 2 characters long"),
 
-  if (!patientId || !doctorId || !date || !time) {
-    return res.status(400).json({
-      message: 'Missing required fields',
-      details: {
-        patientId: !patientId ? 'Patient ID is required' : null,
-        doctorId: !doctorId ? 'Doctor ID is required' : null,
-        date: !date ? 'Date is required' : null,
-        time: !time ? 'Time is required' : null
-      }
-    });
-  }
+  body("email")
+    .isEmail()
+    .withMessage("Please provide a valid email")
+    .normalizeEmail(),
 
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(date)) {
-    return res.status(400).json({
-      message: 'Invalid date format',
-      details: 'Date must be in YYYY-MM-DD format'
-    });
-  }
+  body("password")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
 
-  const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
-  if (!timeRegex.test(time)) {
-    return res.status(400).json({
-      message: 'Invalid time format',
-      details: 'Time must be in HH:mm format'
-    });
-  }
+  body("phone")
+    .optional()
+    .isMobilePhone("any")
+    .withMessage("Invalid phone number format"),
 
-  const appointmentDate = new Date(date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  body("gender")
+    .optional()
+    .isIn(["male", "female", "other"])
+    .withMessage("Gender must be either male, female, or other"),
 
-  if (appointmentDate < today) {
-    return res.status(400).json({
-      message: 'Invalid date',
-      details: 'Appointment date cannot be in the past'
-    });
-  }
-
-  next();
-};
+  body("dob")
+    .optional()
+    .isISO8601()
+    .withMessage("Invalid date format. Use YYYY-MM-DD"),
+];
