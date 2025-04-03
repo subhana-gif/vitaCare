@@ -14,7 +14,7 @@ class AuthService {
         if (email.trim() !== ADMIN_EMAIL.trim() || password.trim() !== ADMIN_PASSWORD.trim()) {
             throw new Error("Invalid credentials");
         }
-        return this.tokenService.generateToken({ email: ADMIN_EMAIL, role: "admin" });
+        return this.tokenService.generateToken({ email: ADMIN_EMAIL, role: "admin", id: "admin123" });
     }
 }
 exports.default = new AuthService(tokenService_1.default);

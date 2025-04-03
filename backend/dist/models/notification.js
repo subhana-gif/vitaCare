@@ -34,11 +34,38 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const notificationSchema = new mongoose_1.Schema({
-    message: { type: String, required: true },
-    type: { type: String, required: true },
-    doctorId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "Doctor", required: true },
-    read: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
+const NotificationSchema = new mongoose_1.Schema({
+    recipientId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: [true, "Recipient ID is required"],
+        refPath: "recipientRole" // Dynamically reference based on role
+    },
+    recipientRole: {
+        type: String,
+        enum: ["user", "doctor", "admin"],
+        required: [true, "Recipient role is required"]
+    },
+    message: {
+        type: String,
+        required: [true, "Message cannot be empty"],
+        minlength: [3, "Message must be at least 3 characters long"],
+        maxlength: [500, "Message cannot exceed 500 characters"]
+    },
+    isRead: { type: Boolean, default: false },
+}, { timestamps: true });
+// Ensure recipientId matches the recipientRole model
+NotificationSchema.pre("save", async function (next) {
+    const roleModelMap = {
+        user: "User",
+        doctor: "Doctor",
+        admin: "Admin"
+    };
+    const modelName = roleModelMap[this.recipientRole];
+    const exists = await mongoose_1.default.model(modelName).exists({ _id: this.recipientId });
+    if (!exists) {
+        return next(new Error(`${this.recipientRole} with ID ${this.recipientId} does not exist`));
+    }
+    next();
 });
-exports.default = mongoose_1.default.model("Notification", notificationSchema);
+const Notification = mongoose_1.default.model("Notification", NotificationSchema);
+exports.default = Notification;

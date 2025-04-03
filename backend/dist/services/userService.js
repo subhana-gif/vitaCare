@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.userServiceInstance = exports.UserService = void 0;
 const userRepository_1 = __importDefault(require("../repositories/userRepository"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const tokenService_1 = __importDefault(require("../services/tokenService"));
@@ -34,12 +35,10 @@ class UserService {
         if (!user || !(await bcrypt_1.default.compare(password, user.password))) {
             throw new Error("Invalid credentials");
         }
-        const isMatch = await bcrypt_1.default.compare(password, user.password);
-        console.log("Password Match Status:", isMatch);
         if (user.isBlocked) {
             throw new Error("Your account has been blocked. Please contact support.");
         }
-        const token = tokenService_1.default.generateToken({ id: user._id });
+        const token = tokenService_1.default.generateToken({ id: user._id, role: user.role || "user", name: user.name });
         return { token, user };
     }
     async forgotPassword(email) {
@@ -47,7 +46,7 @@ class UserService {
         if (!user) {
             throw new Error("If this email exists in our system, you will receive reset instructions");
         }
-        const resetToken = tokenService_1.default.generateToken({ email: user.email }, "1h");
+        const resetToken = tokenService_1.default.generateToken({ email: user.email, role: "user" }, "1h");
         const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
         await emailService_1.default.sendPasswordResetEmail(email, resetLink);
         return { success: true, message: "Reset instructions sent to your email" };
@@ -65,7 +64,6 @@ class UserService {
         return { success: true, message: "OTP sent successfully" };
     }
     async verifyOTP(email, otp) {
-        // Implement OTP verification logic here
         return { success: true, message: "OTP verified successfully" };
     }
     async resendOTP(email) {
@@ -77,7 +75,11 @@ class UserService {
         return await this.userRepository.findAllUsers();
     }
     async toggleBlockUser(userId) {
-        return await this.userRepository.toggleBlockStatus(userId);
+        const user = await this.userRepository.toggleBlockStatus(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
     }
     async getUserProfile(userId) {
         return await this.userRepository.findById(userId);
@@ -85,5 +87,9 @@ class UserService {
     async updateUserProfile(userId, data) {
         return await this.userRepository.updateUser(userId, data);
     }
+    async getUserById(id) {
+        return this.userRepository.findById(id);
+    }
 }
-exports.default = new UserService(userRepository_1.default.getInstance());
+exports.UserService = UserService;
+exports.userServiceInstance = new UserService(userRepository_1.default.getInstance());

@@ -1,47 +1,33 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateAppointmentData = void 0;
-const validateAppointmentData = (req, res, next) => {
-    const { patientId, doctorId, date, time } = req.body;
-    // Check if all required fields are present
-    if (!patientId || !doctorId || !date || !time) {
-        return res.status(400).json({
-            message: 'Missing required fields',
-            details: {
-                patientId: !patientId ? 'Patient ID is required' : null,
-                doctorId: !doctorId ? 'Doctor ID is required' : null,
-                date: !date ? 'Date is required' : null,
-                time: !time ? 'Time is required' : null
-            }
-        });
-    }
-    // Validate date format (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-        return res.status(400).json({
-            message: 'Invalid date format',
-            details: 'Date must be in YYYY-MM-DD format'
-        });
-    }
-    // Validate time format (HH:mm)
-    const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
-    if (!timeRegex.test(time)) {
-        return res.status(400).json({
-            message: 'Invalid time format',
-            details: 'Time must be in HH:mm format'
-        });
-    }
-    // Validate that the date is not in the past
-    const appointmentDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (appointmentDate < today) {
-        return res.status(400).json({
-            message: 'Invalid date',
-            details: 'Appointment date cannot be in the past'
-        });
-    }
-    // If all validations pass, proceed to the next middleware
-    next();
-};
-exports.validateAppointmentData = validateAppointmentData;
+exports.validate = void 0;
+const express_validator_1 = require("express-validator");
+const validate = () => [
+    (0, express_validator_1.body)("name")
+        .optional()
+        .isString()
+        .withMessage("Name must be a string")
+        .trim()
+        .isLength({ min: 2 })
+        .withMessage("Name must be at least 2 characters long"),
+    (0, express_validator_1.body)("email")
+        .isEmail()
+        .withMessage("Please provide a valid email")
+        .normalizeEmail(),
+    (0, express_validator_1.body)("password")
+        .isLength({ min: 6 })
+        .withMessage("Password must be at least 6 characters long"),
+    (0, express_validator_1.body)("phone")
+        .optional()
+        .isMobilePhone("any")
+        .withMessage("Invalid phone number format"),
+    (0, express_validator_1.body)("gender")
+        .optional()
+        .isIn(["male", "female", "other"])
+        .withMessage("Gender must be either male, female, or other"),
+    (0, express_validator_1.body)("dob")
+        .optional()
+        .isISO8601()
+        .withMessage("Invalid date format. Use YYYY-MM-DD"),
+];
+exports.validate = validate;

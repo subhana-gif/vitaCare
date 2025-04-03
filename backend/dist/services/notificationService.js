@@ -1,25 +1,22 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NotificationService = void 0;
-const notificationRepository_1 = require("../repositories/notificationRepository");
-class NotificationService {
-    constructor() {
-        this.notificationRepository = new notificationRepository_1.NotificationRepository();
+const notification_1 = __importDefault(require("../models/notification"));
+const createNotification = async (data) => {
+    try {
+        const notification = new notification_1.default({
+            recipientId: data.recipientId,
+            recipientRole: data.recipientRole,
+            message: data.message,
+        });
+        await notification.save();
+        return notification;
     }
-    async createNotification(data) {
-        return await this.notificationRepository.createNotification(data);
+    catch (error) {
+        console.error("Error creating notification:", error);
+        throw new Error("Failed to create notification.");
     }
-    async deleteNotification(filter) {
-        await this.notificationRepository.deleteNotification(filter); // Assuming `NotificationModel` is your Mongoose model
-    }
-    async getAdminNotifications() {
-        return await this.notificationRepository.findAllNotifications();
-    }
-    async markAllAsRead() {
-        await this.notificationRepository.markAllAsRead();
-    }
-    async markAsRead(id) {
-        return await this.notificationRepository.markAsRead(id);
-    }
-}
-exports.NotificationService = NotificationService;
+};
+exports.default = { createNotification };

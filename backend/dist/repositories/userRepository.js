@@ -42,4 +42,3 @@ class UserRepository {
     }
 }
 exports.default = UserRepository;
-// Export the singleton instance as the default export

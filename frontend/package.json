@@ -16,6 +16,7 @@
     "@reduxjs/toolkit": "^2.5.1",
     "@shadcn/ui": "^0.0.4",
     "@tolgee/react": "^6.2.4",
+    "@types/socket.io-client": "^3.0.0",
     "@vitalets/google-translate-api": "^9.2.1",
     "antd": "^5.0.0",
     "axios": "^1.7.9",

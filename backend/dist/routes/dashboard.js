@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const dashboardController_1 = require("../controllers/dashboardController");
+const adminDashboardController_1 = require("../controllers/adminDashboardController");
+const router = express_1.default.Router();
+router.get('/:doctorId/appointments/summary', (0, authMiddleware_1.verifyToken)(["doctor"]), dashboardController_1.getAppointmentSummary);
+router.get('/:doctorId/payments/summary', (0, authMiddleware_1.verifyToken)(["doctor"]), dashboardController_1.getPaymentSummary);
+router.get('/:doctorId/appointments/time-slots', (0, authMiddleware_1.verifyToken)(["doctor"]), dashboardController_1.getPopularTimeSlots);
+router.get('/:doctorId/monthly-stats', (0, authMiddleware_1.verifyToken)(["doctor"]), dashboardController_1.getMonthlyStats);
+router.get('/:doctorId/appointments/today', (0, authMiddleware_1.verifyToken)(["doctor"]), dashboardController_1.getTodayAppointments);
+router.get('/summary', (0, authMiddleware_1.verifyToken)(["admin"]), adminDashboardController_1.getSummaryStats);
+router.get('/appointment-status', (0, authMiddleware_1.verifyToken)(["admin"]), adminDashboardController_1.getAppointmentStatusDistribution);
+router.get('/payment-status', (0, authMiddleware_1.verifyToken)(["admin"]), adminDashboardController_1.getPaymentStatusDistribution);
+router.get('/time-series', (0, authMiddleware_1.verifyToken)(["admin"]), adminDashboardController_1.getTimeSeriesData);
+router.get('/top-doctors', (0, authMiddleware_1.verifyToken)(["admin"]), adminDashboardController_1.getTopDoctors);
+router.get('/top-patients', (0, authMiddleware_1.verifyToken)(["admin"]), adminDashboardController_1.getTopPatients);
+exports.default = router;
