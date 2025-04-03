@@ -1,0 +1,86 @@
+{
+  "Home": {
+    "en": "Home",
+    "fr": "Maison"
+  },
+  "ALL_DOCTORS": {
+    "en": "ALL DOCTORS",
+    "fr": "tous les médecins"
+  },
+  "APPOINTMENTS": {
+    "en": "APPOINTMENTS",
+    "fr": "Nominations"
+  },
+  "ABOUT": {
+    "en": "ABOUT",
+    "fr": "À PROPOS"
+  },
+  "CONTACT": {
+    "en": "CONTACT",
+    "fr": "CONTACT"
+  },
+  "Notifications": {
+    "en": "Notifications",
+    "fr": "Notifications"
+  },
+  "No_notifications": {
+    "en": "No notifications",
+    "fr": "Aucune notification"
+  },
+  "Profile": {
+    "en": "Profile",
+    "fr": "Profil"
+  },
+  "Logout": {
+    "en": "Logout",
+    "fr": "Déconnexion"
+  },
+  "general_physician": {
+    "en": "General Physician",
+    "fr": "Médecin Généraliste"
+  },
+  "gynecologist": {
+    "en": "Gynecologist",
+    "fr": "Gynécologue"
+  },
+  "dermatologist": {
+    "en": "Dermatologist",
+    "fr": "Dermatologue"
+  },
+  "pediatrician": {
+    "en": "Pediatrician",
+    "fr": "Pédiatre"
+  },
+  "neurologist": {
+    "en": "Neurologist",
+    "fr": "Neurologue"
+  },
+  "gastroenterologist": {
+    "en": "Gastroenterologist",
+    "fr": "Gastro-entérologue"
+  },
+  "Book_Appointment_With_Trusted_Doctors": {
+    "en": "Book Appointment With Trusted Doctors",
+    "fr": "Prendre rendez-vous avec des médecins de confiance"
+  },
+  "Simply_browse_through_our_extensive_list_of_trusted_doctors,": {
+    "en": "Simply browse through our extensiven list of trusted doctors,",
+    "fr": "Parcourez simplement notre vaste liste de médecins de confiance,"
+  },
+  "schedule_your_appointment_hassle_free.": {
+    "en": "schedule your appointment hassle free.",
+    "fr": "Planifiez votre rendez-vous en toute simplicité."
+  },
+  "Book appointment →": {
+    "en": "Book appointment →",
+    "fr": "Rendez-vous du livre →"
+  },
+  "Find by Speciality": {
+    "en": "Find by Speciality",
+    "fr": "Trouver par spécialité"
+  },
+  "Simply browse through our extensive list of trusted doctors, schedule\r\n          your appointment hassle-free.": {
+    "en": "Simply browse through our extensive list of trusted doctors, schedule\r\n          your appointment hassle-free.",
+    "fr": "Parcourez simplement notre vaste liste de médecins de confiance, calendrier\r\n Votre rendez-vous sans tracas."
+  }
+}

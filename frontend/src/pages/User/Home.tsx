@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MessageCircle, Calendar, Clock, Star, Shield, Users } from "lucide-react";
 import { fetchHealthArticles } from "../../services/healthservice";
 import { motion } from "framer-motion";
+import { T } from "@tolgee/react";
 
 interface Specialty {
   name: string;
@@ -28,15 +29,15 @@ const HomePage: React.FC = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
 
-  const specialties: Specialty[] = [
-    { name: "General physician", icon: "👨‍⚕️" },
-    { name: "Gynecologist", icon: "👩‍⚕️" },
-    { name: "Dermatologist", icon: "🧑‍⚕️" },
-    { name: "Pediatrician", icon: "👶" },
-    { name: "Neurologist", icon: "🧠" },
-    { name: "Gastroenterologist", icon: "👨‍⚕️" },
+  const specialties = [
+    { name: "general physician", icon: "👨‍⚕️" },
+    { name: "gynecologist", icon: "👩‍⚕️" },
+    { name: "dermatologist", icon: "🧑‍⚕️" },
+    { name: "pediatrician", icon: "👶" },
+    { name: "neurologist", icon: "🧠" },
+    { name: "gastroenterologist", icon: "👨‍⚕️" }
   ];
-
+  
   const testimonials: Testimonial[] = [
     {
       name: "Sarah Johnson",
@@ -85,17 +86,17 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-20 flex items-center justify-between">
           <div className="max-w-2xl">
             <h1 className="text-6xl font-bold mb-6 leading-tight">
-              Book Appointment With Trusted Doctors
+              <T keyName="Book_Appointment_With_Trusted_Doctors">Book Appointment With Trusted Doctors</T>
             </h1>
             <p className="text-2xl mb-8 opacity-90">
-              Simply browse through our extensive list of trusted doctors,
-              schedule your appointment hassle-free.
+              <T keyName="Simply_browse_through_our_extensive_list_of_trusted_doctors,">Simply browse through our extensive list of trusted doctors,</T>
+              <T keyName="schedule_your_appointment_hassle_free.">schedule your appointment hassle-free.</T>
             </p>
             <button
               className="bg-white text-blue-600 px-8 py-4 rounded-lg text-3xl font-medium hover:bg-gray-100 transition-colors"
               onClick={() => navigate("/doctors")}
             >
-              Book appointment →
+              <T keyName="Book appointment →">Book appointment →</T>
             </button>
           </div>
           <div className="hidden lg:block"></div>
@@ -104,26 +105,30 @@ const HomePage: React.FC = () => {
 
       {/* Specialties Section */}
       <div className="max-w-8xl mx-auto px-4 py-20">
-        <h2 className="text-4xl font-bold mb-3">Find by Speciality</h2>
+        <h2 className="text-4xl font-bold mb-3">
+          <T keyName="Find by Speciality">Find by Speciality</T>
+        </h2>
         <p className="text-gray-600 text-2xl mb-10">
+          <T keyName="Simply browse through our extensive list of trusted doctors, schedule
+          your appointment hassle-free.">
           Simply browse through our extensive list of trusted doctors, schedule
           your appointment hassle-free.
+          </T>
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {specialties.map((specialty, index) => (
-            <div
-              key={index}
-              className="bg-white p-8 rounded-lg shadow-sm text-center hover:shadow-lg transition-shadow cursor-pointer hover:bg-blue-50"
-              onClick={() => handleSpecialtyClick(specialty)}
-            >
-              <div className="text-6xl mb-4">{specialty.icon}</div>
-              <p className="text-gray-800 text-2xl font-medium break-words whitespace-normal">
-                {specialty.name}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+  {specialties.map((specialty, index) => (
+    <div
+      key={index}
+      className="bg-white p-8 rounded-lg shadow-sm text-center hover:shadow-lg transition-shadow cursor-pointer hover:bg-blue-50"
+      onClick={() => handleSpecialtyClick(specialty)}
+    >
+      <div className="text-6xl mb-4">{specialty.icon}</div>
+      <p className="text-gray-800 text-2xl font-medium break-words whitespace-normal">
+        <T keyName={`${specialty.name}`} />
+      </p>
+    </div>
+  ))}
+</div>;      </div>
 
 
       <div className="max-w-7xl mx-auto px-4 py-20">

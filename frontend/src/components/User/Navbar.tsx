@@ -6,6 +6,7 @@ import { IoNotificationsOutline } from "react-icons/io5";
 import { logout } from "../../redux/slices/authSlice";
 import { io, Socket } from "socket.io-client";
 import { RootState } from "../../redux/store";
+import { T } from "@tolgee/react";
 
 interface Notification {
   message: string;
@@ -103,11 +104,11 @@ const Navbar: React.FC = () => {
 
       {/* Centered Nav Links */}
       <div className="flex space-x-8 mx-auto">
-        <a href="/" className="text-gray-600 text-3xl hover:text-blue-600">HOME</a>
-        <a href="/doctors" className="text-gray-600 text-3xl hover:text-blue-600">ALL DOCTORS</a>
-        <a href="/myAppointments" className="text-gray-600 text-3xl hover:text-blue-600">APPOINTMENTS</a>
-        <a href="/about" className="text-gray-600 text-3xl hover:text-blue-600">ABOUT</a>
-        <a href="/contact" className="text-gray-600 text-3xl hover:text-blue-600">CONTACT</a>
+        <a href="/" className="text-gray-600 text-3xl hover:text-blue-600"> <T keyName="Home">HOME</T></a>
+        <a href="/doctors" className="text-gray-600 text-3xl hover:text-blue-600"> <T keyName="ALL_DOCTORS">ALL DOCTORS</T></a>
+        <a href="/myAppointments" className="text-gray-600 text-3xl hover:text-blue-600"> <T keyName="APPOINTMENTS">APPOINTMENTS</T></a>
+        <a href="/about" className="text-gray-600 text-3xl hover:text-blue-600"><T keyName="ABOUT">ABOUT</T></a>
+        <a href="/contact" className="text-gray-600 text-3xl hover:text-blue-600"><T keyName="CONTACT">CONTACT</T></a>
       </div>
 
       {/* Notification Icon and Dropdown */}
@@ -126,7 +127,7 @@ const Navbar: React.FC = () => {
         {showNotifications && (
           <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
             <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+              <h3 className="text-lg font-semibold text-gray-800"><T keyName="Notifications">Notifications</T></h3>
             </div>
             {notifications.length > 0 ? (
               <div className="divide-y divide-gray-200">
@@ -141,7 +142,7 @@ const Navbar: React.FC = () => {
               </div>
             ) : (
               <div className="p-4 text-center text-gray-500">
-                No notifications
+                <T keyName="No_notifications">No notifications</T>
               </div>
             )}
           </div>
@@ -162,13 +163,13 @@ const Navbar: React.FC = () => {
               onClick={() => navigate('/profile')}
               className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-blue-50"
             >
-              Profile
+              <T keyName="Profile">Profile</T>
             </button>    
             <button
               onClick={handleLogout}
               className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-blue-50"
             >
-              Logout
+              <T keyName="Logout">Logout</T>
             </button>
           </div>
         )}
