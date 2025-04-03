@@ -1,15 +1,16 @@
+// src/pages/Chats.tsx
 import React, { useEffect, useState, useRef } from "react";
-import { Share2, MoreVertical, Trash2, Video } from "lucide-react"; // Added Video icon
+import { Share2, MoreVertical, Trash2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import io, { Socket } from "socket.io-client";
 import { RootState } from "../../redux/store";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { doctorService } from "../../services/doctorService";
+import VideoCall from "../../components/ui/videoCall";
 
 const socket: Socket = io("http://localhost:5001", { withCredentials: true });
 
-// Define types
 interface Message {
   _id: string;
   sender: string;
@@ -36,122 +37,11 @@ const Chats: React.FC = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
 
-  // Video call states
-  const [isCalling, setIsCalling] = useState(false);
-  const [isRinging, setIsRinging] = useState(false);
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-
   const user = useSelector((state: RootState) => state.auth.user);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const token = useSelector((state: RootState) => state.auth.accessToken);
 
-  // --- Video Call Logic ---
-  const createPeerConnection = () => {
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("iceCandidate", {
-          to: doctorId,
-          candidate: event.candidate,
-        });
-      }
-    };
-    pc.ontrack = (event) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
-    };
-    return pc;
-  };
-
-  const startCall = async () => {
-    setIsCalling(true);
-    const pc = createPeerConnection();
-    peerConnectionRef.current = pc;
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    socket.emit("callUser", { to: doctorId, from: userId, offer });
-  };
-
-  const acceptCall = async () => {
-    setIsRinging(false);
-    setIsCalling(true);
-  };
-
-  const rejectCall = () => {
-    setIsRinging(false);
-    socket.emit("rejectCall", { to: doctorId });
-  };
-
-  const endCall = () => {
-    setIsCalling(false);
-    peerConnectionRef.current?.close();
-    socket.emit("endCall", { to: doctorId });
-  };
-
-  useEffect(() => {
-    if (userId && doctorId) {
-      socket.emit("registerVideoCall", userId);
-
-      socket.on("incomingCall", async ({ from, offer, socketId }) => {
-        setIsRinging(true);
-        const pc = createPeerConnection();
-        peerConnectionRef.current = pc;
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit("acceptCall", { to: socketId, answer });
-      });
-
-      socket.on("callAccepted", async ({ answer }) => {
-        await peerConnectionRef.current?.setRemoteDescription(
-          new RTCSessionDescription(answer)
-        );
-      });
-
-      socket.on("iceCandidate", async ({ candidate }) => {
-        if (candidate) {
-          await peerConnectionRef.current?.addIceCandidate(
-            new RTCIceCandidate(candidate)
-          );
-        }
-      });
-
-      socket.on("callRejected", () => {
-        setIsRinging(false);
-        setIsCalling(false);
-      });
-
-      socket.on("callEnded", () => {
-        setIsCalling(false);
-        peerConnectionRef.current?.close();
-      });
-
-      return () => {
-        socket.off("incomingCall");
-        socket.off("callAccepted");
-        socket.off("iceCandidate");
-        socket.off("callRejected");
-        socket.off("callEnded");
-      };
-    }
-  }, [userId, doctorId]);
-
-  // --- Existing Chat Logic ---
   const handleDelete = async (messageId: string) => {
     try {
       await axios.delete(`http://localhost:5001/api/chat/message/${messageId}`, {
@@ -329,7 +219,7 @@ const Chats: React.FC = () => {
   return (
     <div className="w-full">
       <div className="chat-container flex flex-col h-[80vh] border rounded-lg shadow-lg w-full max-w-2xl mx-auto overflow-hidden">
-        {/* Chat header with Video Call button */}
+        {/* Chat header */}
         <div className="chat-header p-3 border-b bg-blue-500 text-white rounded-t-lg flex-shrink-0 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {doctor?.imageUrl && (
@@ -341,60 +231,10 @@ const Chats: React.FC = () => {
             )}
             <h2 className="font-semibold text-2xl">{doctor?.name || "Loading..."}</h2>
           </div>
-          <button
-            onClick={startCall}
-            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 flex items-center gap-1"
-            disabled={isCalling || isRinging}
-          >
-            <Video size={20} />
-            <span>Video Call</span>
-          </button>
+          {userId && doctorId && (
+            <VideoCall socket={socket} userId={userId} targetUserId={doctorId} />
+          )}
         </div>
-
-        {/* Video Call UI (shown when calling or ringing) */}
-        {(isCalling || isRinging) && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center gap-4">
-              <div className="flex gap-4">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  className="w-40 h-40 rounded object-cover border"
-                />
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  className="w-40 h-40 rounded object-cover border"
-                />
-              </div>
-              {isRinging && !isCalling && (
-                <div className="flex gap-4">
-                  <button
-                    onClick={acceptCall}
-                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={rejectCall}
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Reject
-                  </button>
-                </div>
-              )}
-              {isCalling && (
-                <button
-                  onClick={endCall}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  End Call
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Messages container */}
         <div className="flex-grow overflow-y-auto p-3">
