@@ -57,7 +57,6 @@ const prescriptionSchema = new Schema<IPrescription, IPrescriptionModel>(
       type: Schema.Types.ObjectId,
       ref: "Appointment",
       required: [true, "Appointment reference is required"],
-      unique: true,
     },
     medicines: {
       type: [medicineSchema],
