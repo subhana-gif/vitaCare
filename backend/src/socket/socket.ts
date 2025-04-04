@@ -43,32 +43,27 @@ export default (io: Server) => {
       io.emit("userList", Object.values(users)); // Optional: Notify all clients of active users
     });
 
-    // Handle call initiation (ringing)
     socket.on("callUser", ({ to, from, offer }) => {
-      const targetSocketId = Object.keys(users).find(
-        (key) => users[key] === to // Fixed syntax here
-      );
+      const targetSocketId = Object.keys(users).find((key) => users[key] === to);
+      console.log(`Call from ${from} (socket: ${socket.id}) to ${to} (socket: ${targetSocketId})`);
       if (targetSocketId) {
-        io.to(targetSocketId).emit("incomingCall", {
-          from,
-          offer,
-          socketId: socket.id,
-        });
+        io.to(targetSocketId).emit("incomingCall", { from, offer, socketId: socket.id });
+        socket.emit("callTargetSocket", { targetSocketId });
       } else {
         socket.emit("callFailed", { message: "User not available" });
       }
     });
-
-    // Handle call acceptance
-    socket.on("acceptCall", ({ to, answer }) => {
-      io.to(to).emit("callAccepted", { answer });
-    });
-
-    // Handle ICE candidates
+    
     socket.on("iceCandidate", ({ to, candidate }) => {
+      console.log(`ICE candidate from ${socket.id} to ${to}`);
       io.to(to).emit("iceCandidate", { candidate });
     });
-
+    
+    socket.on("acceptCall", ({ to, answer }) => {
+      console.log(`Answer from ${socket.id} to ${to}`);
+      io.to(to).emit("callAccepted", { answer });
+    });
+    
     // Handle call rejection (optional)
     socket.on("rejectCall", ({ to }) => {
       io.to(to).emit("callRejected");
