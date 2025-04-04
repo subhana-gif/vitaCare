@@ -19,51 +19,61 @@ const appointmentSchema = new Schema<IAppointment>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Patient ID is required'],
+      index: true // Single field index for patient queries
     },
     doctorId: {
       type: Schema.Types.ObjectId,
       ref: 'Doctor',
       required: [true, 'Doctor ID is required'],
+      index: true // Single field index for doctor queries
     },
     date: {
       type: String,
       required: [true, 'Appointment date is required'],
-      match: [/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'],
+      match: [/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)']
     },
     time: {
       type: String,
       required: [true, 'Appointment time is required'],
-      match: [/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)'],
+      match: [/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)']
     },
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'cancelled', 'completed'],
       default: 'pending',
+      index: true // Index for filtering by status
     },
     paymentStatus: {
       type: String,
       enum: ['pending', 'paid', 'refunded'],
-      default: 'pending',
+      default: 'pending'
     },
     appointmentFee: {
       type: Number,
       required: [true, 'Appointment fee is required'],
-      min: [1, 'Appointment fee must be a positive number'],
+      min: [1, 'Appointment fee must be a positive number']
     },
     paymentId: {
       type: String,
-      default: null,
-      validate: {
-        validator: function (value: string | null) {
-          return value === null || (typeof value === 'string' && value.trim().length > 0);
-        },
-        message: 'Invalid Payment ID',
-      },
-    },
+      default: null
+    }
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    autoIndex: false // Disable automatic index creation
+  }
 );
 
-appointmentSchema.index({ doctorId: 1, date: 1, time: 1 }, { unique: true });
+// Compound index for unique time slots
+appointmentSchema.index(
+  { doctorId: 1, date: 1, time: 1 }, 
+  { 
+    unique: true,
+    name: 'timeslot_unique_idx'
+  }
+);
+
+appointmentSchema.index({ patientId: 1, status: 1 });
+appointmentSchema.index({ doctorId: 1, status: 1 });
 
 export default mongoose.model<IAppointment>('Appointment', appointmentSchema);
