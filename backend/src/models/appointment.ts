@@ -64,7 +64,6 @@ const appointmentSchema = new Schema<IAppointment>(
   { timestamps: true }
 );
 
-// Add index for efficient querying (prevent duplicate appointments)
 appointmentSchema.index({ doctorId: 1, date: 1, time: 1 }, { unique: true });
 
 export default mongoose.model<IAppointment>('Appointment', appointmentSchema);
