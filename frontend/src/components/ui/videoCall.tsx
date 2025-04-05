@@ -23,40 +23,57 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   const [targetSocketId, setTargetSocketId] = useState<string | null>(null);
   const ringAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize ringing sound
-// Inside the component
-useEffect(() => {
-  ringAudioRef.current = new Audio(basslineWonderland);
-  ringAudioRef.current.loop = true;
-  ringAudioRef.current.volume = 0.5;
-  ringAudioRef.current.onloadeddata = () => {
-    console.log("Ringtone loaded successfully");
-    // Preload audio by playing and pausing immediately after interaction
-    document.addEventListener("click", () => {
-      ringAudioRef.current?.play().then(() => {
-        ringAudioRef.current?.pause();
-        console.log("Audio preloaded and unlocked");
-      }).catch((e) => console.error("Preload error:", e));
-    }, { once: true }); // Only run once
-  };
-  ringAudioRef.current.onerror = (e) => console.error("Error loading ringtone:", e);
-}, []);
 
-useEffect(() => {
-  if (isRinging && ringAudioRef.current) {
-    console.log("Attempting to play ringtone");
-    ringAudioRef.current.currentTime = 0;
-    ringAudioRef.current
-      .play()
-      .then(() => console.log("Ringtone playing"))
-      .catch((e) => console.error("Error playing ringtone:", e));
-  } else if (!isRinging && ringAudioRef.current) {
-    ringAudioRef.current.pause();
-    ringAudioRef.current.currentTime = 0;
-    console.log("Ringtone paused");
-  }
-}, [isRinging]);
-  // Play/stop ringing sound based on isRinging state
+
+  const playVideo = async (element: HTMLVideoElement | null, stream: MediaStream | null) => {
+    if (!element || !stream) return;
+    
+    try {
+      // Only assign if the stream is different
+      if (element.srcObject !== stream) {
+        element.srcObject = stream;
+      }
+      
+      // Mute remote video if it's the same as local (prevent echo)
+      element.muted = element === localVideoRef.current;
+      
+      const playPromise = element.play();
+      
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
+    } catch (error) {
+      console.error('Error playing video:', error);
+      // Retry after a short delay if aborted
+      if (error.name === 'AbortError') {
+        setTimeout(() => playVideo(element, stream), 500);
+      }
+    }
+  };
+
+  // Initialize ringing sound
+  useEffect(() => {
+    ringAudioRef.current = new Audio(basslineWonderland);
+    ringAudioRef.current.loop = true;
+    ringAudioRef.current.volume = 0.5;
+    ringAudioRef.current.onloadeddata = () => {
+      console.log("Ringtone loaded successfully");
+      document.addEventListener(
+        "click",
+        () => {
+          ringAudioRef.current?.play()
+            .then(() => {
+              ringAudioRef.current?.pause();
+              console.log("Audio preloaded and unlocked");
+            })
+            .catch((e) => console.error("Preload error:", e));
+        },
+        { once: true }
+      );
+    };
+    ringAudioRef.current.onerror = (e) => console.error("Error loading ringtone:", e);
+  }, []);
+
   useEffect(() => {
     if (isRinging && ringAudioRef.current) {
       console.log("Attempting to play ringtone");
@@ -91,90 +108,35 @@ useEffect(() => {
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
-  
+
     pc.onicecandidate = (event) => {
       if (event.candidate && targetSocketId) {
         socket.emit("iceCandidate", { to: targetSocketId, candidate: event.candidate });
       }
     };
-  
-    let lastStreamId: string | null = null; // Track the last assigned stream to avoid duplicates
-  
+
     pc.ontrack = (event) => {
       const remoteStream = event.streams[0];
-      console.log("ontrack event fired with stream ID:", remoteStream.id);
-      console.log("Remote stream tracks:", remoteStream.getTracks().map((t) => t.kind));
-  
-      // Skip if this stream is already assigned
-      if (lastStreamId === remoteStream.id) {
-        console.log("Duplicate stream ID, skipping...");
-        return;
-      }
-  
-      setRemoteStreamId(remoteStream.id);
-      lastStreamId = remoteStream.id;
-  
-      if (remoteVideoRef.current) {
-        // Log current video state
-        console.log("Video paused:", remoteVideoRef.current.paused);
-        console.log("Video srcObject exists:", !!remoteVideoRef.current.srcObject);
-  
-        // Pause and clear existing stream if present
-        if (remoteVideoRef.current.srcObject && !remoteVideoRef.current.paused) {
-          console.log("Pausing existing video...");
-          remoteVideoRef.current.pause();
-        }
-  
-        // Assign the new stream
-        console.log("Assigning new srcObject...");
-        remoteVideoRef.current.srcObject = remoteStream;
-  
-        // Check if the video is ready to play
-        if (remoteVideoRef.current.paused) {
-          const playPromise = remoteVideoRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log("Remote video playing successfully");
-              })
-              .catch((e) => {
-                console.error("Error playing remote video:", e.name, e.message);
-                if (e.name === "AbortError" || e.name === "NotAllowedError") {
-                  console.log("Retrying play after 500ms...");
-                  setTimeout(() => {
-                    if (
-                      remoteVideoRef.current &&
-                      remoteVideoRef.current.srcObject === remoteStream &&
-                      remoteVideoRef.current.paused
-                    ) {
-                      remoteVideoRef.current.play().catch((retryError) =>
-                        console.error("Retry play failed:", retryError.name, retryError.message)
-                      );
-                    } else {
-                      console.log("Retry skipped: Stream changed or video not paused");
-                    }
-                  }, 500);
-                } else {
-                  console.error("Non-retryable error:", e);
-                }
-              });
-          }
-        } else {
-          console.log("Video already playing, no need to call play()");
-        }
-      } else {
-        console.error("remoteVideoRef.current is null");
+      console.log("Received remote stream:", remoteStream.id);
+      
+      // Use the helper function to play the video
+      playVideo(remoteVideoRef.current, remoteStream);
+      
+      // Only update state if the stream is new
+      if (remoteStreamId !== remoteStream.id) {
+        setRemoteStreamId(remoteStream.id);
       }
     };
-  
     pc.onconnectionstatechange = () => {
       console.log("Connection state:", pc.connectionState);
-      if (pc.connectionState === "failed") {
-        console.error("WebRTC connection failed");
-        endCall();
-      }
+      if (pc.connectionState === "disconnected" || 
+        pc.connectionState === "failed" || 
+        pc.connectionState === "closed") {
+      console.log("Call disconnected automatically");
+      endCall(false);
+    }
     };
-  
+
     pc.oniceconnectionstatechange = () => {
       console.log("ICE connection state:", pc.iceConnectionState);
       if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
@@ -182,10 +144,10 @@ useEffect(() => {
         endCall();
       }
     };
-  
+
     return pc;
   };
-    
+
   const startCall = async () => {
     try {
       const hasPermission = await checkPermissions();
@@ -276,23 +238,49 @@ useEffect(() => {
     socket.emit("rejectCall", { to: targetSocketId });
   };
 
-  const endCall = () => {
-    setIsCalling(false);
-    setIsRinging(false);
-    setRemoteStreamId(null);
+  const endCall = (initiatedLocally = true) => {
+    // Send end call signal if this was a local action
+    if (initiatedLocally && targetSocketId) {
+      socket.emit("endCall", { to: targetSocketId });
+    }
+  
+    // Clean up peer connection
     if (peerConnectionRef.current) {
+      peerConnectionRef.current.ontrack = null;
+      peerConnectionRef.current.onicecandidate = null;
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
+  
+    // Stop all media tracks
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
       localStreamRef.current = null;
     }
-    if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
-    socket.emit("endCall", { to: targetSocketId });
+  
+    // Clear video elements
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+  
+    // Reset states
+    setIsCalling(false);
+    setIsRinging(false);
+    setRemoteStreamId(null);
+    
+    // Stop ringtone if playing
+    if (ringAudioRef.current) {
+      ringAudioRef.current.pause();
+      ringAudioRef.current.currentTime = 0;
+    }
   };
-
+  
   const toggleAudio = () => {
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
@@ -338,18 +326,20 @@ useEffect(() => {
     });
 
     socket.on("callRejected", () => {
-      setIsRinging(false);
-      setIsCalling(false);
-      alert("Call was rejected by the other user.");
+      console.log("Call was rejected by remote user");
+      endCall(false);
+      alert("The other user rejected your call");
     });
 
     socket.on("callEnded", () => {
-      endCall();
+      console.log("Remote user ended the call");
+      endCall(false); // false indicates remote initiation
     });
 
     socket.on("callFailed", ({ message }) => {
-      setIsCalling(false);
-      alert(message);
+      console.error("Call failed:", message);
+      endCall(false);
+      alert(`Call failed: ${message}`);
     });
 
     return () => {
@@ -391,6 +381,7 @@ useEffect(() => {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
+                onError={(e) => console.error('Remote video error:', e)}
                 className="w-full h-full object-cover rounded-lg shadow-lg"
               />
             )}
@@ -453,13 +444,13 @@ useEffect(() => {
                   {videoEnabled ? "Video Off" : "Video On"}
                 </button>
                 <button
-                  onClick={endCall}
-                  className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 flex items-center gap-2"
-                >
-                  <Video size={20} />
-                  End Call
-                </button>
-              </>
+  onClick={() => endCall(true)} // true indicates local initiation
+  className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 flex items-center gap-2"
+>
+  <Video size={20} />
+  End Call
+</button>        
+      </>
             )}
           </div>
         </div>
@@ -469,3 +460,4 @@ useEffect(() => {
 };
 
 export default VideoCall;
+

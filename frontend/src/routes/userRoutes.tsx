@@ -14,9 +14,8 @@ import ResetPassword from "../pages/User/ResetPassword";
 import ProtectedRoute from "../pages/User/ProtectedRoutes";
 import DoctorLogin from "../pages/Doctor/Login";
 import DoctorSignup from "../pages/Doctor/signup";
-import Chats from "../pages/Common/chat";
 import PrescriptionView from "../components/Prescription/PrescriptionView";
-import About from "../pages/User/about"
+import About from "../pages/User/About"
 import Contact from "../pages/User/contact"
 
 
@@ -40,8 +39,7 @@ const UserRoutes: React.FC = () => {
         <Route path="doctors/:specialty" element={<AllDoctors />} />
         <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="myAppointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
-        <Route path="chats/:userId?/:doctorId?"element={<ProtectedRoute><Chats /></ProtectedRoute>}/>
-        <Route path="chats/:userId?/:doctorId?"element={<ProtectedRoute><Chats /></ProtectedRoute>}/>
+        <Route path="chats/:userId?/:doctorId?"element={<ProtectedRoute><Chat /></ProtectedRoute>}/>
         <Route path="prescription/:appointmentId" element={<ProtectedRoute><PrescriptionView /></ProtectedRoute>} />
         
         </Route>

@@ -32,12 +32,17 @@ export default (io: Server) => {
     });
 
     socket.on("messageDeleted", async ({ messageId, userId, doctorId }) => {
+      console.log(`Received messageDeleted: messageId=${messageId}, userId=${userId}, doctorId=${doctorId}`);
+      if (!userId || !doctorId) {
+        console.error("Invalid userId or doctorId for messageDeleted event");
+        return;
+      }
       const roomId = [userId, doctorId].sort().join("_");
+      console.log(`Message ${messageId} deleted, broadcasting to room: ${roomId}`);
       io.to(roomId).emit("messageDeleted", { messageId });
     });
 
-    // --- New Video Call Logic ---
-    // Register user for video calls
+    
     socket.on("registerVideoCall", (userId: string) => {
       users[socket.id] = userId;
       io.emit("userList", Object.values(users)); // Optional: Notify all clients of active users
