@@ -59,14 +59,15 @@ export const userService = {
   },
   
   updateProfile: async (
-p0: string, profileData: {
-  name: string;
-  phone: string;
-  address: string;
-  gender: string;
-  dob: string;
-}  ) => {
-    const accessToken = getToken();
+    accessToken: string, 
+    profileData: {
+      name: string;
+      phone: string;
+      address: string;
+      gender: string;
+      dob: string;
+    }
+  ) => {
     const response = await fetch(`${BASE_URL}/profile`, {
       method: "PUT",
       headers: {
@@ -75,15 +76,19 @@ p0: string, profileData: {
       },
       body: JSON.stringify(profileData),
     });
-
+  
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || "Failed to update profile.");
     }
-
-    return await response.json();
+  
+    const result = await response.json();
+    
+    // Make sure the backend isn't returning an email field
+    const { email, ...rest } = result;
+    return rest;
   },
-
+  
   resetPassword: async (data: { token: string; password: string }) => {
     const response = await axios.post(`${BASE_URL}/reset-password`, data, {
       headers: {

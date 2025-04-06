@@ -30,19 +30,5 @@ const UserSchema: Schema<IUserDocument> = new Schema(
   { timestamps: true }
 );
 
-// Password hashing middleware
-UserSchema.pre<IUserDocument>("save", async function (next) {
-  if (this.isModified("password") || this.isNew) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-  next();
-});
-
-// Password comparison method
-UserSchema.methods.comparePassword = async function (enteredPassword: string) {
-  return bcrypt.compare(enteredPassword, this.password);
-};
-
-
 const User = mongoose.model<IUserDocument>("User", UserSchema);
 export default User;

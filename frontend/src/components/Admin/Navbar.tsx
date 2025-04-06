@@ -29,9 +29,23 @@ const Navbar = () => {
       socket.emit("joinAdminRoom", "admin");
     });
 
-    socket.on("newNotification", (notification: Notification) => {
+    socket.on("newNotification", (notification: any) => {
       console.log("New doctor registration notification:", notification);
-      setNotifications(prev => [notification, ...prev]);
+      if (
+        notification &&
+        typeof notification.message === "string" &&
+        typeof notification.createdAt === "string" &&
+        typeof notification.seen === "boolean"
+      ) {
+        const parsedNotification: Notification = {
+          message: notification.message,
+          createdAt: new Date(notification.createdAt),
+          seen: notification.seen,
+        };
+        setNotifications((prev) => [parsedNotification, ...prev]);
+      } else {
+        console.error("Invalid notification received:", notification);
+      }
     });
 
     socket.on("connect_error", (error) => {
@@ -61,7 +75,7 @@ const Navbar = () => {
     navigate("/admin/login");
   };
 
-  const unseenNotifications = notifications.filter(n => !n.seen).length;
+  const unseenNotifications = notifications.filter((n) => !n.seen).length;
 
   return (
     <div className="bg-white shadow-md p-4 flex justify-between items-center relative">

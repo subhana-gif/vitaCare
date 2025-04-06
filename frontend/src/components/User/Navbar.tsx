@@ -7,12 +7,38 @@ import { logout } from "../../redux/slices/authSlice";
 import { io, Socket } from "socket.io-client";
 import { RootState } from "../../redux/store";
 import { T } from "@tolgee/react";
+import { useTolgee } from "@tolgee/react";
 
+const LanguageSelector = () => {
+  const { changeLanguage, getLanguage } = useTolgee();
+  const currentLanguage = getLanguage() || localStorage.getItem("lang") || "en";
+  const [lang, setLang] = useState(currentLanguage);
+
+  return (
+    <select
+      value={lang}
+      onChange={(e) => {
+        const newLang = e.target.value;
+        changeLanguage(newLang);
+        localStorage.setItem("lang", newLang);
+        setLang(newLang);
+      }}
+      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2"
+    >
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="ml">മലയാളം</option>
+      <option value="ar">العربية</option>
+    </select>
+  );
+};
 interface Notification {
   message: string;
   createdAt: Date;
   seen: boolean;
 }
+
+
 
 const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
@@ -109,6 +135,10 @@ const Navbar: React.FC = () => {
         <a href="/myAppointments" className="text-gray-600 text-3xl hover:text-blue-600"> <T keyName="APPOINTMENTS">APPOINTMENTS</T></a>
         <a href="/about" className="text-gray-600 text-3xl hover:text-blue-600"><T keyName="ABOUT">ABOUT</T></a>
         <a href="/contact" className="text-gray-600 text-3xl hover:text-blue-600"><T keyName="CONTACT">CONTACT</T></a>
+      </div>
+
+      <div className="relative">
+      <LanguageSelector />
       </div>
 
       {/* Notification Icon and Dropdown */}

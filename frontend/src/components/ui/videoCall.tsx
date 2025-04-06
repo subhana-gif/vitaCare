@@ -116,18 +116,16 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     };
 
     pc.ontrack = (event) => {
-      const remoteStream = event.streams[0];
-      console.log("Received remote stream:", remoteStream.id);
-      
-      // Use the helper function to play the video
+      const remoteStream = new MediaStream();
+      event.streams[0].getTracks().forEach((track) => {
+        remoteStream.addTrack(track);
+      });
+    
       playVideo(remoteVideoRef.current, remoteStream);
-      
-      // Only update state if the stream is new
-      if (remoteStreamId !== remoteStream.id) {
-        setRemoteStreamId(remoteStream.id);
-      }
+      setRemoteStreamId(remoteStream.id);
     };
-    pc.onconnectionstatechange = () => {
+    
+      pc.onconnectionstatechange = () => {
       console.log("Connection state:", pc.connectionState);
       if (pc.connectionState === "disconnected" || 
         pc.connectionState === "failed" || 

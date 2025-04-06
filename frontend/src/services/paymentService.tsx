@@ -54,6 +54,7 @@ export const handlePaymentProcess = async (
 
     return new Promise((resolve) => {
       const options = {
+        key: "rzp_test_4MBYamMKeUifHI",
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Doctor Appointment",

@@ -132,7 +132,6 @@ export class PrescriptionService implements IPrescriptionService {
             .text(`   Dosage: ${medicine.dosage}`)
             .text(`   Duration: ${medicine.duration}`)
             .text(`   Timing: ${medicine.timing}`)
-            .text(`   Instructions: ${medicine.instructions || 'No special instructions'}`)
             .moveDown(0.5);
         });
 

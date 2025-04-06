@@ -8,7 +8,7 @@ const Layout: React.FC = () => {
     <>
       <Navbar />
       <main className="min-h-screen p-6">
-        <Outlet /> {/* This will render the child components based on the route */}
+        <Outlet />
       </main>
       <Footer />
     </>

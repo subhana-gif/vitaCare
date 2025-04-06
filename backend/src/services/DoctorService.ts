@@ -47,9 +47,10 @@ export class DoctorService implements IDoctorService {
     const doctor = await this.repository.create(doctorData);
 
     const resetToken = TokenService.generateToken(
-      { id: doctor._id, email: doctor.email },
+      { id: doctor._id, email: doctor.email,role:"admin" },
       "24h"
     );
+    console.log("set password token:",resetToken)
     const resetLink = `${
       process.env.FRONTEND_URL || "http://localhost:5173"
     }/doctors/set-password/${resetToken}`;

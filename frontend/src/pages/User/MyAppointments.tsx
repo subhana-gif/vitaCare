@@ -273,5 +273,3 @@ const MyAppointments: React.FC = () => {
 
 export default MyAppointments;
 
-// Add import at the top
-import PrescriptionView from '../../components/Prescription/PrescriptionView';

@@ -13,7 +13,7 @@ const doctorController = new DoctorController(doctorService);
 
 // Public routes
 router.post("/login", validate(),doctorController.loginDoctor.bind(doctorController));
-router.post("/signup",validate(), doctorController.registerDoctor.bind(doctorController));
+router.post("/signup", doctorController.registerDoctor.bind(doctorController));
 router.post("/forgot-password", doctorController.forgotPassword.bind(doctorController));
 router.post("/resetPassword", doctorController.resetPassword.bind(doctorController));
 router.post("/set-password", doctorController.setPassword.bind(doctorController));
@@ -23,7 +23,7 @@ router.get("/", doctorController.getAllDoctors.bind(doctorController));
 router.post("/add", validate(),verifyToken(["admin"]), uploadAndSaveToS3, doctorController.addDoctor.bind(doctorController));
 router.get("/profile", verifyToken(["user","doctor","admin"]), doctorController.getDoctorProfile.bind(doctorController));
 router.get("/:id", verifyToken(["admin","doctor","user"]), doctorController.getDoctorById.bind(doctorController));
-router.put("/:id", validate(),verifyToken(["admin","doctor"]), uploadAndSaveToS3, doctorController.updateDoctor.bind(doctorController));
+router.put("/:id",verifyToken(["admin","doctor"]), uploadAndSaveToS3, doctorController.updateDoctor.bind(doctorController));
 router.delete("/:id", verifyToken(["admin"]), doctorController.deleteDoctor.bind(doctorController));
 router.post("/approval", verifyToken(["admin"]), doctorController.approveDoctor.bind(doctorController));
 

@@ -1,13 +1,10 @@
 import { Server, Socket } from "socket.io";
 
 export default (io: Server) => {
-  // Store active users (socketId -> userId) for easier lookup
   const users: { [key: string]: string } = {};
 
   io.on("connection", (socket: Socket) => {
-    console.log("User connected:", socket.id);
 
-    // --- Existing Chat Logic ---
     socket.on("joinRoom", ({ userId, doctorId }) => {
       const roomId = [userId, doctorId].sort().join("_");
       socket.join(roomId);
@@ -32,13 +29,11 @@ export default (io: Server) => {
     });
 
     socket.on("messageDeleted", async ({ messageId, userId, doctorId }) => {
-      console.log(`Received messageDeleted: messageId=${messageId}, userId=${userId}, doctorId=${doctorId}`);
       if (!userId || !doctorId) {
         console.error("Invalid userId or doctorId for messageDeleted event");
         return;
       }
       const roomId = [userId, doctorId].sort().join("_");
-      console.log(`Message ${messageId} deleted, broadcasting to room: ${roomId}`);
       io.to(roomId).emit("messageDeleted", { messageId });
     });
 
@@ -50,7 +45,6 @@ export default (io: Server) => {
 
     socket.on("callUser", ({ to, from, offer }) => {
       const targetSocketId = Object.keys(users).find((key) => users[key] === to);
-      console.log(`Call from ${from} (socket: ${socket.id}) to ${to} (socket: ${targetSocketId})`);
       if (targetSocketId) {
         io.to(targetSocketId).emit("incomingCall", { from, offer, socketId: socket.id });
         socket.emit("callTargetSocket", { targetSocketId });
@@ -60,12 +54,10 @@ export default (io: Server) => {
     });
     
     socket.on("iceCandidate", ({ to, candidate }) => {
-      console.log(`ICE candidate from ${socket.id} to ${to}`);
       io.to(to).emit("iceCandidate", { candidate });
     });
     
     socket.on("acceptCall", ({ to, answer }) => {
-      console.log(`Answer from ${socket.id} to ${to}`);
       io.to(to).emit("callAccepted", { answer });
     });
     
@@ -83,10 +75,7 @@ export default (io: Server) => {
     socket.on("disconnect", () => {
       const userId = users[socket.id];
       delete users[socket.id];
-      io.emit("userList", Object.values(users)); // Optional: Update user list
-      console.log("User disconnected:", socket.id);
-
-      // Notify the other party if a call was active (optional)
+      io.emit("userList", Object.values(users)); 
       if (userId) {
         const otherSocketId = Object.keys(users).find(
           (key) => users[key] !== userId

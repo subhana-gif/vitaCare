@@ -35,9 +35,14 @@ const extractTranslations = (filePath: string) => {
   while ((match = TRANSLATION_REGEX.exec(content)) !== null) {
     const key = match[1];
     if (!(key in translations)) {
-      translations[key] = { en: key, fr: "" }; // ✅ Store English key, mark French as empty
+      translations[key] = { 
+        en: key, 
+        fr: "", 
+        ml: "", 
+        ar: "" 
+      };
     }
-  }
+    }
 };
 
 // ✅ Translate text into multiple languages (English & French)

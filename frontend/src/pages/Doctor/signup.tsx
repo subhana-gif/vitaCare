@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { doctorService } from "../../services/doctorService";
 import { toast } from "react-toastify";
 import * as yup from "yup";
@@ -10,11 +10,13 @@ interface DoctorSignupData {
   password: string;
 }
 
-// Yup validation schema
 const doctorSchema = yup.object().shape({
   name: yup.string().required("Name is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
-  password: yup.string().required("Password is required").min(6, "Password must be at least 6 characters"),
+  password: yup
+    .string()
+    .required("Password is required")
+    .min(6, "Password must be at least 6 characters"),
 });
 
 const DoctorSignup: React.FC = () => {
@@ -43,7 +45,7 @@ const DoctorSignup: React.FC = () => {
 
       const data = await doctorService.signupDoctor(doctor);
       toast.success("Registration successful! Please log in.");
-      navigate("/doctors/login");  // 🚨 Redirect to login after success
+      navigate("/doctors/login");
     } catch (error) {
       if (error instanceof yup.ValidationError) {
         const validationErrors: { [key: string]: string } = {};
@@ -54,7 +56,7 @@ const DoctorSignup: React.FC = () => {
         });
         setErrors(validationErrors);
       } else {
-        toast.error("Something went wrong");
+        toast.error(error.response?.data?.message || "Registration failed");
       }
     } finally {
       setLoading(false);
@@ -62,49 +64,89 @@ const DoctorSignup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
-        <h2 className="text-3xl font-extrabold text-center text-blue-600">Doctor Signup</h2>
+    <div className="flex items-center justify-center min-h-screen bg-blue-50">
+      <div className="flex w-full max-w-5xl bg-white shadow-xl rounded-lg overflow-hidden">
+        {/* Left Side - Branding */}
+        <div className=" md:block w-1/2 bg-blue-600 p-12 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-6xl font-bold text-white mb-6">VitaCare</h1>
+            <div className="text-9xl py-24">🩺</div>
+            <p className="text-white text-xl">Join our network of healthcare professionals</p>
+          </div>
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={doctor.name}
-            onChange={handleChange}
-            className="p-2 border rounded w-full"
-          />
-          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+        {/* Right Side - Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-12">
+          <div className="mb-8">
+            <h2 className="text-4xl font-bold text-gray-800 mb-2">Doctor Registration</h2>
+            <p className="text-gray-600 text-lg">Create your professional account</p>
+          </div>
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={doctor.email}
-            onChange={handleChange}
-            className="p-2 border rounded w-full"
-          />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-gray-700 text-lg font-medium mb-2">Full Name</label>
+              <input
+                type="text"
+                name="name"
+                value={doctor.name}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  errors.name ? "border-red-300" : "border-gray-300"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={doctor.password}
-            onChange={handleChange}
-            className="p-2 border rounded w-full"
-          />
-          {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+            <div>
+              <label className="block text-gray-700 text-lg font-medium mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={doctor.email}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  errors.email ? "border-red-300" : "border-gray-300"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                placeholder="doctor@example.com"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
 
-          <button
-            type="submit"
-            className="bg-blue-600 text-white p-3 rounded w-full"
-            disabled={loading}
-          >
-            {loading ? "Signing up..." : "Sign Up"}
-          </button>
-        </form>
+            <div>
+              <label className="block text-gray-700 text-lg font-medium mb-2">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={doctor.password}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  errors.password ? "border-red-300" : "border-gray-300"
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                placeholder="At least 6 characters"
+              />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full bg-blue-600 text-white py-3 text-xl font-medium rounded-lg hover:bg-blue-700 transition duration-300 ${
+                loading ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+            >
+              {loading ? "Registering..." : "Create Account"}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Already have an account?{" "}
+              <Link to="/doctors/login" className="text-blue-600 hover:underline">
+                Log in
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

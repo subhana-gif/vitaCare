@@ -112,8 +112,20 @@ class UserController {
       if (!userId) {
         throw new Error("User ID is missing");
       }
-      const updatedData = req.body;
-      const user = await this.userService.updateUserProfile(userId, updatedData);
+      const { name, phone, address, gender, dob } = req.body;
+      const updatedData = {
+        name,
+        phone,
+        address,
+        gender,
+        dob
+      };
+      
+      // Filter out undefined values
+      const filteredData = Object.fromEntries(
+        Object.entries(updatedData).filter(([_, v]) => v !== undefined)
+      );      
+      const user = await this.userService.updateUserProfile(userId, filteredData);
       res.status(200).json(user);
     } catch (error) {
       next(error);

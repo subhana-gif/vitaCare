@@ -35,7 +35,7 @@ const SetPassword: React.FC = () => {
       await passwordSchema.validate({ password, confirmPassword }, { abortEarly: false });
       setErrors({});
       setLoading(true);
-      console.log("Token params:", token); // ✅ Should now display the correct token
+      console.log("Token:", token); 
       
       if (!token) {
         toast.error("Invalid token. Please try again.");

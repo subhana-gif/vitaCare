@@ -1,86 +1,224 @@
 {
   "Home": {
-    "en": "Home",
-    "fr": "Maison"
+    "en": "HOME",
+    "fr": "Maison",
+    "ml": "ഹോം പേജ്",
+    "ar": "الصفحة الرئيسية"
   },
   "ALL_DOCTORS": {
     "en": "ALL DOCTORS",
-    "fr": "tous les médecins"
+    "fr": "tous les médecins",
+    "ml": "എല്ലാ ഡോക്ടർമാരും",
+    "ar": "جميع الأطباء"
   },
   "APPOINTMENTS": {
     "en": "APPOINTMENTS",
-    "fr": "Nominations"
+    "fr": "Nominations",
+    "ml": "നിയമനങ്ങൾ",
+    "ar": "المواعيد"
   },
   "ABOUT": {
     "en": "ABOUT",
-    "fr": "À PROPOS"
+    "fr": "À PROPOS",
+    "ml": "കുറിച്ച്",
+    "ar": "حول"
   },
   "CONTACT": {
     "en": "CONTACT",
-    "fr": "CONTACT"
+    "fr": "CONTACT",
+    "ml": "ബന്ധപ്പെടുക",
+    "ar": "اتصل"
   },
   "Notifications": {
     "en": "Notifications",
-    "fr": "Notifications"
+    "fr": "Notifications",
+    "ml": "അറിയിപ്പുകൾ",
+    "ar": "الإشعارات"
   },
   "No_notifications": {
     "en": "No notifications",
-    "fr": "Aucune notification"
+    "fr": "Aucune notification",
+    "ml": "അറിയിപ്പുകളൊന്നുമില്ല",
+    "ar": "لا إشعارات"
   },
   "Profile": {
     "en": "Profile",
-    "fr": "Profil"
+    "fr": "Profil",
+    "ml": "പ്രൊഫൈൽ",
+    "ar": "الملف الشخصي"
   },
   "Logout": {
     "en": "Logout",
-    "fr": "Déconnexion"
+    "fr": "Déconnexion",
+    "ml": "പുറത്തുകടക്കുക",
+    "ar": "تسجيل الخروج"
   },
-  "general_physician": {
+  "general physician": {
     "en": "General Physician",
-    "fr": "Médecin Généraliste"
+    "fr": "Médecin Généraliste",
+    "ml": "ജനറൽ ഫിസീഷൻ",
+    "ar": "الطبيب العام"
   },
   "gynecologist": {
     "en": "Gynecologist",
-    "fr": "Gynécologue"
+    "fr": "Gynécologue",
+    "ml": "ഗൈനക്കോളജിസ്റ്റ്",
+    "ar": "طبيبة نساء"
   },
   "dermatologist": {
     "en": "Dermatologist",
-    "fr": "Dermatologue"
+    "fr": "Dermatologue",
+    "ml": "ത്വക് രോഗവിദഗ്ധൻ",
+    "ar": "طبيب الجلد"
   },
   "pediatrician": {
     "en": "Pediatrician",
-    "fr": "Pédiatre"
+    "fr": "Pédiatre",
+    "ml": "കുട്ടികളുടെ ഡോക്ടർ",
+    "ar": "طبيب أطفال"
   },
   "neurologist": {
     "en": "Neurologist",
-    "fr": "Neurologue"
+    "fr": "Neurologue",
+    "ml": "ന്യുറോളജിസ്റ്റ്",
+    "ar": "طبيب أعصاب"
   },
   "gastroenterologist": {
     "en": "Gastroenterologist",
-    "fr": "Gastro-entérologue"
+    "fr": "Gastro-entérologue",
+    "ml": "ഗാസ്‌ട്രോഎന്ററോളജിസ്റ്റ്",
+    "ar": "طبيب الجهاز الهضمي"
   },
   "Book_Appointment_With_Trusted_Doctors": {
     "en": "Book Appointment With Trusted Doctors",
-    "fr": "Prendre rendez-vous avec des médecins de confiance"
+    "fr": "Prendre rendez-vous avec des médecins de confiance",
+    "ml": "വിശ്വസനീയരായ ഡോക്ടർമാരുമായി നിയമനം ബുക്ക് ചെയ്യുക",
+    "ar": "احجز موعدًا مع أطباء موثوقين"
   },
   "Simply_browse_through_our_extensive_list_of_trusted_doctors,": {
     "en": "Simply browse through our extensiven list of trusted doctors,",
-    "fr": "Parcourez simplement notre vaste liste de médecins de confiance,"
+    "fr": "Parcourez simplement notre vaste liste de médecins de confiance,",
+    "ml": "നമ്മുടെ വിശാലമായ വിശ്വസനീയ ഡോക്ടർമാരുടെ പട്ടിക തിരയുക,",
+    "ar": "تصفح قائمتنا الواسعة من الأطباء الموثوقين،"
   },
   "schedule_your_appointment_hassle_free.": {
     "en": "schedule your appointment hassle free.",
-    "fr": "Planifiez votre rendez-vous en toute simplicité."
+    "fr": "Planifiez votre rendez-vous en toute simplicité.",
+    "ml": "നിങ്ങളുടെ നിയമനം എളുപ്പത്തിൽ ഷെഡ്യൂൾ ചെയ്യൂ.",
+    "ar": "قم بجدولة موعدك بسهولة."
   },
   "Book appointment →": {
     "en": "Book appointment →",
-    "fr": "Rendez-vous du livre →"
+    "fr": "Rendez-vous du livre →",
+    "ml": "നിയമനം ബുക്ക് ചെയ്യുക →",
+    "ar": "احجز موعدًا →"
   },
   "Find by Speciality": {
     "en": "Find by Speciality",
-    "fr": "Trouver par spécialité"
+    "fr": "Trouver par spécialité",
+    "ml": "വിശേഷത അനുസരിച്ച് കണ്ടെത്തുക",
+    "ar": "ابحث حسب التخصص"
   },
   "Simply browse through our extensive list of trusted doctors, schedule\r\n          your appointment hassle-free.": {
     "en": "Simply browse through our extensive list of trusted doctors, schedule\r\n          your appointment hassle-free.",
-    "fr": "Parcourez simplement notre vaste liste de médecins de confiance, calendrier\r\n Votre rendez-vous sans tracas."
+    "fr": "Parcourez simplement notre vaste liste de médecins de confiance, calendrier\r\n Votre rendez-vous sans tracas.",
+    "ml": "നമ്മുടെ വിശാലമായ വിശ്വസനീയ ഡോക്ടർമാരുടെ പട്ടിക തിരയുക, നിങ്ങളുടെ നിയമനം എളുപ്പത്തിൽ ഷെഡ്യൂൾ ചെയ്യുക.",
+    "ar": "تصفح قائمتنا الواسعة من الأطباء الموثوقين، وجدول موعدك بسهولة."
+  },
+  "our patients say": {
+    "en": "our patients say",
+    "fr": "Nos patients disent",
+    "ar": "آراء مرضانا",
+    "ml": "ഞങ്ങളുടെ രോഗികൾ പറയുന്നു"
+  },
+  "Read testimonials from patients who have used our platform to connect with healthcare professionals.": {
+    "en": "Read testimonials from patients who have used our platform to connect with healthcare professionals.",
+    "fr": "Lisez les témoignages de patients qui ont utilisé notre plateforme pour se connecter avec les professionnels de la santé.",
+    "ar": "اقرأ شهادات المرضى الذين استخدموا منصتنا للتواصل مع المتخصصين في الرعاية الصحية.",
+    "ml": "ആരോഗ്യപരിചരണ വിദഗ്ധരുമായി ബന്ധപ്പെടാൻ നമ്മുടെ പ്ലാറ്റ്‌ഫോം ഉപയോഗിച്ച രോഗികളുടെ അഭിപ്രായങ്ങൾ വായിക്കുക."
+  },
+  "Sarah Johnson": {
+    "en": "Sarah Johnson",
+    "fr": "Sarah Johnson",
+    "ar": "سارة جونسون",
+    "ml": "സാറ ജോൺസൺ"
+  },
+  "VitaCare made it so easy to find a specialist. The booking process was seamless and I got an appointment the same week!": {
+    "en": "VitaCare made it so easy to find a specialist. The booking process was seamless and I got an appointment the same week!",
+    "fr": "VitaCare a rendu la recherche d’un spécialiste très facile. Le processus de réservation était fluide et j’ai obtenu un rendez-vous la même semaine !",
+    "ar": "جعلت VitaCare من السهل جدًا العثور على أخصائي. كانت عملية الحجز سلسة وحصلت على موعد في نفس الأسبوع!",
+    "ml": "ഒരു വിദഗ്ധനെ കണ്ടെത്തുന്നത് VitaCare വഴി വളരെ എളുപ്പമാക്കി. ബുക്കിംഗ് പ്രക്രിയ പെട്ടെന്നായിരുന്നു, ഞാന് ആഴ്ചക്കുള്ളില്‍ തന്നെ സമയം നേടി!"
+  },
+  "Michael Chen": {
+    "en": "Michael Chen",
+    "fr": "Michael Chen",
+    "ar": "مايكل تشين",
+    "ml": "മൈക്കേൽ ചേൻ"
+  },
+  "I've been using VitaCare for my family's medical needs for over a year. Their doctors are professional and the platform is user-friendly.": {
+    "en": "I've been using VitaCare for my family's medical needs for over a year. Their doctors are professional and the platform is user-friendly.",
+    "fr": "J'utilise VitaCare pour les besoins médicaux de ma famille depuis plus d'un an. Leurs médecins sont professionnels et la plateforme est conviviale.",
+    "ar": "أستخدم VitaCare لتلبية احتياجات عائلتي الطبية منذ أكثر من عام. أطباؤهم محترفون والمنصة سهلة الاستخدام.",
+    "ml": "ഒരു വര്‍ഷത്തിലധികമായി കുടുംബത്തിന്റെ ആരോഗ്യകാര്യങ്ങൾക്ക് ഞാൻ VitaCare ഉപയോഗിക്കുന്നു. അവരുടെ ഡോക്ടർമാർ നിപുണരും പ്ലാറ്റ്ഫോം ഉപയോക്തൃ സൗഹൃദവുമാണ്."
+  },
+  "Elena Rodriguez": {
+    "en": "Elena Rodriguez",
+    "fr": "Elena Rodriguez",
+    "ar": "إلينا رودريغيز",
+    "ml": "എലീന റോഡ്രിഗസ്"
+  },
+  "The follow-up care and reminders are excellent. My doctor was able to address all my concerns during the video consultation.": {
+    "en": "The follow-up care and reminders are excellent. My doctor was able to address all my concerns during the video consultation.",
+    "fr": "Le suivi et les rappels sont excellents. Mon médecin a pu répondre à toutes mes préoccupations lors de la consultation vidéo.",
+    "ar": "الرعاية والمتابعة والتذكيرات ممتازة. تمكن طبيبي من معالجة جميع مخاوفي أثناء الاستشارة بالفيديو.",
+    "ml": "ഫോളോ അപ്പ് കെയറും റിമൈൻഡറുകളും അതിമനോഹരമാണ്. വീഡിയോ കൺസൾട്ടേഷനിൽ എന്റെ എല്ലാ സംശയങ്ങളും ഡോക്ടർ പരിഹരിച്ചു."
+  },
+  "🩺 Latest Health Articles": {
+    "en": "🩺 Latest Health Articles",
+    "fr": "🩺 Derniers articles de santé",
+    "ar": "🩺 أحدث مقالات الصحة",
+    "ml": "🩺 പുതിയ ആരോഗ്യ ലേഖനങ്ങൾ"
+  },
+  "Loading articles...": {
+    "en": "Loading articles...",
+    "fr": "Chargement des articles...",
+    "ar": "جارٍ تحميل المقالات...",
+    "ml": "ലേഖനങ്ങൾ ലോഡ് ചെയ്യുന്നു..."
+  },
+  "Read More →": {
+    "en": "Read More →",
+    "fr": "Lire la suite →",
+    "ar": "اقرأ المزيد →",
+    "ml": "കൂടുതൽ വായിക്കുക →"
+  },
+  "COMPANY": {
+    "en": "COMPANY",
+    "fr": "ENTREPRISE",
+    "ml": "കമ്പനി",
+    "ar": "الشركة"
+  },
+  "About us": {
+    "en": "About us",
+    "fr": "À propos de nous",
+    "ml": "ഞങ്ങളേക്കുറിച്ച്",
+    "ar": "معلومات عنا"
+  },
+  "Delivery": {
+    "en": "Delivery",
+    "fr": "Livraison",
+    "ml": "ഡെലിവറി",
+    "ar": "التوصيل"
+  },
+  "Privacy policy": {
+    "en": "Privacy policy",
+    "fr": "Politique de confidentialité",
+    "ml": "സ്വകാര്യതാനയം",
+    "ar": "سياسة الخصوصية"
+  },
+  "GET IN TOUCH": {
+    "en": "GET IN TOUCH",
+    "fr": "ENTRER EN CONTACT",
+    "ml": "ബന്ധപ്പെടുക",
+    "ar": "ابقى على تواصل"
   }
 }

@@ -107,9 +107,9 @@ const setPassword = async (token: string, password: string): Promise<string> => 
   const signupDoctor = async (doctorData: { name: string; email: string; password: string }) => {
     const response = await axios.post<{ message: string; doctorId: string }>(
       `${API_BASE_URL}/signup`,
-      doctorData, // Now sending as JSON, not FormData
+      doctorData,
       {
-        headers: { "Content-Type": "application/json" }, // Updated header for JSON data
+        headers: { "Content-Type": "application/json" },
       }
     );
     return response.data;

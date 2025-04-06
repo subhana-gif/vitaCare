@@ -128,7 +128,8 @@ const HomePage: React.FC = () => {
       </p>
     </div>
   ))}
-</div>;      </div>
+</div>;      
+</div>
 
 
       <div className="max-w-7xl mx-auto px-4 py-20">
@@ -138,10 +139,13 @@ const HomePage: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-bold mb-3">What Our Patients Say</h2>
+          <h2 className="text-4xl font-bold mb-3">
+            <T keyName="our patients say">What Our Patients Say</T>
+          </h2>
           <p className="text-gray-600 text-xl max-w-3xl mx-auto">
-            Read testimonials from patients who have used our platform to connect with healthcare professionals.
-          </p>
+            <T keyName="Read testimonials from patients who have used our platform to connect with healthcare professionals.">
+              Read testimonials from patients who have used our platform to connect with healthcare professionals.
+            </T>  </p>
         </motion.div>
         
         <div className="relative overflow-hidden">
@@ -155,7 +159,9 @@ const HomePage: React.FC = () => {
                 <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
                   <div className="flex items-center mb-6">
                     <div>
-                      <h4 className="font-bold text-xl">{testimonial.name}</h4>
+                    <h4 className="font-bold text-xl">
+                      <T keyName={testimonial.name} />
+                    </h4>
                       <div className="flex text-yellow-400 mt-1">
                         {[...Array(5)].map((_, i) => (
                           <Star 
@@ -168,7 +174,9 @@ const HomePage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-600 text-lg italic">"{testimonial.text}"</p>
+                  <p className="text-gray-600 text-lg italic">
+                    "<T keyName={testimonial.text} />"
+                  </p>
                 </div>
               </div>
             ))}
@@ -187,10 +195,16 @@ const HomePage: React.FC = () => {
       </div>
 
       <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">🩺 Latest Health Articles</h1>
+      <h1 className="text-3xl font-bold mb-4">
+        <T keyName="🩺 Latest Health Articles">
+        🩺 Latest Health Articles
+        </T></h1>
 
       {loading ? (
-        <p>Loading articles...</p>
+        <p>
+          <T keyName="Loading articles...">
+          Loading articles...
+          </T></p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {articles.map((article, index) => (
@@ -208,7 +222,7 @@ const HomePage: React.FC = () => {
                 rel="noopener noreferrer"
                 className="text-blue-500 mt-2 block"
               >
-                Read More →
+                <T keyName="Read More →" />
               </a>
             </div>
           ))}
@@ -228,24 +242,24 @@ const HomePage: React.FC = () => {
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-xl mb-6">COMPANY</h3>
+              <h3 className="font-bold text-xl mb-6"><T keyName="COMPANY"/></h3>
               <div className="space-y-4">
                 <p className="text-gray-600 text-lg hover:text-blue-600 cursor-pointer">
-                  Home
+                  <T keyName="Home"/>
                 </p>
                 <p className="text-gray-600 text-lg hover:text-blue-600 cursor-pointer">
-                  About us
+                <T keyName="About us"/>
                 </p>
                 <p className="text-gray-600 text-lg hover:text-blue-600 cursor-pointer">
-                  Delivery
+                <T keyName="Delivery"/>
                 </p>
                 <p className="text-gray-600 text-lg hover:text-blue-600 cursor-pointer">
-                  Privacy policy
+                <T keyName="Privacy policy"/>
                 </p>
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-xl mb-6">GET IN TOUCH</h3>
+              <h3 className="font-bold text-xl mb-6"><T keyName="GET IN TOUCH"/></h3>
               <div className="space-y-4">
                 <p className="text-gray-600 text-lg">+0-000-000-000</p>
                 <p className="text-gray-600 text-lg">vitaCare@email.com</p>

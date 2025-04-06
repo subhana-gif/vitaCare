@@ -15,13 +15,19 @@ const translations = {
   fr: Object.fromEntries(
     Object.entries(translationsRaw).map(([key, value]) => [key, value.fr])
   ),
+  ml: Object.fromEntries(
+    Object.entries(translationsRaw).map(([key, value]) => [key, value.ml])
+  ),
+  ar: Object.fromEntries(
+    Object.entries(translationsRaw).map(([key, value]) => [key, value.ar])
+  ),
 };
 
 const tolgee = Tolgee()
   .use(DevTools())
   .use(FormatSimple())
   .init({
-    availableLanguages: ["en", "fr"],
+    availableLanguages: ["en", "fr","ml","ar"],
     defaultLanguage: localStorage.getItem("lang") || "en", // Get from storage
     fallbackLanguage: "en",
     staticData: translations, // Make sure translations are structured correctly

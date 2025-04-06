@@ -62,7 +62,7 @@ const Profile: React.FC = () => {
 
         setFormData({
           name: profileData.name || "",
-          email: profileData.email || "",
+          email: profileData.email || "", // Ensure email is set from profile data
           phone: profileData.phone || "",
           address: profileData.address || "",
           gender: profileData.gender || "",
@@ -83,17 +83,22 @@ const Profile: React.FC = () => {
   }, [authUser, accessToken]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    // Prevent changes to email field
+    if (name === "email") return;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
+  
     const { name, phone, address, gender, dob } = formData;
-
+  
     try {
       const response = await userService.updateProfile(accessToken as string, {
         name: String(name),
@@ -102,13 +107,24 @@ const Profile: React.FC = () => {
         gender: String(gender),
         dob: String(dob),
       });
-
-      setUser(response);
-      setFormData({
-        ...formData,
+  
+      // Update user state with the response, but keep the original email
+      setUser({
         ...response,
+        email: user?.email || "" // Preserve the original email
       });
-
+  
+      // Update formData but keep the original email
+      setFormData(prev => ({
+        ...prev,
+        name: response.name || "",
+        phone: response.phone || "",
+        address: response.address || "",
+        gender: response.gender || "",
+        dob: response.dob || "",
+        // email is not changed
+      }));
+  
       setIsEditing(false);
       toast.success("Profile updated successfully!");
     } catch (err) {
@@ -116,7 +132,7 @@ const Profile: React.FC = () => {
       console.error("Error updating profile:", err);
     }
   };
-
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -239,8 +255,8 @@ const Profile: React.FC = () => {
                       type="email"
                       name="email"
                       value={formData.email}
-                      className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-                      disabled
+                      readOnly
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                     />
                     <p className="text-sm text-gray-500 mt-1 italic">Email cannot be changed</p>
                   </div>

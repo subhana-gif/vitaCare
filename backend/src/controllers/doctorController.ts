@@ -16,20 +16,26 @@ export class DoctorController {
     try {
       const { name, email, password } = req.body;
       const doctor = await this.doctorService.registerDoctor({ name, email, password });
-
-      await notificationService.createNotification({
+  
+      // Create the notification and get the result
+      const notification = await notificationService.createNotification({
         recipientId: doctor._id?.toString() || "",
         recipientRole: "admin",
         message: `New doctor ${doctor.name} signed up!`,
       });
-
-      (req as any).io.to("adminRoom").emit("newNotification");
+  
+      // Emit the notification to the admin room
+      (req as any).io.to("adminRoom").emit("newNotification", {
+        message: notification.message,
+        createdAt: notification.createdAt || new Date(), // Use current date if not provided
+        seen: false, // Default to false if not provided
+      });
+  
       res.status(201).json({ message: "Doctor registered successfully", doctor });
     } catch (error) {
       this.handleError(res, error, "Error registering doctor");
     }
   }
-
   async loginDoctor(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
@@ -225,9 +231,11 @@ export class DoctorController {
   async setPassword(req: Request, res: Response): Promise<void> {
     try {
       const { token, password } = req.body;
+      console.log("token for setpassword:",token)
       await this.doctorService.setPassword(token, password);
       res.status(200).json({ message: "Password set successfully" });
     } catch (error) {
+      console.log("error setting password:",error)
       this.handleError(res, error, "Error setting password");
     }
   }

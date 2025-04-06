@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import SetPassword from "../pages/Admin/SetPassword";
+import SetPassword from "../pages/Doctor/SetPassword";
 import DoctorLayout from "../components/Doctor/layout";
 import DoctorDashboard from "../pages/Doctor/Dashboard";
 import DoctorAppointments from "../pages/Doctor/Appointments";

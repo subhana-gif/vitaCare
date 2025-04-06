@@ -12,42 +12,42 @@ export interface INotification extends Document {
 
 const NotificationSchema = new Schema<INotification>(
   {
-    recipientId: { 
-      type: Schema.Types.ObjectId, 
-      required: [true, "Recipient ID is required"], 
-      refPath: "recipientRole" // Dynamically reference based on role
-    },
-    recipientRole: { 
-      type: String, 
-      enum: ["user", "doctor", "admin"], 
-      required: [true, "Recipient role is required"]
-    },
-    message: { 
-      type: String, 
-      required: [true, "Message cannot be empty"], 
-      minlength: [3, "Message must be at least 3 characters long"], 
-      maxlength: [500, "Message cannot exceed 500 characters"]
-    },
+    recipientId: { type: Schema.Types.ObjectId, required: true },
+    recipientRole: { type: String, enum: ["user", "doctor", "admin"], required: true },
+    message: { type: String, required: true },
     isRead: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
 
-// Ensure recipientId matches the recipientRole model
-NotificationSchema.pre<INotification>("save", async function (next) {
-  const roleModelMap: Record<Role, string> = {
-    user: "User",
-    doctor: "Doctor",
-    admin: "Admin"
-  };
+// Pre-save middleware to limit notifications to 5 per recipientId
+NotificationSchema.pre("save", async function (this: INotification, next) {
+  try {
+    const notificationModel = this.constructor as mongoose.Model<INotification>;
 
-  const modelName = roleModelMap[this.recipientRole];
-  const exists = await mongoose.model(modelName).exists({ _id: this.recipientId });
+    // Count existing notifications for this recipientId
+    const notificationCount = await notificationModel.countDocuments({
+      recipientId: this.recipientId,
+    });
 
-  if (!exists) {
-    return next(new Error(`${this.recipientRole} with ID ${this.recipientId} does not exist`));
+    // If there are 5 or more, delete the oldest one
+    if (notificationCount >= 5) {
+      const oldestNotification = await notificationModel
+        .findOne({ recipientId: this.recipientId })
+        .sort({ createdAt: 1 }); // Oldest first
+
+      if (oldestNotification) {
+        await notificationModel.deleteOne({ _id: oldestNotification._id });
+        console.log(`Deleted oldest notification: ${oldestNotification._id}`);
+      }
+    }
+
+    next(); // Proceed with saving the new notification
+  } catch (error) {
+    console.error("Error in pre-save hook:", error);
+    next(error instanceof Error ? error : new Error("Failed in pre-save hook"));
   }
-  next();
 });
 
 const Notification = mongoose.model<INotification>("Notification", NotificationSchema);

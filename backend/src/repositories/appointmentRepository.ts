@@ -34,7 +34,7 @@ async getAppointmentsByPatient(patientId: string): Promise<IAppointment[]> {
   return Appointment.find({ patientId })
     .populate({
       path: 'doctorId',
-      select: 'name specialty imageUrl address'
+      select: 'name speciality imageUrl address'
     })
     .exec();
 }
