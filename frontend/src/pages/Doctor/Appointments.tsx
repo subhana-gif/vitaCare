@@ -8,6 +8,7 @@ import AppointmentDetailsModal from "./AppointmentDetailsModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import PrescriptionModal from "./PrescriptionModal";
+import { appointmentService } from "../../services/appointmentService";
 
 interface Patient {
   _id: string;
@@ -60,19 +61,15 @@ const AppointmentPage: React.FC = () => {
 
   useEffect(() => {
     const fetchAppointments = async () => {
+      if(!token)return
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5001/api/appointments/doctor", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setAppointments(response.data.appointments);
-        setFilteredAppointments(response.data.appointments);
-        setTotalPages(Math.ceil(response.data.appointments.length / appointmentsPerPage));
+        const data = await appointmentService.fetchAppointmentsDoctor(token);
+        setAppointments(data.appointments);
+        setFilteredAppointments(data.appointments);
+        setTotalPages(Math.ceil(data.appointments.length / appointmentsPerPage));
         setError(null);
       } catch (error) {
-        console.error("Error fetching appointments:", error);
         setError("Failed to fetch appointments. Please try again later.");
       } finally {
         setLoading(false);
@@ -114,32 +111,19 @@ const AppointmentPage: React.FC = () => {
   };
 
   const checkPrescriptionExists = async (appointmentId: string) => {
+    if(!token)return
     try {
-      const response = await axios.get(
-        `http://localhost:5001/api/prescriptions/${appointmentId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-  
-      // Log the prescription data for debugging
-      console.log("Existing prescription data:", response.data);
-  
-      // Return the prescription data
-      return response.data;
-    } catch (error) {
+      const prescription = await appointmentService.checkPrescriptionExists(appointmentId, token);
+      return prescription;
+      } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 404) {
-          // No prescription exists for this appointment
-          console.log("No prescription found for appointment ID:", appointmentId);
           return null;
         } else {
-          // Handle other Axios errors
           console.error("Error fetching prescription:", error.message);
           throw new Error(`Failed to fetch prescription: ${error.message}`);
         }
       } else {
-        // Handle non-Axios errors
         console.error("Unexpected error:", error);
         throw new Error("An unexpected error occurred while fetching prescription.");
       }
@@ -219,33 +203,24 @@ const handleGivePrescription = async (appointment: Appointment) => {
               MySwal.showLoading();
             }
           });
+          const paymentId = appointment.paymentId
+          if(!paymentId || !token)return
           
-          const refundResponse = await axios.post(
-            "http://localhost:5001/api/payment/refund",
-            {
-              appointmentId,
-              paymentId: appointment.paymentId,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-
-          if (!refundResponse.data.success) {
-            throw new Error(refundResponse.data.message || "Refund failed");
+          const refundResponse = await appointmentService.refundPayment(appointmentId, paymentId, token);
+          
+          if (!refundResponse.success || !refundResponse.refundDetails) {
+            console.error("Invalid refund response:", refundResponse);
+            throw new Error(refundResponse.message || "Refund failed or missing data.");
           }
-
-          const refundDetails = refundResponse.data.refundDetails;
           
+          const refundDetails = refundResponse.refundDetails;
+                    
           // Enhanced success modal
           await MySwal.fire({
             title: '<span class="text-green-600">Refund Successful</span>',
             html: `
               <div class="text-left p-2">
                 <div class="flex justify-center mb-5">
-                  <div class="bg-green-100 rounded-full p-3 w-16 h-16 flex items-center justify-center">
-                    <i class="fas fa-check-circle text-green-500 text-3xl"></i>
-                  </div>
                 </div>
                 <div class="border rounded-lg p-4 bg-gray-50">
                   <div class="grid grid-cols-2 gap-2">
@@ -315,15 +290,10 @@ const handleGivePrescription = async (appointment: Appointment) => {
           return;
         }
       }
+      if(!token)return
 
       // Update appointment status
-      const response = await axios.put(
-        `http://localhost:5001/api/appointments/${appointmentId}/status`,
-        { status: newStatus },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await appointmentService.updateAppointmentStatus(appointmentId, newStatus, token);
 
       setAppointments((prevAppointments) =>
         prevAppointments.map((appt) =>
@@ -340,20 +310,6 @@ const handleGivePrescription = async (appointment: Appointment) => {
     }
   };  
 
-  const getStatusBadgeClass = (status: string) => {
-    switch(status.toLowerCase()) {
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getPaymentBadgeClass = (status: string) => {
     switch(status.toLowerCase()) {

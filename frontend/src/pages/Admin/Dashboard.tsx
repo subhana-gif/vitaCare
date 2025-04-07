@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { dashboardService } from "../../services/dashboardService";
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -115,76 +116,47 @@ const AdminDashboard: React.FC = () => {
   const [topPatients, setTopPatients] = useState<TopEntityData[]>([]);
   const token = localStorage.getItem("adminToken")
   
+
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!token) return;
+  
       try {
         setIsLoading(true);
-        
-        // Fetch summary statistics
-        const summaryRes = await axios.get(`http://localhost:5001/api/dashboard/summary?range=${dateRange}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setSummaryStats(summaryRes.data);
-        
-        // Fetch appointment status distribution
-        const appointmentStatusRes = await axios.get(`http://localhost:5001/api/dashboard/appointment-status?range=${dateRange}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setAppointmentStatusDistribution(appointmentStatusRes.data);
-        
-        // Fetch payment status distribution
-        const paymentStatusRes = await axios.get(`http://localhost:5001/api/dashboard/payment-status?range=${dateRange}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setPaymentStatusDistribution(paymentStatusRes.data);
-        
-        // Fetch time series data
-        const timeSeriesRes = await axios.get(`http://localhost:5001/api/dashboard/time-series?range=${dateRange}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setTimeSeriesData(timeSeriesRes.data);
-        
-        // Fetch top doctors by appointments
-        const topDoctorsRes = await axios.get(`http://localhost:5001/api/dashboard/top-doctors?range=${dateRange}&limit=5`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setTopDoctors(topDoctorsRes.data);
-        
-        // Fetch top patients by appointments
-        const topPatientsRes = await axios.get(`http://localhost:5001/api/dashboard/top-patients?range=${dateRange}&limit=5`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setTopPatients(topPatientsRes.data);
-        
-        setIsLoading(false);
+  
+        const [
+          summary,
+          appointmentStatus,
+          paymentStatus,
+          timeSeries,
+          topDoctors,
+          topPatients,
+        ] = await Promise.all([
+          dashboardService.getSummaryStats(token, dateRange),
+          dashboardService.getAppointmentStatus(token, dateRange),
+          dashboardService.getPaymentStatus(token, dateRange),
+          dashboardService.getTimeSeries(token, dateRange),
+          dashboardService.getTopDoctors(token, dateRange),
+          dashboardService.getTopPatients(token, dateRange),
+        ]);
+  
+        setSummaryStats(summary);
+        setAppointmentStatusDistribution(appointmentStatus);
+        setPaymentStatusDistribution(paymentStatus);
+        setTimeSeriesData(timeSeries);
+        setTopDoctors(topDoctors);
+        setTopPatients(topPatients);
       } catch (err: any) {
-        setError('Failed to load dashboard data');
+        setError("Failed to load dashboard data");
+        console.error("Dashboard data fetch error:", err.response?.data || err.message);
+      } finally {
         setIsLoading(false);
-        console.error('Dashboard data fetch error:', err.response?.data || err.message);
       }
     };
-
-    fetchDashboardData();
-  }, [dateRange]);
   
+    fetchDashboardData();
+  }, [dateRange, token]);
+    
   // Prepare chart data
   const appointmentStatusData = {
     labels: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],

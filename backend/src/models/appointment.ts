@@ -19,13 +19,13 @@ const appointmentSchema = new Schema<IAppointment>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Patient ID is required'],
-      index: true // Single field index for patient queries
+      index: true 
     },
     doctorId: {
       type: Schema.Types.ObjectId,
       ref: 'Doctor',
       required: [true, 'Doctor ID is required'],
-      index: true // Single field index for doctor queries
+      index: true 
     },
     date: {
       type: String,
@@ -41,7 +41,7 @@ const appointmentSchema = new Schema<IAppointment>(
       type: String,
       enum: ['pending', 'confirmed', 'cancelled', 'completed'],
       default: 'pending',
-      index: true // Index for filtering by status
+      index: true 
     },
     paymentStatus: {
       type: String,
@@ -60,11 +60,10 @@ const appointmentSchema = new Schema<IAppointment>(
   },
   { 
     timestamps: true,
-    autoIndex: false // Disable automatic index creation
+    autoIndex: false 
   }
 );
 
-// Compound index for unique time slots
 appointmentSchema.index(
   { doctorId: 1, date: 1, time: 1 }, 
   { 

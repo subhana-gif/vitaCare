@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { appointmentService } from "../../services/appointmentService";
 
 interface Patient {
   _id: string;
@@ -45,18 +45,14 @@ const AdminAppointmentPage: React.FC = () => {
   const token = localStorage.getItem("adminToken");
   
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const getAppointments = async (token: string | null) => {
+      if (!token) return;
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5001/api/appointments", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        setAppointments(response.data.appointments);
-        setFilteredAppointments(response.data.appointments);
-        setTotalPages(Math.ceil(response.data.appointments.length / appointmentsPerPage));
+        const data = await appointmentService.fetchAppointments(token);
+        setAppointments(data);
+        setFilteredAppointments(data);
+        setTotalPages(Math.ceil(data.length / appointmentsPerPage));
         setError(null);
       } catch (error) {
         console.error("Error fetching appointments:", error);
@@ -65,10 +61,10 @@ const AdminAppointmentPage: React.FC = () => {
         setLoading(false);
       }
     };
-
-    fetchAppointments();
+  
+    if (token) getAppointments(token);
   }, [token]);
-
+  
   // Filter appointments based on search input
   useEffect(() => {
     if (!searchTerm.trim()) {

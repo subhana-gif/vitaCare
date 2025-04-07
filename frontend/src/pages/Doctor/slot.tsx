@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import { RootState } from "../../redux/store";
 import 'react-toastify/dist/ReactToastify.css';
 import { useSelector } from "react-redux";
+import { slotService } from "../../services/slotService";
+import Pagination from "../Common/Pagination"; // Adjust the import path as needed
 
 interface Slot {
   isAvailable: boolean;
@@ -30,6 +32,8 @@ const SlotManagement: React.FC = () => {
   const [sortBy, setSortBy] = useState<"date" | "startTime" | "price" | "status">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [minDate, setMinDate] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(5);
 
   const doctorId = useSelector((state: RootState) => state.doctors.doctorId);
   const token = useSelector((state: RootState) => state.doctors.token);
@@ -37,20 +41,16 @@ const SlotManagement: React.FC = () => {
   useEffect(() => {
     if (doctorId) fetchSlots();
     
-    // Set minimum date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setMinDate(tomorrow.toISOString().split('T')[0]);
   }, [doctorId]);
 
   const fetchSlots = async () => {
+    if (!doctorId || !token) return;
     try {
-      const response = await axios.get(`http://localhost:5001/api/slots/${doctorId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setSlots(response.data?.slots || []);
+      const data = await slotService.fetchSlots(doctorId, token);
+      setSlots(data);
     } catch (error) {
       console.error("Failed to fetch slots:", error);
       setSlots([]);
@@ -81,18 +81,10 @@ const SlotManagement: React.FC = () => {
     }
 
     if (!validateTimeRange()) return;
-
     try {
+      if (!doctorId || !token) return;
       setLoading(true);
-      await axios.post(
-        "http://localhost:5001/api/slots/create", 
-        { doctorId, date, startTime, endTime, price },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await slotService.addSlot(doctorId, date, startTime, endTime, price, token);
       toast.success("Slot added successfully!");
       setDate("");
       setStartTime("");
@@ -118,21 +110,17 @@ const SlotManagement: React.FC = () => {
     if (!editingSlotId) return;
     
     if (!validateEditTimeRange()) return;
-
+    if (!token) return;
     try {
-      await axios.put(
-        `http://localhost:5001/api/slots/${editingSlotId}`, 
-        { 
+      await slotService.updateSlot(
+        editingSlotId,
+        {
           price: editingPrice,
           date: editingDate,
           startTime: editingStartTime,
-          endTime: editingEndTime 
+          endTime: editingEndTime,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        token
       );
       toast.success("Slot updated successfully!");
       setEditingSlotId(null);
@@ -143,16 +131,9 @@ const SlotManagement: React.FC = () => {
   };
 
   const handleMarkUnavailable = async (slotId: string) => {
+    if (!token) return;
     try {
-      await axios.put(
-        `http://localhost:5001/api/slots/${slotId}/unavailable`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await slotService.markUnavailable(slotId, token);
       toast.success("Slot marked as unavailable.");
       fetchSlots();
     } catch (error) {
@@ -161,16 +142,9 @@ const SlotManagement: React.FC = () => {
   };
 
   const handleMarkAvailable = async (slotId: string) => {
+    if (!token) return;
     try {
-      await axios.put(
-        `http://localhost:5001/api/slots/${slotId}/available`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await slotService.markAvailable(slotId, token);
       toast.success("Slot marked as available.");
       fetchSlots();
     } catch (error) {
@@ -207,7 +181,16 @@ const SlotManagement: React.FC = () => {
     }
   });
 
-  // Format date to display in a more readable format
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentSlots = sortedSlots.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(slots.length / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { 
       weekday: 'short', 
@@ -218,22 +201,19 @@ const SlotManagement: React.FC = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Format time to 12-hour format
-const formatTime = (timeString: string) => {
-  if (!timeString) return ""; // Add this check
-  const [hours, minutes] = timeString.split(':');
-  const hour = parseInt(hours, 10);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const formattedHour = hour % 12 || 12;
-  return `${formattedHour}:${minutes} ${ampm}`;
-};
-
+  const formatTime = (timeString: string) => {
+    if (!timeString) return "";
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${minutes} ${ampm}`;
+  };
 
   return (
     <div className="p-3 w-full bg-white rounded-lg shadow-lg">
       <h2 className="text-3xl font-bold mb-6 text-gray-800">Appointment Slot Management</h2>
       
-      {/* Add Slot Form */}
       <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
         <h3 className="text-xl font-semibold mb-3 text-gray-700">Create New Slot</h3>
         <div className="grid md:grid-cols-5 gap-4">
@@ -297,7 +277,6 @@ const formatTime = (timeString: string) => {
         </div>
       </div>
 
-      {/* Slot List */}
       <div className="bg-white rounded-lg shadow border border-gray-200">
         <div className="flex justify-between items-center p-4 border-b">
           <h3 className="text-xl font-semibold text-gray-800">All Appointment Slots</h3>
@@ -315,172 +294,179 @@ const formatTime = (timeString: string) => {
             <p className="mt-1 text-base text-gray-500">Get started by creating a new appointment slot.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th 
-                    scope="col" 
-                    className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => toggleSort("date")}
-                  >
-                    <div className="flex items-center">
-                      Date
-                      {sortBy === "date" && (
-                        <span className="ml-1">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    scope="col" 
-                    className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => toggleSort("startTime")}
-                  >
-                    <div className="flex items-center">
-                      Time Slot
-                      {sortBy === "startTime" && (
-                        <span className="ml-1">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    scope="col" 
-                    className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => toggleSort("price")}
-                  >
-                    <div className="flex items-center">
-                      Price
-                      {sortBy === "price" && (
-                        <span className="ml-1">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th 
-                    scope="col" 
-                    className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => toggleSort("status")}
-                  >
-                    <div className="flex items-center">
-                      Status
-                      {sortBy === "status" && (
-                        <span className="ml-1">
-                          {sortOrder === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sortedSlots.map((slot) => (
-                  <tr key={slot._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {editingSlotId === slot._id ? (
-                        <input
-                          type="date"
-                          value={editingDate}
-                          min={minDate}
-                          onChange={(e) => setEditingDate(e.target.value)}
-                          className="border border-gray-300 rounded-md px-2 py-1 w-full"
-                        />
-                      ) : (
-                        formatDate(slot.date)
-                      )}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {editingSlotId === slot._id ? (
-                        <div className="flex space-x-2">
-                          <input
-                            type="time"
-                            value={editingStartTime}
-                            onChange={(e) => setEditingStartTime(e.target.value)}
-                            className="border border-gray-300 rounded-md px-2 py-1 w-24"
-                          />
-                          <span className="px-1">to</span>
-                          <input
-                            type="time"
-                            value={editingEndTime}
-                            onChange={(e) => setEditingEndTime(e.target.value)}
-                            className="border border-gray-300 rounded-md px-2 py-1 w-24"
-                          />
-                        </div>
-                      ) : (
-                        <span>{formatTime(slot.startTime)} - {formatTime(slot.endTime)}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {editingSlotId === slot._id ? (
-                        <input
-                          type="number"
-                          value={editingPrice}
-                          onChange={(e) => setEditingPrice(Number(e.target.value))}
-                          className="border border-gray-300 rounded-md px-2 py-1 w-full"
-                          min="0"
-                        />
-                      ) : (
-                        <div className="font-medium">
-                          ₹{slot.price.toLocaleString()}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        {slot.isAvailable ? (
-                          <button
-                            onClick={() => handleMarkUnavailable(slot._id)}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Mark Unavailable
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleMarkAvailable(slot._id)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Mark Available
-                          </button>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th 
+                      scope="col" 
+                      className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => toggleSort("date")}
+                    >
+                      <div className="flex items-center">
+                        Date
+                        {sortBy === "date" && (
+                          <span className="ml-1">
+                            {sortOrder === "asc" ? "↑" : "↓"}
+                          </span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
-                      {editingSlotId === slot._id ? (
-                        <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={handleUpdateSlot}
-                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingSlotId(null)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => startEditing(slot)}
-                          className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded"
-                        >
-                          Edit
-                        </button>
-                      )}
-                    </td>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => toggleSort("startTime")}
+                    >
+                      <div className="flex items-center">
+                        Time Slot
+                        {sortBy === "startTime" && (
+                          <span className="ml-1">
+                            {sortOrder === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => toggleSort("price")}
+                    >
+                      <div className="flex items-center">
+                        Price
+                        {sortBy === "price" && (
+                          <span className="ml-1">
+                            {sortOrder === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => toggleSort("status")}
+                    >
+                      <div className="flex items-center">
+                        Status
+                        {sortBy === "status" && (
+                          <span className="ml-1">
+                            {sortOrder === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {currentSlots.map((slot) => (
+                    <tr key={slot._id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {editingSlotId === slot._id ? (
+                          <input
+                            type="date"
+                            value={editingDate}
+                            min={minDate}
+                            onChange={(e) => setEditingDate(e.target.value)}
+                            className="border border-gray-300 rounded-md px-2 py-1 w-full"
+                          />
+                        ) : (
+                          formatDate(slot.date)
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {editingSlotId === slot._id ? (
+                          <div className="flex space-x-2">
+                            <input
+                              type="time"
+                              value={editingStartTime}
+                              onChange={(e) => setEditingStartTime(e.target.value)}
+                              className="border border-gray-300 rounded-md px-2 py-1 w-24"
+                            />
+                            <span className="px-1">to</span>
+                            <input
+                              type="time"
+                              value={editingEndTime}
+                              onChange={(e) => setEditingEndTime(e.target.value)}
+                              className="border border-gray-300 rounded-md px-2 py-1 w-24"
+                            />
+                          </div>
+                        ) : (
+                          <span>{formatTime(slot.startTime)} - {formatTime(slot.endTime)}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {editingSlotId === slot._id ? (
+                          <input
+                            type="number"
+                            value={editingPrice}
+                            onChange={(e) => setEditingPrice(Number(e.target.value))}
+                            className="border border-gray-300 rounded-md px-2 py-1 w-full"
+                            min="0"
+                          />
+                        ) : (
+                          <div className="font-medium">
+                            ₹{slot.price.toLocaleString()}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex gap-2">
+                          {slot.isAvailable ? (
+                            <button
+                              onClick={() => handleMarkUnavailable(slot._id)}
+                              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Mark Unavailable
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleMarkAvailable(slot._id)}
+                              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Mark Available
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        {editingSlotId === slot._id ? (
+                          <div className="flex gap-2 justify-center">
+                            <button
+                              onClick={handleUpdateSlot}
+                              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingSlotId(null)}
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEditing(slot)}
+                            className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1 rounded"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
         )}
       </div>
     </div>

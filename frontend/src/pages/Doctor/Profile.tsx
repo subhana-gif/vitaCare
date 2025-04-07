@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { doctorService } from "../../services/doctorService";
 import React from "react";
 import axios from "axios";
+import { adminService } from "../../services/adminSevice";
 
 interface Doctor {
   _id: string;
@@ -65,8 +66,8 @@ const DoctorProfile: React.FC = () => {
   useEffect(() => {
     const fetchSpecialities = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/admin/specialities");
-        setSpecialities(response.data);
+        const response = await adminService.fetchSpecialities();
+        setSpecialities(response);
       } catch (error) {
         toast.error("Failed to fetch specialities.");
         setError("Could not load specialities. Please try again later.");

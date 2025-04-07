@@ -32,6 +32,42 @@ export const adminService = {
         throw new Error("Failed to fetch specialities.");
     }
 },
+
+addSpeciality: async (name: string, token: string) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/specialities`,
+      { name },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const errorMsg = error?.response?.data?.message || "Failed to add speciality.";
+    throw new Error(errorMsg);
+  }
+},
+
+toggleSpecialityStatus: async (id: string, token: string) => {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/specialities/${id}/toggle`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    const message = error?.response?.data?.message || "Failed to toggle speciality status.";
+    throw new Error(message);
+  }
+},
     
 };
 

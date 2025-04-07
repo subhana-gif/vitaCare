@@ -6,7 +6,6 @@ const API = axios.create({
   withCredentials: true, // Send cookies
 });
 
-// Attach token to requests
 API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const state = store.getState();
   const token = state.auth.accessToken;
@@ -18,7 +17,6 @@ API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// Handle expired tokens
 API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const state = store.getState();
   const token = state.auth.accessToken;

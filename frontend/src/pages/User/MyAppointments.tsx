@@ -1,4 +1,3 @@
-// src/components/Appointments/MyAppointments.tsx
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
@@ -11,15 +10,19 @@ import EmptyState from "./EmptyState";
 import { fetchAppointmentsApi, cancelAppointmentApi } from "../../services/appointmentService";
 import { handlePaymentProcess } from "../../services/paymentService";
 import { Appointment } from "../../types/appointment";
-import {CancellationModal} from "./Modals/CancellationModal";
-import {PaymentSuccessModal} from "./Modals/PaymentSuccessModal";
+import { CancellationModal } from "./Modals/CancellationModal";
+import { PaymentSuccessModal } from "./Modals/PaymentSuccessModal";
 import { ToastProvider, useToast } from "./Toast/ToastContext.tsx";
 
-// Wrap component to use toast context
+// Extend Appointment interface to include createdAt (adjust based on your actual data)
+interface ExtendedAppointment extends Appointment {
+  createdAt?: string; // Assuming this exists in your backend data
+}
+
 const AppointmentsWithToast: React.FC = () => {
   const { showToast } = useToast();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<ExtendedAppointment[]>([]);
+  const [filteredAppointments, setFilteredAppointments] = useState<ExtendedAppointment[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [filter, setFilter] = useState<string>("all");
@@ -28,11 +31,10 @@ const AppointmentsWithToast: React.FC = () => {
   const [itemsPerPage] = useState<number>(5);
   const hasFetched = useRef<boolean>(false);
   
-  // Modal states
   const [cancelModalOpen, setCancelModalOpen] = useState<boolean>(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState<string | null>(null);
   const [cancellationDetails, setCancellationDetails] = useState<{
-    paymentStatus:string;
+    paymentStatus: string;
     doctorName: string;
     date: string;
     time: string;
@@ -59,8 +61,12 @@ const AppointmentsWithToast: React.FC = () => {
       try {
         setLoading(true);
         const fetchedAppointments = await fetchAppointmentsApi(token);
-        setAppointments(fetchedAppointments);
-        setFilteredAppointments(fetchedAppointments);
+        // Sort appointments by createdAt in descending order (latest first)
+        const sortedAppointments = fetchedAppointments.sort((a: ExtendedAppointment, b: ExtendedAppointment) => 
+          new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
+        );
+        setAppointments(sortedAppointments);
+        setFilteredAppointments(sortedAppointments);
         hasFetched.current = true;
       } catch (error) {
         console.error("Error fetching appointments:", error);
@@ -75,7 +81,7 @@ const AppointmentsWithToast: React.FC = () => {
 
   useEffect(() => {
     // Apply filters and search
-    let results = appointments;
+    let results = [...appointments]; // Create a copy to avoid mutating state directly
   
     // Apply payment filter
     if (filter === "paid") {
@@ -98,8 +104,7 @@ const AppointmentsWithToast: React.FC = () => {
     }
   
     setFilteredAppointments(results);
-    // Reset to first page when filters change
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [appointments, searchTerm, filter]);
 
   const handleCancelClick = (appointmentId: string) => {
@@ -128,7 +133,6 @@ const AppointmentsWithToast: React.FC = () => {
       setLoading(true);
       setCancelModalOpen(false);
 
-      // Optimistically update UI
       const updatedAppointments = appointments.map((appt) => 
         appt._id === appointmentToCancel 
           ? { ...appt, status: "cancelled", cancellationReason: reason } 
@@ -140,15 +144,12 @@ const AppointmentsWithToast: React.FC = () => {
       await cancelAppointmentApi(appointmentToCancel, token, reason);
       showToast("Appointment cancelled successfully", "success");
       
-      // Handle refund logic if needed
       const cancelledAppointment = appointments.find(app => app._id === appointmentToCancel);
       if (cancelledAppointment?.paid || cancelledAppointment?.paymentStatus === "paid") {
         showToast("Your refund has been initiated", "info");
       }
     } catch (error) {
       console.error("Error cancelling appointment:", error);
-      
-      // Revert the state if the API call fails
       const originalAppointments = [...appointments];
       setAppointments(originalAppointments);
       showToast("Failed to cancel appointment. Please try again.", "error");
@@ -159,19 +160,17 @@ const AppointmentsWithToast: React.FC = () => {
     }
   };
 
-  const handlePayment = async (appointment: Appointment) => {
+  const handlePayment = async (appointment: ExtendedAppointment) => {
     try {
-      const paymentResult = await handlePaymentProcess(appointment, user,token||"");
+      const paymentResult = await handlePaymentProcess(appointment, user, token || "");
       
       if (paymentResult.success) {
-        // Update the appointment list
         setAppointments((prevAppointments) =>
           prevAppointments.map((appt) =>
             appt._id === appointment._id ? { ...appt, paid: true, paymentStatus: "paid" } : appt
           )
         );
         
-        // Show success modal
         setPaymentSuccessDetails({
           doctorName: appointment.doctorId?.name || "Unknown Doctor",
           speciality: appointment.doctorId?.speciality || "Specialty not specified",
@@ -188,13 +187,11 @@ const AppointmentsWithToast: React.FC = () => {
     }
   };
 
-  // Calculate pagination variables
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentAppointments = filteredAppointments.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
 
-  // Conditional rendering based on state
   if (loading && appointments.length === 0) {
     return <LoadingState message="Loading your appointments..." />;
   }
@@ -245,7 +242,6 @@ const AppointmentsWithToast: React.FC = () => {
         <EmptyState hasFilters={searchTerm !== "" || filter !== "all"} />
       )}
       
-      {/* Modals */}
       <CancellationModal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
@@ -262,7 +258,6 @@ const AppointmentsWithToast: React.FC = () => {
   );
 };
 
-// Main component with toast provider
 const MyAppointments: React.FC = () => {
   return (
     <ToastProvider>
@@ -272,4 +267,3 @@ const MyAppointments: React.FC = () => {
 };
 
 export default MyAppointments;
-

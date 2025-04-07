@@ -1,4 +1,5 @@
 import axios from "axios";
+import {Chat} from "../types/chat"
 
 const API_BASE_URL = "http://localhost:5001/api/doctor";
 
@@ -166,6 +167,39 @@ const setPassword = async (token: string, password: string): Promise<string> => 
       return response.data; 
     };
 
+
+    const updateDoctorProfile = async (doctorId: string,token: string,formData: FormData): Promise<Response> => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/${doctorId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+  
+        if (!response.ok) {
+          throw new Error(`Failed to update doctor. Status: ${response.status}`);
+        }
+  
+        return response;
+      } catch (error) {
+        throw error;
+      }
+    }
+
+
+const fetchDoctorChats = async (doctorId: string, token: string): Promise<Chat[]> => {
+  const res = await axios.get(`http://localhost:5001/api/chat/doctor/${doctorId}/chats`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};
+
+
         
 export const doctorService = { createDoctor ,setPassword,forgotPassword,fetchAllDoctors,
-  resetPassword,login,uploadImage,fetchDoctor,updateProfile,signupDoctor,getDoctorById,approveDoctor};
+  resetPassword,login,uploadImage,fetchDoctor,updateProfile,signupDoctor,getDoctorById,approveDoctor,
+  fetchDoctorChats,updateDoctorProfile};

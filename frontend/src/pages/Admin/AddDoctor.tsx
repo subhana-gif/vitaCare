@@ -6,18 +6,20 @@ import ReactCrop, { centerCrop, makeAspectCrop, Crop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { doctorService } from "../../services/doctorService";
 import * as yup from "yup";
+import { adminService } from "../../services/adminSevice";
 
 interface DoctorFormData {
   name: string;
   email: string;
   speciality: string;
   degree: string;
-  experience: string; // Change to string
+  experience: string; 
   address: string;
   about: string;
   available: string;
-  image?: File; // Optional image field
-}// Define the validation schema
+  image?: File; 
+}
+
 const doctorSchema = yup.object().shape({
   name: yup.string().required("Name is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
@@ -25,7 +27,7 @@ const doctorSchema = yup.object().shape({
   degree: yup.string().required("Degree is required"),
   experience: yup
     .number()
-    .typeError("Experience must be a number") // Handle invalid numbers
+    .typeError("Experience must be a number") 
     .required("Experience is required")
     .positive("Experience must be a positive number")
     .integer("Experience must be an integer"),
@@ -46,10 +48,10 @@ const AddDoctor: React.FC = () => {
     email: "",
     speciality: "",
     degree: "",
-    experience: "", // Initialize as null
+    experience: "", 
     address: "",
     about: "",
-    available: "true", // Default to "true"
+    available: "true",
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -67,8 +69,8 @@ const AddDoctor: React.FC = () => {
   useEffect(() => {
     const fetchSpecialities = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/admin/specialities");
-        setSpecialities(response.data);
+        const data = await adminService.fetchSpecialities();
+        setSpecialities(data);
       } catch (error) {
         toast.error("Failed to fetch specialities.");
       }

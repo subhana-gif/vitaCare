@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { toast } from 'react-toastify';
+import { slotService } from "../../services/slotService";
 
 interface TimeSlotSelectorProps {
   doctorId: string;
@@ -57,37 +58,21 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
   
       setLoading(true);
       try {
-        const response = await fetch(
-          `http://localhost:5001/api/slots/${doctorId}/date/${selectedDate}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-  
-        if (!response.ok) {
-          throw new Error("Failed to fetch available slots");
-        }
-  
-        const data = await response.json();
-        const { slots = [] } = data;
-        
-        setOriginalSlots(slots);
-        
-        // Process slots into 15-minute intervals
+        const slots = await slotService.fetchSlotsByDate(doctorId, selectedDate, token);
+
+        setOriginalSlots(slots || []);        
         const now = dayjs();
         const isToday = selectedDate === now.format("YYYY-MM-DD");
         
         const processedTimeSlots: ProcessedTimeSlot[] = [];
         
         slots.forEach(slot => {
-          // Generate 15-minute intervals within this slot's range
           let currentTime = dayjs(`2000-01-01 ${slot.startTime}`);
           const endTime = dayjs(`2000-01-01 ${slot.endTime}`);
           
           while (currentTime.isBefore(endTime)) {
             const timeString = currentTime.format("HH:mm");
             
-            // Check if this specific time is in the past (for today)
             if (isToday) {
               const slotDateTime = dayjs(`${selectedDate} ${timeString}`);
               if (slotDateTime.isBefore(now)) {
@@ -96,7 +81,6 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
               }
             }
             
-            // Check if this specific time is already booked
             const isBooked = bookedAppointments.some(
               appointment => 
                 appointment.date === selectedDate && 

@@ -18,11 +18,10 @@ const SpecialityManagement: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showInactive, setShowInactive] = useState(true);
     
-    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5); // Increased for better use of full width
+    const [itemsPerPage] = useState(5); 
     const token = localStorage.getItem("adminToken")
-    // Fetch Specialities
+
     useEffect(() => {
         const fetchSpecialities = async () => {
             setIsLoading(true);
@@ -38,74 +37,60 @@ const SpecialityManagement: React.FC = () => {
         fetchSpecialities();
     }, []);
 
-    // Add New Speciality
+
     const handleAddSpeciality = async () => {
-        if (!newSpeciality.trim()) {
-            toast.warn("Please enter a valid speciality name.");
-            return;
-        }
-
-        try {
-            await axios.post(
-                "http://localhost:5001/api/admin/specialities",
-                { name: newSpeciality },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            toast.success("Speciality added successfully!");
-            setNewSpeciality("");
-        
-            const updatedResponse = await axios.get("http://localhost:5001/api/admin/specialities", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setSpecialities(updatedResponse.data);
-        } catch (error) {
-            toast.error("Error adding speciality. It may already exist.");
-        }
-        
+      if (!newSpeciality.trim()) {
+        toast.warn("Please enter a valid speciality name.");
+        return;
+      }
+      if(!token)return
+    
+      try {
+        await adminService.addSpeciality(newSpeciality, token); 
+        toast.success("Speciality added successfully!");
+        setNewSpeciality("");
+    
+        const updatedSpecialities = await adminService.fetchSpecialities(); 
+        setSpecialities(updatedSpecialities);
+      } catch (error: any) {
+        toast.error(error.message || "Error adding speciality.");
+      }
     };
-
-    // Toggle Speciality Status
+    
     const handleToggleStatus = async (id: string) => {
+        if(!token)return
         try {
-            const response = await axios.put(
-                `http://localhost:5001/api/admin/specialities/${id}/toggle`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const updatedSpeciality = response.data;
-    
-            setSpecialities((prevSpecialities) =>
-                prevSpecialities.map((spec) =>
-                    spec._id === id ? { ...spec, isActive: updatedSpeciality.isActive } : spec
-                )
-            );
-    
-            toast.success(`Speciality ${updatedSpeciality.isActive ? "activated" : "deactivated"} successfully!`);
-        } catch (error) {
-            toast.error("Error toggling speciality status.");
+          const updatedSpeciality = await adminService.toggleSpecialityStatus(id, token);
+      
+          setSpecialities((prevSpecialities) =>
+            prevSpecialities.map((spec) =>
+              spec._id === id ? { ...spec, isActive: updatedSpeciality.isActive } : spec
+            )
+          );
+      
+          toast.success(
+            `Speciality ${updatedSpeciality.isActive ? "activated" : "deactivated"} successfully!`
+          );
+        } catch (error: any) {
+          toast.error(error.message || "Error toggling speciality status.");
         }
-    };
+      };    
     
-    
-    // Filter specialities based on search term and active status
     const filteredSpecialities = specialities.filter(spec => 
         spec.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
         (showInactive || spec.isActive)
     );
 
-    // Sort specialities: active first, then alphabetically
     const sortedSpecialities = [...filteredSpecialities].sort((a, b) => {
         if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
         return a.name.localeCompare(b.name);
     });
 
-    // Calculate pagination
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = sortedSpecialities.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(sortedSpecialities.length / itemsPerPage);
 
-    // Handle page change
     const handlePageChange = (pageNumber: number) => {
         setCurrentPage(pageNumber);
     };

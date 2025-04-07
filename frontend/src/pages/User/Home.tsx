@@ -277,7 +277,7 @@ const HomePage: React.FC = () => {
       {/* Chat Button */}
       <motion.button
         className="fixed bottom-6 right-6 bg-blue-600 text-white p-6 rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center"
-        onClick={() => navigate("/chat")}
+        onClick={() => navigate("/geminiChat")}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         initial={{ opacity: 0, y: 20 }}

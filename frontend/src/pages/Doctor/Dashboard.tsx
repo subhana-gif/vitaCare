@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import { useSelector } from 'react-redux'; 
 import { IAppointment } from '../../../../backend/src/models/appointment';
+import { dashboardService } from '../../services/dashboardService';
 
 import {
   Chart as ChartJS,
@@ -81,16 +82,8 @@ const DoctorDashboard: React.FC = () => {
     const fetchTodayAppointments = async () => {
       try {
         setIsLoading(true);
-
-        // Fetch today's appointments
-        const todayAppointmentsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/today`,{
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          }
-        });
-        setTodayAppointments(todayAppointmentsRes.data);
-
+        const data = await dashboardService.fetchTodayAppointments(doctorId, token);
+        setTodayAppointments(data);
         setIsLoading(false);
       } catch (err: any) {
         console.error('Today\'s appointments fetch error:', err.response?.data || err.message);
@@ -108,46 +101,21 @@ const DoctorDashboard: React.FC = () => {
   }, [doctorId]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const getDashboardData = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch appointment summary
-        const appointmentRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/summary?range=${dateRange}`,{
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          }
-        });
-        setAppointmentSummary(appointmentRes.data);
-        
-        // Fetch payment summary
-        const paymentRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/payments/summary?range=${dateRange}`,{
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          }
-        });
-        setPaymentSummary(paymentRes.data);
-        
-        // Fetch popular time slots
-        const timeSlotsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/appointments/time-slots?range=${dateRange}`,{
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          }
-        });
-        setPopularTimeSlots(timeSlotsRes.data);
-        
-        // Fetch monthly stats
-        const monthlyStatsRes = await axios.get(`http://localhost:5001/api/dashboard/${doctorId}/monthly-stats?months=6`,{
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          }
-        });
-        setMonthlyStats(monthlyStatsRes.data);
-        
+  
+        const [appointmentData, paymentData, timeSlotsData, monthlyStatsData] = await Promise.all([
+          dashboardService.fetchAppointmentSummary(doctorId, token, dateRange),
+          dashboardService.fetchPaymentSummary(doctorId, token, dateRange),
+          dashboardService.fetchPopularTimeSlots(doctorId, token, dateRange),
+          dashboardService.fetchMonthlyStats(doctorId, token),
+        ]);
+  
+        setAppointmentSummary(appointmentData);
+        setPaymentSummary(paymentData);
+        setPopularTimeSlots(timeSlotsData);
+        setMonthlyStats(monthlyStatsData);
         setIsLoading(false);
       } catch (err: any) {
         setError('Failed to load dashboard data');
@@ -155,12 +123,10 @@ const DoctorDashboard: React.FC = () => {
         console.error('Dashboard data fetch error:', err);
       }
     };
-
-    if (doctorId) {
-      fetchDashboardData();
-    }
+  
+    if (doctorId) getDashboardData();
   }, [doctorId, dateRange]);
-
+  
   // Chart data for appointment status
   const appointmentStatusData = {
     labels: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],

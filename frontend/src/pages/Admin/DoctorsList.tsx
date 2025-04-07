@@ -10,6 +10,7 @@ import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { useRef } from "react";
 import axios from "axios";
+import { adminService } from "../../services/adminSevice";
 
 interface Doctor {
   status: string;
@@ -47,9 +48,8 @@ const DoctorListSidebar: React.FC = () => {
   useEffect(() => {
     const fetchSpecializations = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/admin/specialities"); 
-        const allSpecializations = response.data.map((spec: { name: string }) => spec.name); 
-        
+        const specialities = await adminService.fetchSpecialities();
+        const allSpecializations = specialities.map((spec: { name: string }) => spec.name);
         setSpecializations(allSpecializations);
       } catch (error) {
         console.error("Error fetching specializations:", error);
@@ -249,14 +249,12 @@ const DoctorListSidebar: React.FC = () => {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch(`http://localhost:5001/api/doctor/${selectedDoctor._id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formDataToSend
-      });
-
+      const response = await doctorService.updateDoctorProfile(
+        selectedDoctor._id,
+        token,
+        formDataToSend
+      );
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update doctor');
@@ -309,13 +307,12 @@ const DoctorListSidebar: React.FC = () => {
 
       formData.append('isBlocked', newBlockStatus.toString());
 
-      const response = await fetch(`http://localhost:5001/api/doctor/${selectedDoctor._id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+      const response = await doctorService.updateDoctorProfile(
+        selectedDoctor._id,
+        token,
+        formData
+      );
+      
 
       if (!response.ok) {
         const errorData = await response.json();

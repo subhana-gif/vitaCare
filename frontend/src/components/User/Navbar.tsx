@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { FaUserCircle } from "react-icons/fa";
 import { IoNotificationsOutline } from "react-icons/io5";
@@ -118,16 +118,14 @@ const Navbar: React.FC = () => {
     }
   };
 
-
-
   return (
     <nav className="max-w-9xl mx-auto px-4 py-4 flex justify-between items-center">
-      {/* Logo */}
-      <div className="flex items-center gap-2">
-        <div className="text-4xl">💙</div>
-        <span className="text-5xl font-bold">VitaCare</span>
-      </div>
-
+      <Link to="/">
+        <div className="flex items-center gap-2 cursor-pointer">
+          <div className="text-4xl">💙</div>
+          <span className="text-5xl font-bold">VitaCare</span>
+        </div>
+      </Link> 
       {/* Centered Nav Links */}
       <div className="flex space-x-8 mx-auto">
         <a href="/" className="text-gray-600 text-3xl hover:text-blue-600"> <T keyName="Home">HOME</T></a>

@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../redux/store";
 import { checkBlocked, logout } from "../../redux/slices/authSlice";
-import axios from "axios"; // For real-time user status check
+import {userService} from "../../services/userService"
 import React from "react";
 
 interface ProtectedRouteProps {
@@ -17,15 +17,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   useEffect(() => {
     const checkUserStatus = async () => {
+      if(!token)return
       try {
-        const response = await axios.get(`http://localhost:5001/api/user/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (response.data.isBlocked) {
+        const response = await userService.getProfile(token); 
+        if (response.isBlocked) {
           dispatch(checkBlocked());
-          dispatch(logout());  // Ensure session is cleared
-        }
+          dispatch(logout()); 
+        } 
       } catch (error) {
         console.error("Failed to verify user status:", error);
       }

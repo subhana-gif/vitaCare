@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { FaMapMarkerAlt } from "react-icons/fa";
 import TimeSlotSelector from './TimeSlotSelector'; // Path to the new component
 import DoctorReviews from '../../components/Reviews/DoctorReviews';
+import { appointmentService } from "../../services/appointmentService";
 
 
 interface Doctor {
@@ -84,24 +85,19 @@ const DoctorDetails: React.FC = () => {
     if (doctor) {
       const fetchBookedSlots = async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/appointments/doctor`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (!res.ok) throw new Error("Failed to fetch appointments");
-      
-          const data = await res.json();
+          const data = await appointmentService.fetchAppointmentsDoctor(token as string);
           if (Array.isArray(data)) {
-            setBookedSlots(data);  // ✅ Only set if it's an array
+            setBookedSlots(data);
           } else {
-            console.error("Unexpected data format for booked slots:", data);
-            setBookedSlots([]);  // ✅ Fallback to empty array
+            console.error("Unexpected format in booked slots response:", data);
+            setBookedSlots([]);
           }
         } catch (error) {
           console.error("Error fetching booked slots:", error);
-          setBookedSlots([]);  // ✅ Prevent `.some()` issues
+          setBookedSlots([]);
         }
       };
-      
+            
       const fetchRelatedDoctors = async () => {
         try {
           const allDoctors = await doctorService.fetchAllDoctors();  
@@ -126,43 +122,31 @@ const handleBooking = async () => {
     toast.warn("Please select a valid date and time slot");
     return;
   }
-  
+
   if (!user?._id || !doctor?._id) {
     toast.error("User or Doctor details not available.");
     return;
   }
 
   try {
-    const res = await fetch("http://localhost:5001/api/appointments/book", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        patientId: user._id,
-        doctorId: doctor._id,
-        slotId: selectedSlotId,  // Now sending the actual slot ID
-        date: selectedDate,
-        time: selectedSlotTime,
-      }),
-    });
+    const data = await appointmentService.bookAppointment(
+      user._id,
+      doctor._id,
+      selectedSlotId,
+      selectedDate,
+      selectedSlotTime,
+      token as string
+    );
 
-    const data = await res.json();
-
-    if (res.ok) {
-      toast.success("Appointment booked successfully!");
-      setBookedSlots((prevSlots) => [
-        ...prevSlots,
-        { date: selectedDate, time: selectedSlotTime, doctorName: doctor.name }
-      ]);
-      navigate("/myAppointments");
-    } else {
-      toast.error(data.message || "Failed to book appointment");
-    }
-  } catch (error) {
-    console.error("Error booking appointment:", error);
-    toast.error("An error occurred while booking. Please try again.");
+    toast.success("Appointment booked successfully!");
+    setBookedSlots((prevSlots) => [
+      ...prevSlots,
+      { date: selectedDate, time: selectedSlotTime, doctorName: doctor.name },
+    ]);
+    navigate("/myAppointments");
+  } catch (error: any) {
+    toast.error(error.message || "An error occurred while booking.");
+    console.error("Booking error:", error);
   }
 };
 

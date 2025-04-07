@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Socket } from "socket.io-client";
 import { Video, Mic, MicOff, VideoOff, Video as VideoOn } from "lucide-react";
+import { toast } from "react-toastify";
 import basslineWonderland from "../../assets/bassline_wonderland.mp3";
 
 interface VideoCallProps {
@@ -94,7 +95,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       const cameraPermission = await navigator.permissions.query({ name: "camera" as PermissionName });
       const micPermission = await navigator.permissions.query({ name: "microphone" as PermissionName });
       if (cameraPermission.state === "denied" || micPermission.state === "denied") {
-        alert("Camera or microphone access is denied. Please enable both in your browser settings.");
+        toast.error("Camera or microphone access is denied. Please enable both in your browser settings.");
         return false;
       }
       return true;
@@ -146,6 +147,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     return pc;
   };
 
+
   const startCall = async () => {
     try {
       const hasPermission = await checkPermissions();
@@ -184,7 +186,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     } catch (error: any) {
       console.error("Error starting call:", error.name, error.message);
       setIsCalling(false);
-      alert(`Failed to start video call: ${error.message}`);
+      toast.error(`Failed to start video call: ${error.message}`);
     }
   };
 
@@ -227,7 +229,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     } catch (error: any) {
       console.error("Error accepting call:", error.name, error.message);
       setIsCalling(false);
-      alert(`Failed to accept call: ${error.message}`);
+      toast.error(`Failed to accept call: ${error.message}`);
     }
   };
 
@@ -326,7 +328,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     socket.on("callRejected", () => {
       console.log("Call was rejected by remote user");
       endCall(false);
-      alert("The other user rejected your call");
+      toast.warn("The other user rejected your call");
     });
 
     socket.on("callEnded", () => {
@@ -337,7 +339,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     socket.on("callFailed", ({ message }) => {
       console.error("Call failed:", message);
       endCall(false);
-      alert(`Call failed: ${message}`);
+      toast.error(`Call failed: ${message}`);
     });
 
     return () => {

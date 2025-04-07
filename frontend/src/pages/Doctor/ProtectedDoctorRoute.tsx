@@ -5,6 +5,7 @@ import { RootState } from "../../redux/store";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { logout } from "../../redux/slices/authSlice";
+import { doctorService } from "../../services/doctorService";
 
 interface ProtectedRouteProps {
   restricted?: boolean;
@@ -20,12 +21,11 @@ const ProtectedDoctorRoute: React.FC<ProtectedRouteProps> = ({ restricted }) => 
   const status = useSelector((state: RootState) => state.doctors.status);
 
   useEffect(() => {
+    if(!doctorId)return
     const checkDoctorStatus = async () => {
       try {
-        const response = await axios.get(`http://localhost:5001/api/doctor/${doctorId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.data.doctor?.isBlocked) {
+        const doctor = await doctorService.getDoctorById(doctorId);
+        if (doctor?.isBlocked) {
           dispatch(logout());
           toast.error("Your account has been blocked by the admin.");
           

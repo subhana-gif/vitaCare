@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
+import { appointmentService } from '../../services/appointmentService';
 
 interface Medicine {
   name: string;
@@ -50,7 +51,6 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
 
   const token = useSelector((state: RootState) => state.doctors.token);
 
-  // Populate form with existing prescription data if it exists
   useEffect(() => {
     if (existingPrescription) {
       setMedicinesState(existingPrescription.medicines);
@@ -81,45 +81,47 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+  
     if (!medicines[0].name || !diagnosis) {
-      toast.error('Please fill in at least one medicine and diagnosis');
+      toast.error("Please fill in at least one medicine and diagnosis");
       return;
     }
-
+  
     setIsSubmitting(true);
+    if (!token) return;
+  
     try {
-      const method = existingPrescription ? 'put' : 'post'; // Use PUT for update, POST for create
-      const url = existingPrescription
-        ? `http://localhost:5001/api/prescriptions/${existingPrescription._id}`
-        : 'http://localhost:5001/api/prescriptions';
-
-      await axios[method](
-        url,
+      await appointmentService.savePrescription(
         {
           appointmentId,
           medicines,
           diagnosis,
           notes,
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        token,
+        existingPrescription?._id
       );
-
+  
       toast.success(
         existingPrescription
-          ? 'Prescription updated successfully'
-          : 'Prescription created successfully'
+          ? "Prescription updated successfully"
+          : "Prescription created successfully"
       );
+  
+      // 🟢 Call parent setters to sync data
+      setMedicines(medicines);
+      setDiagnosis(diagnosis);
+      setNotes(notes);
+  
       onClose();
     } catch (error) {
-      console.error('Error saving prescription:', error);
-      toast.error('Failed to save prescription');
+      console.error("Error saving prescription:", error);
+      toast.error("Failed to save prescription");
     } finally {
       setIsSubmitting(false);
     }
   };
-
+    
   if (!isOpen) return null;
 
   return (

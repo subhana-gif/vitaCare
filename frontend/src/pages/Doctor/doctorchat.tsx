@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import CommonChat from "../../components/common/chats";
+import { doctorService } from "../../services/doctorService";
 
 interface Chat {
   _id: string;
@@ -23,15 +24,19 @@ const DoctorChatPage: React.FC = () => {
 
   useEffect(() => {
     if (!doctorId) return;
-    axios
-      .get<Chat[]>(`http://localhost:5001/api/chat/doctor/${doctorId}/chats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setChatList(res.data))
-      .catch((err) => console.error("Error fetching chat list:", err));
-      console.log(`DoctorChatPage: doctorId=${doctorId}, token=${token}`);
-  }, [doctorId, token]);
 
+    const fetchChats = async () => {
+      try {
+        const chats = await doctorService.fetchDoctorChats(doctorId, token);
+        setChatList(chats);
+      } catch (err) {
+        console.error("Error fetching chat list:", err);
+      }
+    };
+
+    fetchChats();
+    console.log(`DoctorChatPage: doctorId=${doctorId}, token=${token}`);
+  }, [doctorId, token]);
   const handleSelectPatient = (patientId: string) => {
     setSelectedPatient(patientId);
     console.log(`Selected patient: currentUserId=${doctorId}, targetUserId=${patientId}`);
