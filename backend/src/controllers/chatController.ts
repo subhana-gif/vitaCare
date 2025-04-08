@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { GeminiService } from "../services/geminiService";
+import { HttpMessage, HttpStatus } from '../enums/HttpStatus';
+
 
 export class ChatController {
   constructor(private readonly geminiService: GeminiService) {}
@@ -9,7 +11,7 @@ export class ChatController {
       const { message } = req.body;
       
       if (!message) {
-        res.status(400).json({ error: "Message is required" });
+        res.status(HttpStatus.BAD_REQUEST).json({ error: "Message is required" });
         return;
       }
 
@@ -17,7 +19,7 @@ export class ChatController {
       res.json({ response });
     } catch (error) {
       console.error("ChatController Error:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: HttpMessage.INTERNAL_SERVER_ERROR });
     }
   }
 }

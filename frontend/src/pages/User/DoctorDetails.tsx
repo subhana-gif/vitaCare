@@ -149,7 +149,6 @@ const handleBooking = async () => {
     console.error("Booking error:", error);
   }
 };
-
 const handleChatNavigation = () => {
   if (user?._id && doctor?._id) {
     navigate(`/chats/${user._id}/${doctor._id}`);

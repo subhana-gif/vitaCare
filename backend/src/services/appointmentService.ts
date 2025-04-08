@@ -12,6 +12,12 @@ import { sendCallReminder } from "../config/twilioCall";
 import schedule from "node-schedule";
 import logger from "../utils/logger";
 import { IUserService } from "../interfaces/user/IUserservice";
+import {Dayjs} from "dayjs";
+import {  ISlot } from "../models/slot"; // Adjust path to your types file
+import dayjs from 'dayjs';
+
+
+
 
 
 export class AppointmentService implements IAppointmentService {
@@ -23,29 +29,65 @@ export class AppointmentService implements IAppointmentService {
   ) {
     this.userService = userService || new UserService(UserRepository.getInstance());
   }
-
+    
   async bookAppointment(appointmentData: Omit<IAppointment, "_id">): Promise<IAppointment> {
-    const { doctorId, date, time, patientId } = appointmentData;
-
-    const slot = await slotService.getSlotByDetails(doctorId.toString(), date, time);
+    const { doctorId, date, time, patientId, slotId } = appointmentData;
+  
+    // Fetch slot by ID
+    const slot: ISlot | null = await slotService.getSlotById(slotId);
     if (!slot) {
-      throw new Error("Slot not found or unavailable");
+      throw new Error("Slot not found");
     }
-
+    if (slot.doctorId.toString() !== doctorId.toString()) {
+      throw new Error("Slot doesn't belong to this doctor");
+    }
+  
+    // Validate dayOfWeek matches date
+    if (!date || typeof date !== "string") {
+      throw new Error("Invalid date provided");
+    }
+const dayOfWeek = new Date(date).toLocaleString('en-US', { weekday: 'long' });
+    if (slot.dayOfWeek !== dayOfWeek) {
+      throw new Error("Selected date doesn’t match slot’s day of week");
+    }
+  
+    // Validate time is within slot range and on 15-minute interval
+    if (!slot.startTime || !slot.endTime || !time) {
+      throw new Error("Invalid time data in slot or request");
+    }
+    
+    const startTime = dayjs(`2000-01-01 ${slot.startTime}`);
+    const endTime = dayjs(`2000-01-01 ${slot.endTime}`);
+    const selectedTime = dayjs(`2000-01-01 ${time}`);
+  
+    if (typeof startTime === 'undefined' || typeof endTime === 'undefined' || typeof selectedTime === 'undefined') {
+      throw new Error("Invalid time format in slot or request");
+    }
+  
+    if (
+      selectedTime.isBefore(startTime) ||
+      selectedTime.isAfter(endTime) ||
+      selectedTime.diff(startTime, "minute") % 15 !== 0
+    ) {
+      throw new Error("Selected time is outside slot range or not on 15-minute interval");
+    }
+  
+    // Check for existing appointment
     const existingAppointment = await this.appointmentRepository.findByDetails(doctorId.toString(), date, time);
     if (existingAppointment) {
       throw new Error("This slot is already booked");
     }
-
+  
+    // Create appointment
     const appointment = await this.appointmentRepository.create({
       ...appointmentData,
-      appointmentFee: slot.price
+      appointmentFee: slot.price,
     });
-
+  
     await this.sendConfirmationAndReminders(appointment);
     return appointment;
   }
-
+  
   private async sendConfirmationAndReminders(appointment: IAppointment): Promise<void> {
     const [doctor, patient] = await Promise.all([
       this.doctorService.getDoctorById(appointment.doctorId.toString()),
@@ -155,3 +197,8 @@ export class AppointmentService implements IAppointmentService {
     return this.appointmentRepository.getAllAppointments();
   }
 }
+
+// Remove the incorrect dayjs function
+// function dayjs(date: string) {
+//   throw new Error("Function not implemented.");
+// }

@@ -1,5 +1,4 @@
-import React from 'react';
-import { FaClinicMedical, FaUserMd, FaHeartbeat, FaCalendarCheck } from 'react-icons/fa';
+import { FaUserMd, FaHeartbeat, FaCalendarCheck } from 'react-icons/fa';
 
 const AboutUs = () => {
   return (

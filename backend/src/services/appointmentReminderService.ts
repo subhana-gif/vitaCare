@@ -3,10 +3,17 @@ import EmailService from './emailService';
 import Appointment from '../models/appointment';
 import {subHours, subMinutes } from 'date-fns';
     
+interface AppointmentDetails {
+  _id: string;
+  date: string;
+  time: string;
+  status?: string;
+}
+
 class AppointmentReminderService {
   private readonly jobs: Map<string, CronJob> = new Map();
 
-  async scheduleReminders(appointment: any) {
+  async scheduleReminders(appointment: AppointmentDetails) {
     const appointmentDate = new Date(appointment.date);
     const appointmentTime = appointment.time;
     const [hours, minutes] = appointmentTime.split(':');
@@ -25,9 +32,9 @@ class AppointmentReminderService {
     }
   }
 
-  private async scheduleReminder(appointment: any, reminderTime: Date, timeframe: string) {
+  private async scheduleReminder(appointment: AppointmentDetails, reminderTime: Date, timeframe: string) {
     const jobId = `${appointment._id}-${timeframe}`;
-    
+
     const job = new CronJob(reminderTime, async () => {
       try {
         // Fetch updated appointment with populated patient and doctor details
@@ -54,7 +61,8 @@ class AppointmentReminderService {
             date: updatedAppointment.date,
             time: updatedAppointment.time,
             location: doctor.address,
-            timeframe: timeframe
+            timeframe: timeframe,
+            appointmentFee: 0
           }
         );
 

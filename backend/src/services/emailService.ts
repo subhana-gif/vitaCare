@@ -16,8 +16,8 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(email: string, resetLink: string): Promise<boolean> {
-    const mailOptions = {
-      from: process.env.EMAIL,
+    const mailOptions: MailOptions = {
+      from: process.env.EMAIL || "default@example.com",
       to: email,
       subject: "Password Reset - VitaCare",
       html: `
@@ -41,8 +41,8 @@ class EmailService {
   }
 
   async sendOTPEmail(email: string, otp: string): Promise<boolean> {
-    const mailOptions = {
-      from: process.env.EMAIL,
+    const mailOptions: MailOptions = {
+      from: process.env.EMAIL || "default@example.com",
       to: email,
       subject: "OTP for Verification - VitaCare",
       html: `
@@ -66,14 +66,7 @@ class EmailService {
 
   async sendAppointmentConfirmationEmail(
     userEmail: string,
-    appointmentDetails: {
-      patientName: string;  // Add patient name parameter
-      doctorName: string;
-      date: string;
-      time: string;
-      appointmentFee: number;
-      location?: string;
-    }
+    appointmentDetails: AppointmentDetails
   ): Promise<boolean> {
     const { patientName, doctorName, date, time, appointmentFee, location } = appointmentDetails;
     
@@ -130,14 +123,7 @@ class EmailService {
 
   async sendAppointmentReminderEmail(
     userEmail: string,
-    appointmentDetails: {
-      patientName: string;
-      doctorName: string;
-      date: string;
-      time: string;
-      location?: string;
-      timeframe: string;
-    }
+    appointmentDetails: ReminderDetails
   ): Promise<boolean> {
     const { patientName, doctorName, date, time, location, timeframe } = appointmentDetails;
     
@@ -197,3 +183,24 @@ class EmailService {
 }
 
 export default new EmailService();
+
+
+interface MailOptions {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+}
+
+interface AppointmentDetails {
+  patientName: string;
+  doctorName: string;
+  date: string;
+  time: string;
+  appointmentFee: number;
+  location?: string;
+}
+
+interface ReminderDetails extends AppointmentDetails {
+  timeframe: string;
+}

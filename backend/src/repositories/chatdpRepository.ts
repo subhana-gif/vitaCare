@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Message from "../models/message";
-import {IChatRepository, IMessage, IMessageDocument } from "../interfaces/chat/IChatdpRepository";
+import {IChatRepository, IDoctorChatSummary, IMessage, IMessageDocument } from "../interfaces/chat/IChatdpRepository";
 
 export class ChatdpRepository implements IChatRepository {
   async saveMessage(message: IMessage): Promise<IMessageDocument> {
@@ -20,7 +20,7 @@ export class ChatdpRepository implements IChatRepository {
     return messages as unknown as IMessageDocument[];
   }
 
-  async getDoctorChatList(doctorId: string): Promise<any[]> {
+  async getDoctorChatList(doctorId: string): Promise<IDoctorChatSummary[]> {
     try {
       return await Message.aggregate([
         { $match: { receiver: new mongoose.Types.ObjectId(doctorId) } },

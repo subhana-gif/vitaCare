@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
 import PrescriptionModal from './PrescriptionModal';
+import { Appointment } from "../../types/appointment";
 
 interface AppointmentDetailsModalProps {
   isOpen: boolean;
@@ -121,7 +122,7 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({ isOpe
           <div>
             <label className="block text-sm font-medium text-gray-600">Payment Status</label>
             <div className="mt-1">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusBadgeClass(appointment.paymentStatus)}`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusBadgeClass(appointment.paymentStatus || "Unknown")}`}>
                 {appointment.paymentStatus}
               </span>
             </div>
@@ -158,6 +159,9 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({ isOpe
           onClose={() => setPrescriptionModalOpen(false)}
           appointmentId={appointment._id}
           patientName={patient?.name || ''}
+          setMedicines={(meds) => console.log("Set Medicines:", meds)}
+          setDiagnosis={(diag) => console.log("Set Diagnosis:", diag)}
+          setNotes={(notes) => console.log("Set Notes:", notes)}
         />
       </div>
     </div>

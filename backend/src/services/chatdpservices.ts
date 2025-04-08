@@ -1,23 +1,42 @@
-import { IChatRepository, IMessage,IMessageDocument  } from "../interfaces/chat/IChatdpRepository";
+import { Types } from "mongoose";
+import { IChatRepository, IMessage, IMessageDocument, IDoctorChatSummary } from "../interfaces/chat/IChatdpRepository";
 
 export class ChatdpService {
   constructor(private readonly chatRepository: IChatRepository) {}
 
-  async sendMessage(sender: string, receiver: string, text?: string, media?: string): Promise<IMessageDocument> {
-    if (!sender || !receiver ) {
-      throw new Error("Sender, receiver are required");
+  async sendMessage(
+    sender: string,
+    receiver: string,
+    text?: string,
+    media?: string,
+    callData?: {
+      type?: "image" | "video" | "call";
+      status?: "Missed" | "Not Answered" | "Completed";
+      callDuration?: number;
+      createdAt?: Date;
+    }
+  ): Promise<IMessageDocument> {
+    if (!sender || !receiver) {
+      throw new Error("Sender and receiver are required");
     }
 
     const message: Partial<IMessage> = {
       sender,
       receiver,
       ...(text && { text }),
-      ...(media && { media })
+      ...(media && { media }),
+      ...(callData && {
+        type: callData.type,
+        status: callData.status,
+        callDuration: callData.callDuration,
+        createdAt: callData.createdAt || new Date(),
+      }),
     };
 
     return this.chatRepository.saveMessage(message as IMessage);
   }
 
+  // ... other methods remain unchanged
   async getChatHistory(userId: string, doctorId: string): Promise<IMessageDocument[]> {
     if (!userId || !doctorId) {
       throw new Error("Both user ID and doctor ID are required");
@@ -25,7 +44,7 @@ export class ChatdpService {
     return this.chatRepository.getMessages(userId, doctorId);
   }
 
-  async getDoctorChatList(doctorId: string): Promise<any[]> {
+  async getDoctorChatList(doctorId: string): Promise<IDoctorChatSummary[]> {
     if (!doctorId) {
       throw new Error("Doctor ID is required");
     }

@@ -39,7 +39,7 @@ export const handlePaymentProcess = async (
     }
 
     const amount = appointment.appointmentFee;
-    const response = await fetch("http://localhost:5001/api/payment/payonline", {
+    const response = await fetch(import.meta.env.VITE_API_BASE_URL +"/payment/payonline", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -62,7 +62,7 @@ export const handlePaymentProcess = async (
         order_id: orderData.id,
         handler: async function (response: any) {
           try {
-            const verifyResponse = await fetch("http://localhost:5001/api/payment/verify", {
+            const verifyResponse = await fetch(import.meta.env.VITE_API_BASE_URL +"/payment/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

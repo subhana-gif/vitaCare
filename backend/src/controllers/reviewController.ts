@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { IReviewService } from '../interfaces/review/IReviewService';
 import { IUserService } from '../interfaces/user/IUserservice';
+import { HttpMessage, HttpStatus } from '../enums/HttpStatus';
 
 export class ReviewController {
   constructor(
@@ -14,13 +15,13 @@ export class ReviewController {
       const userId = req.user?.id;
 
       if (!userId) {
-        res.status(401).json({ message: 'User not authenticated' });
+        res.status(HttpStatus.CREATED).json({ message: HttpMessage.CREATED });
         return 
       }
 
       const user = await this.userService.getUserProfile(userId);
       if (!user) {
-        res.status(404).json({ message: 'User not found' });
+        res.status(HttpStatus.NOT_FOUND).json({ message:HttpMessage.NOT_FOUND });
         return
       }
 
@@ -32,7 +33,7 @@ export class ReviewController {
         comment,
       });
 
-      res.status(201).json(review);
+      res.status(HttpStatus.CREATED).json(review);
     } catch (error) {
       next(error);
     }

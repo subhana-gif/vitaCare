@@ -1,7 +1,16 @@
-import mongoose, { Document, Schema } from "mongoose";
-import { IMessage } from "../interfaces/chat/IChatdpRepository";
+import { IMessageDocument } from "interfaces/chat/IChatdpRepository";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
-interface IMessageDocument extends IMessage, Document {}
+export interface IMessage {
+  sender: Types.ObjectId | string;
+  receiver: Types.ObjectId | string;
+  text?: string;
+  media?: string;
+  type?: "image" | "video" | "call";
+  status?: "Missed" | "Not Answered" | "Completed";
+  callDuration?: number;
+  createdAt?: Date;
+}
 
 const messageSchema = new Schema<IMessageDocument>(
   {
@@ -29,15 +38,33 @@ const messageSchema = new Schema<IMessageDocument>(
         message: "Invalid media URL format",
       },
     },
+    type: {
+      type: String,
+      enum: ["image", "video", "call"],
+      default: "text",
+    },
+    status: {
+      type: String,
+      enum: ["Missed", "Not Answered", "Completed"],
+      required: function () {
+        return this.type === "call";
+      },
+    },
+    callDuration: {
+      type: Number, // in minutes
+      required: function () {
+        return this.type === "call" && this.status === "Completed";
+      },
+    },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
 
-// Ensure at least `text` or `media` is provided
+// Ensure at least `text`, `media`, or `type: "call"` is provided
 messageSchema.pre<IMessageDocument>("save", function (next) {
-  if (!this.text && !this.media) {
-    return next(new Error("Message must contain either text or media"));
+  if (!this.text && !this.media && this.type !== "call") {
+    return next(new Error("Message must contain either text, media, or be a call"));
   }
   next();
 });

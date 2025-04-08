@@ -23,37 +23,60 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   const localStreamRef = useRef<MediaStream | null>(null);
   const [targetSocketId, setTargetSocketId] = useState<string | null>(null);
   const ringAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [remoteHungUp, setRemoteHungUp] = useState(false);
+  const [callStartTime, setCallStartTime] = useState<Date | null>(null);
+  const [connectionState, setConnectionState] = useState<string>("");
+  const [iceState, setIceState] = useState<string>("");
 
-
+  useEffect(() => {
+    console.log("useEffect triggered for call state:", { isCalling, isRinging });
+    if (isCalling && !isRinging) {
+      console.log("Call started, setting callStartTime:", new Date());
+      setCallStartTime(new Date());
+    }
+  }, [isCalling, isRinging]);
+  
+  const getCallDuration = () => {
+    if (!callStartTime) {
+      console.log("No callStartTime, returning duration 0");
+      return 0;
+    }
+    const duration = Math.round((new Date().getTime() - callStartTime.getTime()) / 1000); // in seconds
+    console.log("Calculated call duration:", duration, "seconds");
+    return duration;
+  };
 
   const playVideo = async (element: HTMLVideoElement | null, stream: MediaStream | null) => {
-    if (!element || !stream) return;
+    if (!element || !stream) {
+      console.log("playVideo: No element or stream provided");
+      return;
+    }
     
     try {
-      // Only assign if the stream is different
+      console.log("playVideo: Assigning stream to element");
       if (element.srcObject !== stream) {
         element.srcObject = stream;
       }
       
-      // Mute remote video if it's the same as local (prevent echo)
       element.muted = element === localVideoRef.current;
       
       const playPromise = element.play();
       
       if (playPromise !== undefined) {
         await playPromise;
+        console.log("playVideo: Video playback started successfully");
       }
     } catch (error) {
-      console.error('Error playing video:', error);
-      // Retry after a short delay if aborted
+      console.error('playVideo: Error playing video:', error);
       if (error.name === 'AbortError') {
+        console.log("playVideo: Retry scheduled due to AbortError");
         setTimeout(() => playVideo(element, stream), 500);
       }
     }
   };
 
-  // Initialize ringing sound
   useEffect(() => {
+    console.log("useEffect triggered for ringtone initialization");
     ringAudioRef.current = new Audio(basslineWonderland);
     ringAudioRef.current.loop = true;
     ringAudioRef.current.volume = 0.5;
@@ -76,6 +99,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   }, []);
 
   useEffect(() => {
+    console.log("useEffect triggered for ringing state:", isRinging);
     if (isRinging && ringAudioRef.current) {
       console.log("Attempting to play ringtone");
       ringAudioRef.current.currentTime = 0;
@@ -92,12 +116,15 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
 
   const checkPermissions = async (): Promise<boolean> => {
     try {
+      console.log("Checking permissions for camera and microphone");
       const cameraPermission = await navigator.permissions.query({ name: "camera" as PermissionName });
       const micPermission = await navigator.permissions.query({ name: "microphone" as PermissionName });
       if (cameraPermission.state === "denied" || micPermission.state === "denied") {
+        console.log("Permissions denied for camera or microphone");
         toast.error("Camera or microphone access is denied. Please enable both in your browser settings.");
         return false;
       }
+      console.log("Permissions granted");
       return true;
     } catch (err) {
       console.error("Permission check error:", err);
@@ -106,49 +133,60 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   };
 
   const createPeerConnection = () => {
+    console.log("Creating new peer connection");
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
-
+  
     pc.onicecandidate = (event) => {
+      console.log("ICE Candidate:", event.candidate ? "Found" : "All candidates gathered");
       if (event.candidate && targetSocketId) {
+        console.log("Sending ICE candidate to", targetSocketId);
         socket.emit("iceCandidate", { to: targetSocketId, candidate: event.candidate });
       }
     };
-
+  
     pc.ontrack = (event) => {
+      console.log("Received remote track:", event.track.kind);
       const remoteStream = new MediaStream();
       event.streams[0].getTracks().forEach((track) => {
+        console.log(`Adding remote ${track.kind} track`);
         remoteStream.addTrack(track);
       });
-    
+      
       playVideo(remoteVideoRef.current, remoteStream);
       setRemoteStreamId(remoteStream.id);
     };
     
-      pc.onconnectionstatechange = () => {
-      console.log("Connection state:", pc.connectionState);
-      if (pc.connectionState === "disconnected" || 
-        pc.connectionState === "failed" || 
-        pc.connectionState === "closed") {
-      console.log("Call disconnected automatically");
-      endCall(false);
-    }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      console.log("ICE connection state:", pc.iceConnectionState);
-      if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
-        console.error("ICE connection issue");
-        endCall();
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+      setConnectionState(state);
+      console.log("PeerConnection state changed to:", state);
+      if (state === "disconnected" || state === "failed" || state === "closed") {
+        console.log("Call ended due to connection state:", state);
+        endCall(false, getCallDuration());
+      } else if (state === "connected") {
+        console.log("Peer connection established successfully");
       }
     };
-
+  
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      setIceState(state);
+      console.log("ICE connection state changed to:", state);
+      if (state === "failed" || state === "disconnected") {
+        console.log("ICE connection failed, attempting to end call");
+        endCall(false, getCallDuration());
+      } else if (state === "connected") {
+        console.log("ICE connection established");
+      }
+    };
+  
     return pc;
   };
 
-
   const startCall = async () => {
+    console.log("Starting call with userId:", userId, "targetUserId:", targetUserId);
     try {
       const hasPermission = await checkPermissions();
       if (!hasPermission) return;
@@ -158,6 +196,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       peerConnectionRef.current = pc;
 
       const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log("Available devices:", devices);
       const videoDevices = devices.filter((device) => device.kind === "videoinput");
       const audioDevices = devices.filter((device) => device.kind === "audioinput");
 
@@ -171,6 +210,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         video: videoDeviceId ? { deviceId: videoDeviceId } : true,
         audio: audioDeviceId ? { deviceId: audioDeviceId } : true,
       });
+      console.log("Local stream acquired");
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
@@ -182,6 +222,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      console.log("Offer created and set, emitting callUser");
       socket.emit("callUser", { to: targetUserId, from: userId, offer });
     } catch (error: any) {
       console.error("Error starting call:", error.name, error.message);
@@ -191,6 +232,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   };
 
   const acceptCall = async (offer: RTCSessionDescriptionInit, socketId: string) => {
+    console.log("Accepting call from socketId:", socketId);
     try {
       setIsRinging(false);
       if (isCalling) return;
@@ -200,6 +242,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       peerConnectionRef.current = pc;
 
       const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log("Available devices:", devices);
       const videoDevices = devices.filter((device) => device.kind === "videoinput");
       const audioDevices = devices.filter((device) => device.kind === "audioinput");
 
@@ -213,6 +256,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         video: videoDeviceId ? { deviceId: videoDeviceId } : true,
         audio: audioDeviceId ? { deviceId: audioDeviceId } : true,
       });
+      console.log("Local stream acquired");
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
@@ -225,6 +269,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
+      console.log("Answer created and set, emitting acceptCall");
       socket.emit("acceptCall", { to: socketId, answer });
     } catch (error: any) {
       console.error("Error accepting call:", error.name, error.message);
@@ -234,58 +279,81 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   };
 
   const rejectCall = () => {
+    console.log("Rejecting call, targetSocketId:", targetSocketId);
     setIsRinging(false);
     socket.emit("rejectCall", { to: targetSocketId });
   };
 
-  const endCall = (initiatedLocally = true) => {
-    // Send end call signal if this was a local action
+  const endCall = (initiatedLocally = true, callDuration = 0) => {
+    console.log("Ending call, initiatedLocally:", initiatedLocally, "duration:", callDuration);
     if (initiatedLocally && targetSocketId) {
+      console.log("Emitting endCall to:", targetSocketId);
       socket.emit("endCall", { to: targetSocketId });
     }
   
-    // Clean up peer connection
+    let status: "Completed" | "Missed" | "Not Answered";
+    if (initiatedLocally) {
+      status = "Completed";
+    } else {
+      status = remoteHungUp ? "Not Answered" : "Missed";
+    }
+  
+    // Emit callHistory regardless of connection state, since a call was initiated
+    const callData = {
+      sender: userId,
+      receiver: targetUserId,
+      type: "call",
+      status,
+      callDuration: Math.round(callDuration / 60), // Convert to minutes
+      createdAt: new Date(),
+    };
+    console.log("Emitting callHistory with data:", callData);
+    socket.emit("callHistory", callData);
+  
     if (peerConnectionRef.current) {
       peerConnectionRef.current.ontrack = null;
       peerConnectionRef.current.onicecandidate = null;
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
+      console.log("Peer connection cleaned up");
     }
   
-    // Stop all media tracks
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
         track.stop();
         track.enabled = false;
       });
       localStreamRef.current = null;
+      console.log("Local stream tracks stopped");
     }
   
-    // Clear video elements
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
+      console.log("Local video source cleared");
     }
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = null;
+      console.log("Remote video source cleared");
     }
   
-    // Reset states
     setIsCalling(false);
     setIsRinging(false);
+    setRemoteHungUp(false);
     setRemoteStreamId(null);
     
-    // Stop ringtone if playing
     if (ringAudioRef.current) {
       ringAudioRef.current.pause();
       ringAudioRef.current.currentTime = 0;
+      console.log("Ringtone paused and reset");
     }
   };
-  
+
   const toggleAudio = () => {
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
       audioTrack.enabled = !audioTrack.enabled;
       setMuteLocalAudio(!audioTrack.enabled);
+      console.log("Audio toggled, muted:", !audioTrack.enabled);
     }
   };
 
@@ -294,16 +362,20 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       videoTrack.enabled = !videoTrack.enabled;
       setVideoEnabled(videoTrack.enabled);
+      console.log("Video toggled, enabled:", videoTrack.enabled);
     }
   };
 
   useEffect(() => {
+    console.log("useEffect triggered for socket listeners");
     socket.on("callTargetSocket", ({ targetSocketId }) => {
+      console.log("Received callTargetSocket, setting targetSocketId:", targetSocketId);
       setTargetSocketId(targetSocketId);
     });
     socket.emit("registerVideoCall", userId);
 
     socket.on("incomingCall", async ({ from, offer, socketId }) => {
+      console.log("Received incomingCall from:", from, "socketId:", socketId);
       setIsRinging(true);
       setTargetSocketId(socketId);
       const proceed = await checkPermissions();
@@ -316,33 +388,38 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     });
 
     socket.on("callAccepted", async ({ answer }) => {
+      console.log("Received callAccepted, setting remote description");
       await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
     socket.on("iceCandidate", async ({ candidate }) => {
+      console.log("Received iceCandidate");
       if (candidate && peerConnectionRef.current) {
         await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("Added ICE candidate");
       }
     });
 
     socket.on("callRejected", () => {
       console.log("Call was rejected by remote user");
-      endCall(false);
+      endCall(false, 0);
       toast.warn("The other user rejected your call");
     });
 
     socket.on("callEnded", () => {
       console.log("Remote user ended the call");
-      endCall(false); // false indicates remote initiation
+      endCall(false, getCallDuration());
     });
 
     socket.on("callFailed", ({ message }) => {
       console.error("Call failed:", message);
-      endCall(false);
+      setRemoteHungUp(true);
+      endCall(false, 0);
       toast.error(`Call failed: ${message}`);
     });
 
     return () => {
+      console.log("Cleaning up socket listeners");
       socket.off("callTargetSocket");
       socket.off("incomingCall");
       socket.off("callAccepted");
@@ -444,13 +521,13 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
                   {videoEnabled ? "Video Off" : "Video On"}
                 </button>
                 <button
-  onClick={() => endCall(true)} // true indicates local initiation
-  className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 flex items-center gap-2"
->
-  <Video size={20} />
-  End Call
-</button>        
-      </>
+                  onClick={() => endCall(true, getCallDuration())}
+                  className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 flex items-center gap-2"
+                >
+                  <Video size={20} />
+                  End Call
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -460,4 +537,3 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
 };
 
 export default VideoCall;
-

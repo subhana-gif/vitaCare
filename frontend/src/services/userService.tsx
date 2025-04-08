@@ -1,9 +1,13 @@
 import axios from "axios";
 import API from "../api/axiosInstance";
-import {store} from "../redux/store"; // Import your Redux store
+import {store} from "../redux/store"; 
+import { RootState } from "../redux/store";
 
-const getToken = () => store.getState().auth.accessToken;
-const BASE_URL = "http://localhost:5001/api/user";
+const getToken = () => {
+  const state: RootState = store.getState();
+  return state.auth.accessToken;
+};
+const BASE_URL = import.meta.env.VITE_API_BASE_URL + "/user";;
 const token = localStorage.getItem("adminToken");
 
 export const userService = {
@@ -20,7 +24,7 @@ export const userService = {
   },
 
   forgotPassword: async (email: string) => {
-    const response = await API.post("/api/user/forgot-password", { email });
+    const response = await API.post(`${BASE_URL}/forgot-password`, { email });
     console.log("API Response:", response); // Check structure
     return response.data; // ✅ Return `response.data`, not `{ data }`
   },
@@ -146,7 +150,7 @@ export const userService = {
 
  sendMessage: async (message:string, token:string) => {
     try {
-        const response = await fetch("http://localhost:5001/api/chat", {
+        const response = await fetch(import.meta.env.VITE_API_BASE_URL + "/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -160,9 +164,13 @@ export const userService = {
         }
 
         return await response.json();
-    } catch (error) {
-        throw new Error(error.message);
-    }
-}
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        } else {
+          throw new Error("An unexpected error occurred");
+        }
+      }
+      }
 
   };

@@ -1,6 +1,9 @@
 import { Server, Socket } from "socket.io";
+import  {ChatdpService}  from "../services/chatdpservices";
+import  {ChatdpRepository}  from "../repositories/chatdpRepository";
 
 export default (io: Server) => {
+  const chatdpService = new ChatdpService(new ChatdpRepository()); // pass an instance
   const users: { [key: string]: string } = {};
 
   io.on("connection", (socket: Socket) => {
@@ -69,6 +72,33 @@ export default (io: Server) => {
     // Handle call end
     socket.on("endCall", ({ to }) => {
       io.to(to).emit("callEnded");
+    });
+
+    socket.on("callHistory", async (callData) => {
+      try {
+        const { sender, receiver, type, status, callDuration, createdAt } = callData;
+        console.log("Received callHistory:", callData);
+
+        // Save call history as a message
+        const message = await chatdpService.sendMessage(
+          sender,
+          receiver,
+          undefined, // No text
+          undefined, // No media
+          {
+            type,
+            status,
+            callDuration,
+            createdAt: new Date(createdAt),
+          } as any // Type assertion to bypass strict typing for now
+        );
+
+        const roomId = [sender, receiver].sort().join("_");
+        io.to(roomId).emit("receiveMessage", message); // Notify both users
+        console.log("Call history saved and emitted:", message);
+      } catch (error) {
+        console.error("Error saving call history:", error);
+      }
     });
 
     // --- Cleanup on Disconnect ---

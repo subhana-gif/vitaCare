@@ -1,8 +1,43 @@
+
+
 export interface IPaymentOrder {
     amount: number;
     currency: string;
     receipt: string;
   }
+
+  export interface IPaymentOrderResult {
+    id: string; // Razorpay order ID
+    amount: number;
+    currency: string;
+    receipt: string;
+    status: 'created'; // usually this status after creation
+    created_at: number; // Unix timestamp
+  }
+
+  export interface IRefundResponse {
+    id: string; // Refund ID
+    amount: number;
+    currency: string;
+    created_at: number;
+    status: string; // Example: 'processed'
+  }
+
+  export interface IPaymentDetails {
+    id: string; // Payment ID
+    entity: string;
+    amount: number;
+    currency: string;
+    status: string;
+    order_id: string;
+    invoice_id: string | null;
+    international: boolean;
+    method: string;
+    captured: boolean;
+    description: string;
+    created_at: number;
+  }
+  
   
   export interface IPaymentVerification {
     order_id: string;

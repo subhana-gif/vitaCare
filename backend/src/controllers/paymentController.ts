@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import PaymentService from "../services/paymentService";
 import { IPaymentVerification } from "../interfaces/payment/IPayment";
+import { HttpMessage, HttpStatus } from "../enums/HttpStatus";
+
 
 class PaymentController {
   private paymentService: PaymentService;
@@ -13,9 +15,9 @@ class PaymentController {
     try {
       const { amount } = req.body;
       const order = await this.paymentService.createOrder(amount);
-      res.status(201).json(order);
+      res.status(HttpStatus.OK).json(order);
     } catch (error: any) {
-      res.status(500).json({ message: error.message || "Failed to create order." });
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message:HttpMessage.INTERNAL_SERVER_ERROR });
     }
   }
 
@@ -24,20 +26,20 @@ class PaymentController {
       const { order_id, payment_id, signature, appointmentId } = req.body;
 
       if (!order_id || !payment_id || !signature || !appointmentId) {
-        return res.status(400).json({ message: "Invalid request data" });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
       }
 
       const verificationData: IPaymentVerification = { order_id, payment_id, signature, appointmentId };
       const isValid = await this.paymentService.verifyPayment(verificationData);
 
       if (!isValid) {
-        return res.status(400).json({ message: "Payment verification failed" });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
       }
 
-      return res.status(200).json({ success: true, message: "Payment verified successfully" });
+      return res.status(HttpStatus.OK).json({ success: true, message: HttpMessage.OK });
     } catch (error) {
       console.error("Payment Verification Error:", error);
-      return res.status(500).json({ message: "Internal Server Error" });
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: HttpMessage.INTERNAL_SERVER_ERROR });
     }
   }
 
@@ -46,40 +48,40 @@ class PaymentController {
       const { appointmentId } = req.body;
   
       if (!appointmentId) {
-        return res.status(400).json({ message: "Missing required parameters" });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
       }
   
       const appointment = await this.paymentService.getAppointmentById(appointmentId);
     
       if (!appointment) {
-        return res.status(404).json({ message: "Appointment not found" });
+        return res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
       }
   
       const paymentId = appointment.paymentId;
   
       if (!paymentId) {
-        return res.status(400).json({ message: "No payment ID found for this appointment" });
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
       }
   
       const refundDetails = await this.paymentService.processRefund(appointmentId, paymentId);
   
       if (refundDetails) {
-        return res.status(200).json({
+        return res.status(HttpStatus.OK).json({
           success: true,
-          message: "Refund processed successfully",
+          message: HttpMessage.OK,
           refundDetails
         });
       }
   
-      return res.status(400).json({
+      return res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: "Failed to process refund"
+        message: HttpMessage.BAD_REQUEST
       });
     } catch (error) {
       console.error("Refund Error:", error);
-      return res.status(500).json({
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: error instanceof Error ? error.message : "Internal Server Error"
+        message: HttpMessage.INTERNAL_SERVER_ERROR
       });
     }
   }

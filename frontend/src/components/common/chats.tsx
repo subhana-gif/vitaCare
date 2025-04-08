@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { MoreVertical, Trash2, Share2 } from "lucide-react";
+import { MoreVertical, Trash2, Share2, Video } from "lucide-react";
 import io, { Socket } from "socket.io-client";
 import axios from "axios";
 import VideoCall from "../ui/videoCall";
@@ -12,9 +12,11 @@ interface Message {
   receiver: string;
   text?: string;
   media?: string;
-  type?: "image" | "video";
+  type?: "image" | "video" | "call";
   createdAt: Date;
   read: boolean;
+  status?: "Missed" | "Not Answered" | "Completed";
+  callDuration?: number;
 }
 
 interface UserInfo {
@@ -48,7 +50,27 @@ const CommonChat: React.FC<CommonChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getDateHeader = (date: Date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const messageDate = new Date(date);
+    if (messageDate.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (messageDate.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      return messageDate.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+  };
+
   const handleDelete = async (messageId: string) => {
+    console.log("Attempting to delete message with ID:", messageId);
     if (!token || !currentUserId || !targetUserId) {
       console.error("Cannot delete message: missing token, currentUserId, or targetUserId", {
         token,
@@ -61,19 +83,19 @@ const CommonChat: React.FC<CommonChatProps> = ({
       await axios.delete(`http://localhost:5001/api/chat/message/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Message deleted successfully from backend");
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-      
-      // Determine userId and doctorId based on isDoctor prop
+
       const userId = isDoctor ? targetUserId : currentUserId;
       const doctorId = isDoctor ? currentUserId : targetUserId;
-  
+
       socket.emit("messageDeleted", { messageId, userId, doctorId });
       setShowConfirm(false);
     } catch (error) {
       console.error("Error deleting message:", error);
     }
   };
-  
+
   const MessageDropdown = ({
     onDelete,
     isOwnMessage,
@@ -145,26 +167,34 @@ const CommonChat: React.FC<CommonChatProps> = ({
   };
 
   useEffect(() => {
-    if (!currentUserId || !targetUserId || !token) return;
-  
-    // Join the room
+    console.log("useEffect triggered for socket setup, currentUserId:", currentUserId, "targetUserId:", targetUserId);
+    if (!currentUserId || !targetUserId || !token) {
+      console.error("Missing required params:", { currentUserId, targetUserId, token });
+      return;
+    }
+
     socket.emit("joinRoom", { userId: targetUserId, doctorId: currentUserId });
-  
-    // Fetch initial messages
-    axios
-      .get<Message[]>(`http://localhost:5001/api/chat/${targetUserId}/${currentUserId}`, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      })
-      .then((res) => {
+    console.log("Joined room with userId:", targetUserId, "doctorId:", currentUserId);
+
+    const fetchMessages = async () => {
+      console.log("Fetching messages from backend");
+      try {
+        const res = await axios.get<Message[]>(`http://localhost:5001/api/chat/${targetUserId}/${currentUserId}`, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        });
+        console.log("Fetched messages:", res.data);
         const sortedMessages = res.data.sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
         setMessages(sortedMessages);
-      })
-      .catch((err) => console.error("Error fetching messages:", err));
-  
-    // Set up message receive listener
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    };
+    fetchMessages();
+
     const handleReceiveMessage = (msg: Message) => {
+      console.log("Received message:", msg);
       setMessages((prev) =>
         prev.some((m) => m._id === msg._id)
           ? prev
@@ -174,25 +204,33 @@ const CommonChat: React.FC<CommonChatProps> = ({
       );
     };
     socket.on("receiveMessage", handleReceiveMessage);
-  
-    // Set up message deletion listener
+
+    const handleCallHistory = (callData: Message) => {
+      console.log("Received callHistory:", callData);
+      fetchMessages(); // Refetch to ensure consistency
+    };
+    socket.on("callHistory", handleCallHistory);
+
     const handleMessageDeleted = ({ messageId }: { messageId: string }) => {
-        setMessages((prev) => {
-          const newMessages = [...prev.filter((msg) => msg._id !== messageId)]; // Spread into a new array
-          return newMessages;
-        });
-      };
-      
-      socket.on("messageDeleted", handleMessageDeleted);
-  
-    // Cleanup
+      console.log("Message deleted, ID:", messageId);
+      setMessages((prev) => [...prev.filter((msg) => msg._id !== messageId)]);
+    };
+    socket.on("messageDeleted", handleMessageDeleted);
+
     return () => {
+      console.log("Cleaning up socket listeners");
       socket.off("receiveMessage", handleReceiveMessage);
+      socket.off("callHistory", handleCallHistory);
       socket.off("messageDeleted", handleMessageDeleted);
     };
   }, [currentUserId, targetUserId, token]);
+
   const sendMessage = async () => {
-    if (!currentUserId || !targetUserId || (!text.trim() && !media) || !token) return;
+    console.log("Sending message, text:", text, "media:", media);
+    if (!currentUserId || !targetUserId || (!text.trim() && !media) || !token) {
+      console.error("Cannot send message: missing required fields", { currentUserId, targetUserId, text, media, token });
+      return;
+    }
 
     const formData = new FormData();
     formData.append("sender", currentUserId);
@@ -204,6 +242,7 @@ const CommonChat: React.FC<CommonChatProps> = ({
       const res = await axios.post("http://localhost:5001/api/chat/send", formData, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
+      console.log("Message sent successfully, response:", res.data);
       socket.emit("sendMessage", res.data);
       setMessages((prev) => [...prev, res.data]);
       setText("");
@@ -222,16 +261,17 @@ const CommonChat: React.FC<CommonChatProps> = ({
   };
 
   const handleAttachmentClick = () => {
+    console.log("Attachment click triggered");
     fileInputRef.current?.click();
   };
 
   useEffect(() => {
+    console.log("Messages updated, scrolling to bottom");
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div className="flex flex-col h-[80vh] border rounded-lg shadow-lg overflow-hidden">
-      {/* Chat Header */}
       <div className="p-3 border-b bg-blue-500 text-white flex items-center justify-between">
         <div className="flex items-center gap-3">
           {headerImageUrl && (
@@ -246,52 +286,120 @@ const CommonChat: React.FC<CommonChatProps> = ({
         <VideoCall socket={socket} userId={currentUserId} targetUserId={targetUserId} />
       </div>
 
-      {/* Messages Container */}
       <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
         {messages.length === 0 ? (
           <div className="text-center py-4 text-gray-500">No messages yet</div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg._id}
-              className={`p-3 my-2 rounded-lg max-w-xs relative flex items-start ${
-                msg.sender === currentUserId
-                  ? "bg-blue-500 text-white self-end ml-auto"
-                  : "bg-gray-200 self-start mr-auto"
-              }`}
-            >
-              <div className="flex-grow">
-                {msg.text && <p>{msg.text}</p>}
-                {msg.media && (
-                  <div className="media-container">
-                    {msg.media.endsWith(".mp4") ? (
-                      <video src={msg.media} controls className="w-64 h-48 object-cover rounded" />
-                    ) : (
-                      <img src={msg.media} alt="Shared Media" className="w-64 h-48 object-cover rounded" />
-                    )}
-                  </div>
-                )}
-                <span className="text-xs opacity-75 block text-right mt-1">
-                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-              <MessageDropdown
-                isOwnMessage={msg.sender === currentUserId}
-                onDelete={() => {
-                  setMessageToDelete(msg._id);
-                  setShowConfirm(true);
-                }}
-              />
-            </div>
-          ))
+          <>
+            {messages
+              .reduce((acc: { date: string; messages: Message[] }[], msg) => {
+                const dateHeader = getDateHeader(new Date(msg.createdAt));
+                const lastGroup = acc[acc.length - 1];
+                if (lastGroup && lastGroup.date === dateHeader) {
+                  lastGroup.messages.push(msg);
+                } else {
+                  acc.push({ date: dateHeader, messages: [msg] });
+                }
+                return acc;
+              }, [])
+              .map((group, index) => (
+                <div key={index}>
+                  <div className="text-center text-gray-500 my-4">{group.date}</div>
+                  {group.messages.map((msg) => (
+                    <div
+                      key={msg._id}
+                      className={`p-3 my-2 rounded-lg max-w-xs relative ${
+                        msg.sender === currentUserId
+                          ? "bg-blue-500 text-white self-end ml-auto"
+                          : "bg-gray-200 self-start mr-auto"
+                      } ${
+                        msg.type === "call"
+                          ? (msg.status === "Missed" || msg.status === "Not Answered"
+                              ? "bg-red-800 text-red-800"
+                              : "bg-green-800 text-green-800") + " !bg-opacity-20"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="flex-grow">
+                          {msg.type === "call" ? (
+                            <div className="flex items-center gap-2">
+                              <Video
+                                size={18}
+                                className={
+                                  msg.status === "Missed" || msg.status === "Not Answered"
+                                    ? "text-red-500"
+                                    : "text-green-500"
+                                }
+                              />
+                              <div>
+                                <p className="font-medium">
+                                  {msg.status === "Completed"
+                                    ? `Video call (${msg.callDuration || 0} min)`
+                                    : msg.status === "Missed"
+                                    ? "Missed video call"
+                                    : msg.status === "Not Answered"
+                                    ? "Not answered"
+                                    : "Video call"}
+                                </p>
+                                <p className="text-xs opacity-75 mt-1">
+                                  {new Date(msg.createdAt).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {msg.text && <p>{msg.text}</p>}
+                              {msg.media && (
+                                <div className="media-container mt-2">
+                                  {msg.media.endsWith(".mp4") ? (
+                                    <video
+                                      src={msg.media}
+                                      controls
+                                      className="w-64 h-48 object-cover rounded"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={msg.media}
+                                      alt="Shared Media"
+                                      className="w-64 h-48 object-cover rounded"
+                                    />
+                                  )}
+                                </div>
+                              )}
+                              {(msg.text || msg.media) && (
+                                <span className="text-xs opacity-75 block text-right mt-1">
+                                  {new Date(msg.createdAt).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        {msg.type !== "call" && (
+                          <MessageDropdown
+                            isOwnMessage={msg.sender === currentUserId}
+                            onDelete={() => {
+                              setMessageToDelete(msg._id);
+                              setShowConfirm(true);
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+          </>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
       <div className="p-3 border-t bg-white">
         {media && (
           <div className="mb-2 p-2 bg-gray-100 rounded-lg flex items-center">
@@ -301,7 +409,10 @@ const CommonChat: React.FC<CommonChatProps> = ({
               className="h-12 w-12 object-cover rounded"
             />
             <span className="truncate flex-grow ml-2">{media.name}</span>
-            <button onClick={() => setMedia(null)} className="ml-2 text-red-500 hover:text-red-700">
+            <button
+              onClick={() => setMedia(null)}
+              className="ml-2 text-red-500 hover:text-red-700"
+            >
               ✕
             </button>
           </div>

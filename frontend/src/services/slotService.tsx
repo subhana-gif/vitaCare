@@ -1,6 +1,7 @@
 import axios from "axios";
+import dayjs from "dayjs";
 
-const API_BASE = "http://localhost:5001/api/slots";
+const API_BASE = import.meta.env.VITE_API_BASE_URL +"/slots";
 
 export const slotService = {
   fetchSlots: async (doctorId: string, token: string) => {
@@ -13,16 +14,10 @@ export const slotService = {
   },
 
   addSlot: async (
-    doctorId: string,
-    date: string,
-    startTime: string,
-    endTime: string,
-    price: number,
-    token: string
-  ) => {
+doctorId: string, dayOfWeek: string, startTime: string, endTime: string, price: number, token: string  ) => {
     return await axios.post(
       `${API_BASE}/create`,
-      { doctorId, date, startTime, endTime, price },
+      { doctorId, dayOfWeek, startTime, endTime, price },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -58,23 +53,19 @@ export const slotService = {
 
   fetchSlotsByDate: async (doctorId: string, selectedDate: string, token: string) => {
     try {
-      const response = await axios.get(`${API_BASE}/${doctorId}/date/${selectedDate}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const dayOfWeek = dayjs(selectedDate).format("dddd"); // Convert date to day of week
+      const response = await axios.get(`${API_BASE}/${doctorId}/day/${dayOfWeek}`, { // Change endpoint
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.data || !Array.isArray(response.data.slots)) {
         throw new Error("Unexpected response structure");
       }
-
       return response.data.slots;
     } catch (error) {
       console.error("Error fetching slots by date:", error);
       throw error;
     }
   },
-
 
   markAvailable: async (slotId: string, token: string) => {
     return await axios.put(`${API_BASE}/${slotId}/available`, {}, {

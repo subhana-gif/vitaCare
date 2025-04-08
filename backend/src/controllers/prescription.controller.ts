@@ -9,6 +9,7 @@ import { DoctorRepository } from '../repositories/doctorRepository';
 import { IAppointmentRepository } from '../interfaces/appointment/IAppointmentRepository';
 import { IDoctorRepository } from '../interfaces/doctor/IDoctorRepository';
 import { DoctorService } from '../services/DoctorService';
+import { HttpMessage, HttpStatus } from '../enums/HttpStatus';
 
 export class PrescriptionController {
   private prescriptionService: PrescriptionService;
@@ -34,7 +35,7 @@ export class PrescriptionController {
       const { appointmentId, medicines, diagnosis, notes } = req.body;
 
       if (!Types.ObjectId.isValid(appointmentId)) {
-        res.status(400).json({ message: "Invalid appointment ID" });
+        res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.BAD_REQUEST});
         return;
       }
       const prescription = await this.prescriptionService.createPrescription({
@@ -46,12 +47,12 @@ export class PrescriptionController {
 
       const appointment = await this.appointmentService.getAppointmentById(appointmentId);
       if (!appointment) {
-        res.status(404).json({ message: "Appointment not found" });
+        res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.NOT_FOUND });
         return;
       }
       const doctor = await this.doctorService.getDoctorById(appointment.doctorId.toString());
       if (!doctor) {
-        res.status(404).json({ message: "Doctor not found" });
+        res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.NOT_FOUND});
         return;
       }
   
@@ -63,19 +64,20 @@ export class PrescriptionController {
           ${appointment.date} at ${appointment.time} has been ${req.method === 'POST' ? 'created' : 'updated'}.`,
         });
 
-        (req as any).io.to(appointment.patientId.toString()).emit("newNotification", notification);
+        req.io?.to(appointment.patientId.toString()).emit("newNotification", notification);
       }
 
-      res.status(201).json({
+      res.status(HttpStatus.CREATED).json({
         success: true,
-        message: "Prescription processed successfully",
+        message: HttpMessage.OK,
         data: prescription,
       });
-    } catch (error: any) {
-      console.error("Error processing prescription:", error);
-      res.status(500).json({
-        message: error.message || "Failed to process prescription",
-      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.BAD_REQUEST});
+      } else {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST});
+      }
     }
   };
 
@@ -85,16 +87,17 @@ export class PrescriptionController {
 
       const prescription = await this.prescriptionService.getPrescriptionByAppointment(appointmentId);
       if (!prescription) {
-        res.status(404).json({ message: 'Prescription not found' });
+        res.status(HttpStatus.NOT_FOUND).json({ message:HttpMessage.NOT_FOUND });
         return;
       }
 
       res.json(prescription);
-    } catch (error: any) {
-      console.error('Error fetching prescription:', error);
-      res.status(500).json({ 
-        message: error.message || 'Failed to fetch prescription' 
-      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.BAD_REQUEST});
+      } else {
+        res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.BAD_REQUEST });
+      }
     }
   };
 
@@ -104,7 +107,7 @@ export class PrescriptionController {
 
       const prescription = await this.prescriptionService.getPrescriptionByAppointment(appointmentId);
       if (!prescription) {
-        res.status(404).json({ message: 'Prescription not found' });
+        res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
         return;
       }
       const pdfBuffer = await this.prescriptionService.generatePdfContent(prescription);
@@ -112,11 +115,12 @@ export class PrescriptionController {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename=prescription_${appointmentId}.pdf`);
       res.send(pdfBuffer);
-    } catch (error: any) {
-      console.error('Error generating prescription PDF:', error);
-      res.status(500).json({ 
-        message: error.message || 'Failed to generate prescription PDF' 
-      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
+      } else {
+        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST});
+      }
     }
   };
 }

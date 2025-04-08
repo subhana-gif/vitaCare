@@ -1,13 +1,28 @@
+import { Types } from "mongoose";
 import Slot, { ISlot } from "../models/slot";
 
 class SlotRepository {
+ 
+  async getSlotById(slotId: string): Promise<ISlot | null> {
+    return await Slot.findById(slotId);
+  }
+
   async createSlot(slotData: Partial<ISlot>): Promise<ISlot> {
     return await Slot.create(slotData);
+  }
+
+  async getSlotsByDoctorAndDay(doctorId: string, dayOfWeek: string): Promise<ISlot[]> {
+    return await Slot.find({
+      doctorId: new Types.ObjectId(doctorId),
+      dayOfWeek,
+    })as ISlot[];
   }
 
   async getSlotsByDoctorId(doctorId: string): Promise<ISlot[]> {
     return await Slot.find({ doctorId });
   }
+
+
 
   async updateSlot(slotId: string, updatedData: Partial<ISlot>): Promise<ISlot | null> {
     return await Slot.findByIdAndUpdate(slotId, updatedData, { new: true });

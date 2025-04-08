@@ -7,27 +7,22 @@ interface TimeSlotSelectorProps {
   doctorId: string;
   token: string;
   selectedDate: string;
-  bookedAppointments: {
-    date: string;
-    time: string;
-  }[];
+  bookedAppointments: { date: string; time: string }[];
   onSelectSlot: (slotId: string, time: string, price: number) => void;
 }
 
 interface Slot {
   _id: string;
   doctorId: string;
-  date?: string;
+  dayOfWeek: string;
   startTime: string;
   endTime: string;
   isBooked: boolean;
   price: number;
-  day?: number; // Day of week (0-6, Sunday is 0)
-  status?: string;
   isAvailable?: boolean;
+  status?: string;
 }
 
-// Define a type for our processed time slots
 interface ProcessedTimeSlot {
   id: string;
   time: string;
@@ -35,6 +30,7 @@ interface ProcessedTimeSlot {
   price: number;
   originalSlotId: string;
 }
+
 const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
   doctorId,
   token,
@@ -47,91 +43,95 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [availableTimeSlots, setAvailableTimeSlots] = useState<ProcessedTimeSlot[]>([]);
   const [originalSlots, setOriginalSlots] = useState<Slot[]>([]);
-  console.log("token here in user:",token)
 
   useEffect(() => {
     const fetchDoctorSlots = async () => {
-      if (!doctorId || !selectedDate) {
+      if (!doctorId || !selectedDate || !token) {
+        console.log("Missing required props:", { doctorId, selectedDate, token });
         setLoading(false);
+        toast.error("Missing required information to fetch slots");
         return;
       }
-  
+
       setLoading(true);
       try {
-        const slots = await slotService.fetchSlotsByDate(doctorId, selectedDate, token);
+        const dayOfWeek = dayjs(selectedDate).format("dddd");
+        console.log("Fetching slots for:", { doctorId, selectedDate, dayOfWeek, token });
 
-        setOriginalSlots(slots || []);        
+        const slots = await slotService.fetchSlotsByDate(doctorId, selectedDate, token);
+        console.log("Raw slots from service:", slots);
+
+        if (!Array.isArray(slots)) {
+          throw new Error("Invalid slots data: Expected an array");
+        }
+
+        const relevantSlots = slots.filter(slot => slot.isAvailable !== false);
+        setOriginalSlots(relevantSlots);
+
         const now = dayjs();
         const isToday = selectedDate === now.format("YYYY-MM-DD");
-        
         const processedTimeSlots: ProcessedTimeSlot[] = [];
-        
-        slots.forEach(slot => {
+
+        relevantSlots.forEach(slot => {
           let currentTime = dayjs(`2000-01-01 ${slot.startTime}`);
           const endTime = dayjs(`2000-01-01 ${slot.endTime}`);
-          
+
           while (currentTime.isBefore(endTime)) {
             const timeString = currentTime.format("HH:mm");
-            
-            if (isToday) {
-              const slotDateTime = dayjs(`${selectedDate} ${timeString}`);
-              if (slotDateTime.isBefore(now)) {
-                currentTime = currentTime.add(15, "minute");
-                continue;
-              }
+
+            if (isToday && dayjs(`${selectedDate} ${timeString}`).isBefore(now)) {
+              currentTime = currentTime.add(15, "minute");
+              continue;
             }
-            
+
             const isBooked = bookedAppointments.some(
-              appointment => 
-                appointment.date === selectedDate && 
-                appointment.time === timeString
+              appointment => appointment.date === selectedDate && appointment.time === timeString
             );
-            
+
             if (!isBooked) {
               processedTimeSlots.push({
                 id: `${slot._id}-${timeString}`,
                 time: timeString,
                 displayTime: dayjs(`2000-01-01 ${timeString}`).format("h:mm A"),
                 price: slot.price,
-                originalSlotId: slot._id.toString() // Ensure it's a string
+                originalSlotId: slot._id.toString()
               });
             }
-            
+
             currentTime = currentTime.add(15, "minute");
           }
         });
-        
+
+        console.log("Processed time slots:", processedTimeSlots);
         setAvailableTimeSlots(processedTimeSlots);
-        
-        // Reset selected slot when date changes
         setSelectedSlot("");
         setSelectedTime("");
-  
+
       } catch (error) {
         console.error("Error fetching doctor slots:", error);
-        toast.error("Failed to load available time slots");
-      } finally {
+      
+        if (error instanceof Error) {
+          toast.error(`Failed to load available time slots: ${error.message}`);
+        } else {
+          toast.error("Failed to load available time slots: Unknown error");
+        }
+      }
+      finally {
         setLoading(false);
       }
     };
-  
+
     fetchDoctorSlots();
   }, [doctorId, selectedDate, token, bookedAppointments]);
-  
+
   const handleTimeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const timeId = e.target.value;
-    
     if (timeId) {
       const selectedTimeSlot = availableTimeSlots.find(slot => slot.id === timeId);
-      
       if (selectedTimeSlot) {
         setSelectedSlot(timeId);
         setSelectedTime(selectedTimeSlot.time);
-        onSelectSlot(
-          selectedTimeSlot.originalSlotId, 
-          selectedTimeSlot.time, 
-          selectedTimeSlot.price
-        );
+        onSelectSlot(selectedTimeSlot.originalSlotId, selectedTimeSlot.time, selectedTimeSlot.price);
       }
     } else {
       setSelectedSlot("");
@@ -156,7 +156,6 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
     );
   }
 
-  // Group time slots by price for display in the UI
   const slotsByPrice: Record<string, ProcessedTimeSlot[]> = {};
   availableTimeSlots.forEach(slot => {
     const priceKey = slot.price.toString();
@@ -169,10 +168,7 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-lg font-medium text-gray-700 mb-3">
-          Select Time:
-        </label>
-
+        <label className="block text-lg font-medium text-gray-700 mb-3">Select Time:</label>
         <div className="space-y-4">
           <div>
             <label htmlFor="timeSlot" className="block text-sm font-medium text-gray-700 mb-1">
@@ -185,21 +181,15 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
             >
               <option value="">Select a time</option>
-              
-              {/* Group times by price with optgroup */}
               {Object.entries(slotsByPrice).map(([price, slots]) => (
                 <optgroup key={price} label={`₹${price}`}>
                   {slots.map(slot => (
-                    <option key={slot.id} value={slot.id}>
-                      {slot.displayTime}
-                    </option>
+                    <option key={slot.id} value={slot.id}>{slot.displayTime}</option>
                   ))}
                 </optgroup>
               ))}
             </select>
           </div>
-
-          {/* Selected slot display */}
           {selectedSlot && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
               <p className="text-blue-800 font-medium">

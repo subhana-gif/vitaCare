@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Speciality from "../models/speciality";
+import { HttpMessage, HttpStatus } from "../enums/HttpStatus";
 
 class SpecialityController {
 
@@ -7,7 +8,7 @@ class SpecialityController {
         try {
             const { name } = req.query;
             if (!name){
-                res.status(400).json({ error: "Speciality name is required" }) 
+                res.status(HttpStatus.BAD_REQUEST).json({ error: "Speciality name is required" }) 
                  return
             }
             const speciality = await Speciality.findOne({ name });
@@ -18,7 +19,7 @@ class SpecialityController {
             res.json({ isActive: speciality.isActive });
           } catch (error) {
             console.error("Error checking speciality status:", error);
-            res.status(500).json({ error: "Internal Server Error" });
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: HttpMessage.INTERNAL_SERVER_ERROR });
           }
         };
 
@@ -28,24 +29,24 @@ class SpecialityController {
         const { name } = req.body;
 
         if (!name) {
-            res.status(400).json({ message: "Speciality name is required." });
+            res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.BAD_REQUEST });
             return;
         }
 
         try {
             const existingSpeciality = await Speciality.findOne({ name });
             if (existingSpeciality) {
-                res.status(400).json({ message: "Speciality already exists." });
+                res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
                 return;
             }
 
             const speciality = new Speciality({ name });
             await speciality.save();
 
-            res.status(201).json({ message: "Speciality added successfully!", speciality });
+            res.status(HttpStatus.CREATED).json({ message:HttpMessage.CREATED});
         } catch (error) {
             console.error(error)
-            res.status(500).json({ message: "Error adding speciality.", error });
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: HttpMessage.INTERNAL_SERVER_ERROR });
         }
     }
 
@@ -53,10 +54,10 @@ class SpecialityController {
     async getAllSpecialities(req: Request, res: Response) {
         try {
             const specialities = await Speciality.find();
-            res.status(200).json(specialities);
+            res.status(HttpStatus.OK).json(specialities);
         } catch (error) {
             console.log("error getting speciality:",error)
-            res.status(500).json({ message: "Failed to fetch specialities.", error });
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: HttpMessage.INTERNAL_SERVER_ERROR });
         }
     }
 
@@ -68,17 +69,17 @@ class SpecialityController {
             const speciality = await Speciality.findById(id);
 
             if (!speciality) {
-                res.status(404).json({ message: "Speciality not found." });
+                res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
                 return 
             }
 
             speciality.isActive = !speciality.isActive; 
             await speciality.save();
 
-            res.status(200).json(speciality);
+            res.status(HttpStatus.OK).json(speciality);
         } catch (error) {
             console.log("error toggling speciality:",error)
-            res.status(500).json({ message: "Error toggling speciality status.", error });
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: HttpMessage.INTERNAL_SERVER_ERROR });
         }
     }
 

@@ -2,7 +2,7 @@ import axios from "axios";
 import { Appointment } from "../types/appointment";
 
 export const fetchAppointmentsApi = async (token: string): Promise<Appointment[]> => {
-  const res = await fetch("http://localhost:5001/api/appointments/patient", {
+  const res = await fetch(import.meta.env.VITE_API_BASE_URL +"/appointments/patient", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -142,6 +142,8 @@ export const savePrescription = async (
 };
 
 
+const API_BASE = "http://localhost:5001/api"; // Match your backend base URL
+
 export const bookAppointment = async (
   patientId: string,
   doctorId: string,
@@ -152,7 +154,7 @@ export const bookAppointment = async (
 ) => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/api/appointments/book",
+      `${API_BASE}/appointments/book`,
       { patientId, doctorId, slotId, date, time },
       {
         headers: {
@@ -163,12 +165,15 @@ export const bookAppointment = async (
     );
     return response.data;
   } catch (error: any) {
-    const msg = error?.response?.data?.message || "Booking failed.";
+    const status = error?.response?.status;
+    let msg = "Booking failed.";
+    if (status === 400) msg = error?.response?.data?.message || "Invalid booking request.";
+    else if (status === 404) msg = "Slot or doctor not found.";
+    else if (status === 401) msg = "Unauthorized. Please log in again.";
+    else msg = error?.response?.data?.message || "An unexpected error occurred.";
     throw new Error(msg);
   }
 };
-
-
 
 export const appointmentService = {
   fetchAppointmentsApi,

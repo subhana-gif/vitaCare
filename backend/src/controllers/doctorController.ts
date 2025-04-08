@@ -3,13 +3,14 @@ import { IDoctorService } from "../interfaces/doctor/IDoctorService";
 import { uploadFileToS3 } from "../middleware/uploadMiddleware";
 import Speciality from "../models/speciality";
 import notificationService from "../services/notificationService";
+import { HttpMessage, HttpStatus } from "../enums/HttpStatus";
 
 export class DoctorController {
   constructor(private doctorService: IDoctorService) {}
 
   private handleError(res: Response, error: unknown, defaultMessage: string): void {
     const message = error instanceof Error ? error.message : defaultMessage;
-    res.status(500).json({ message });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message });
   }
 
   async registerDoctor(req: Request, res: Response): Promise<void> {
@@ -25,13 +26,13 @@ export class DoctorController {
       });
   
       // Emit the notification to the admin room
-      (req as any).io.to("adminRoom").emit("newNotification", {
+      req.io?.to("adminRoom").emit("newNotification", {
         message: notification.message,
         createdAt: notification.createdAt || new Date(), // Use current date if not provided
         seen: false, // Default to false if not provided
       });
   
-      res.status(201).json({ message: "Doctor registered successfully", doctor });
+      res.status(HttpStatus.CREATED).json({ message: HttpMessage.OK });
     } catch (error) {
       this.handleError(res, error, "Error registering doctor");
     }
@@ -42,11 +43,11 @@ export class DoctorController {
       const result = await this.doctorService.loginDoctor(email, password);
 
       if (!result) {
-        res.status(401).json({ message: "Invalid credentials" });
+        res.status(HttpStatus.UNAUTHORIZED).json({ message: HttpMessage.UNAUTHORIZED });
         return;
       }
 
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         message: "Login successful",
         doctor: {
           _id: result.doctor._id,
@@ -65,7 +66,7 @@ export class DoctorController {
     try {
       const { email } = req.body;
       await this.doctorService.sendResetLink(email);
-      res.status(200).json({ message: "Password reset link sent successfully" });
+      res.status(HttpStatus.OK).json({ message: HttpMessage.OK });
     } catch (error) {
       this.handleError(res, error, "Error sending reset link");
     }
@@ -84,17 +85,17 @@ export class DoctorController {
     try {
       const id = req.params.id || req.query.doctorId;
       if (!id) {
-        res.status(400).json({ message: "Doctor ID is required" });
+        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
         return;
       }
 
       const doctor = await this.doctorService.getDoctorById(id.toString());
       if (!doctor) {
-        res.status(404).json({ message: "Doctor not found" });
+        res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
         return;
       }
 
-      res.status(200).json({ doctor });
+      res.status(HttpStatus.OK).json({ doctor });
     } catch (error) {
       this.handleError(res, error, "Error fetching doctor");
     }
@@ -105,7 +106,7 @@ export class DoctorController {
       const doctorData = req.body;
       const speciality = await Speciality.findOne({ name: doctorData.speciality });
       if (!speciality) {
-        res.status(400).json({ message: "Speciality not found" });
+        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
         return;
       }
 
@@ -115,7 +116,7 @@ export class DoctorController {
       }
 
       const doctor = await this.doctorService.addDoctor(doctorData);
-      res.status(201).json({
+      res.status(HttpStatus.CREATED).json({
         message: "Doctor added successfully",
         doctor,
       });
@@ -137,7 +138,7 @@ export class DoctorController {
       if (updateData.speciality) {
         const speciality = await Speciality.findOne({ name: updateData.speciality });
         if (!speciality) {
-          res.status(400).json({ message: "Invalid speciality" });
+          res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.BAD_REQUEST });
           return;
         }
         updateData.speciality = speciality.name;
@@ -145,11 +146,11 @@ export class DoctorController {
 
       const doctor = await this.doctorService.updateDoctor(id, updateData);
       if (!doctor) {
-        res.status(404).json({ message: "Doctor not found" });
+        res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
         return;
       }
 
-      res.status(200).json({ message: "Doctor updated successfully", doctor });
+      res.status(HttpStatus.OK).json({ message: HttpMessage.OK });
     } catch (error) {
       this.handleError(res, error, "Error updating doctor");
     }
@@ -159,20 +160,19 @@ export class DoctorController {
   async getDoctorProfile(req: Request, res: Response): Promise<void> {
     try {
       // Get doctor ID from the token (more secure than query params)
-      const doctorId = (req as any).user.id;
+      const doctorId = req.user?.id;
       
       if (!doctorId) {
-        res.status(400).json({ message: "Doctor ID not found in token" });
+        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
         return;
       }
   
       const doctor = await this.doctorService.getDoctorById(doctorId);
       if (!doctor) {
-        res.status(404).json({ message: "Doctor not found" });
+        res.status(HttpStatus.NOT_FOUND).json({ message:HttpMessage.NOT_FOUND });
         return;
       }
   
-      // Return only necessary doctor data (don't expose sensitive info)
       const doctorProfile = {
         _id: doctor._id,
         name: doctor.name,
@@ -187,7 +187,7 @@ export class DoctorController {
         status: doctor.status,
       };
   
-      res.status(200).json(doctorProfile); // Changed to return directly
+      res.status(HttpStatus.OK).json(doctorProfile); 
     } catch (error) {
       this.handleError(res, error, "Error fetching doctor profile");
     }
@@ -197,7 +197,7 @@ export class DoctorController {
     try {
       const { id } = req.params;
       await this.doctorService.deleteDoctor(id);
-      res.status(200).json({ message: "Doctor deleted successfully" });
+      res.status(HttpStatus.OK).json({ message: HttpMessage.OK });
     } catch (error) {
       this.handleError(res, error, "Error deleting doctor");
     }
@@ -208,11 +208,11 @@ export class DoctorController {
       const { doctorId, status } = req.body;
       const doctor = await this.doctorService.approveDoctor(doctorId, status);
       if (!doctor) {
-        res.status(404).json({ message: "Doctor not found" });
+        res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
         return;
       }
 
-      res.status(200).json({ message: `Doctor ${status}`, doctor });
+      res.status(HttpStatus.OK).json({ message: `Doctor ${status}`, doctor });
     } catch (error) {
       this.handleError(res, error, "Error approving doctor");
     }
@@ -222,7 +222,7 @@ export class DoctorController {
     try {
       const { token, newPassword } = req.body;
       await this.doctorService.resetPassword(token, newPassword);
-      res.status(200).json({ message: "Password reset successful" });
+      res.status(HttpStatus.OK).json({ message: HttpMessage.OK });
     } catch (error) {
       this.handleError(res, error, "Error resetting password");
     }
@@ -233,7 +233,7 @@ export class DoctorController {
       const { token, password } = req.body;
       console.log("token for setpassword:",token)
       await this.doctorService.setPassword(token, password);
-      res.status(200).json({ message: "Password set successfully" });
+      res.status(HttpStatus.OK).json({ message: HttpMessage.OK});
     } catch (error) {
       console.log("error setting password:",error)
       this.handleError(res, error, "Error setting password");

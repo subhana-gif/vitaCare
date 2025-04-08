@@ -46,7 +46,7 @@ const Reviews: React.FC = () => {
 
   const fetchReviews = async () => {
     try {
-      const response = await axios.get(`http://localhost:5001/api/reviews/${doctorId}`, {
+      const response = await axios.get(import.meta.env.VITE_API_BASE_URL +`/reviews/${doctorId}`, {
         headers: { Authorization: `Bearer ${doctorToken}` }
       });
   

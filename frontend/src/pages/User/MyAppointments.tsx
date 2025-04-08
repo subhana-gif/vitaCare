@@ -12,7 +12,7 @@ import { handlePaymentProcess } from "../../services/paymentService";
 import { Appointment } from "../../types/appointment";
 import { CancellationModal } from "./Modals/CancellationModal";
 import { PaymentSuccessModal } from "./Modals/PaymentSuccessModal";
-import { ToastProvider, useToast } from "./Toast/ToastContext.tsx";
+import { ToastProvider, useToast } from "./Toast/ToastContext";
 
 // Extend Appointment interface to include createdAt (adjust based on your actual data)
 interface ExtendedAppointment extends Appointment {

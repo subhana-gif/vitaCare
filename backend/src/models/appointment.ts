@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IAppointment extends Document {
   patientId: mongoose.Types.ObjectId;
   doctorId: mongoose.Types.ObjectId;
+  slotId:string;
   date: string;
   time: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -11,6 +12,7 @@ export interface IAppointment extends Document {
   paymentId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  _id: string; // Update the type of _id to string
 }
 
 const appointmentSchema = new Schema<IAppointment>(
@@ -71,6 +73,7 @@ appointmentSchema.index(
     name: 'timeslot_unique_idx'
   }
 );
+
 
 appointmentSchema.index({ patientId: 1, status: 1 });
 appointmentSchema.index({ doctorId: 1, status: 1 });

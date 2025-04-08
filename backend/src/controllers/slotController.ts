@@ -1,63 +1,98 @@
 import { Request, Response } from "express";
 import slotService from "../services/slotService";
 import asyncHandler from "../utils/asyncHandlers";
+import { HttpMessage, HttpStatus } from "../enums/HttpStatus";
 
 class SlotController {
   addSlot = asyncHandler(async (req: Request, res: Response) => {
-    const slot = await slotService.addSlot(req.body);
-    res.status(201).json({ message: "Slot added successfully", slot });
+    const { doctorId, dayOfWeek, startTime, endTime, price } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(HttpStatus.CREATED).json({ message: HttpMessage.UNAUTHORIZED });
+    }
+
+    if (!doctorId || !dayOfWeek || !startTime || !endTime || price === undefined) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST});
+    }
+
+    const slot = await slotService.addSlot(doctorId, dayOfWeek, startTime, endTime, price, token);
+    res.status(HttpStatus.CREATED).json({ message: HttpMessage.CREATED});
   });
 
   getSlotsByDoctorId = asyncHandler(async (req: Request, res: Response) => {
     const { doctorId } = req.params;
-    const slots = await slotService.getSlotsByDoctorId(doctorId);
-    res.status(200).json({ slots });
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({ message:HttpMessage.UNAUTHORIZED});
+    }
+
+    const slots = await slotService.fetchSlots(doctorId, token);
+    res.status(HttpStatus.OK).json({ slots });
   });
 
   updateSlot = asyncHandler(async (req: Request, res: Response) => {
     const { slotId } = req.params;
-    const { price, date, startTime,endTime } = req.body;
+    const { price, startTime, endTime } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
 
-    const updatedSlot = await slotService.updateSlot(slotId, { price, date, startTime, endTime });
-
-    if (!updatedSlot) {
-      return res.status(404).json({ message: "Slot not found." });
+    if (!token) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({ message: HttpMessage.UNAUTHORIZED });
     }
 
-    res.status(200).json({ message: "Slot updated successfully!", updatedSlot });
+    const updatedSlot = await slotService.updateSlot(slotId, { price, startTime, endTime }, token);
+
+    if (!updatedSlot) {
+      return res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
+    }
+
+    res.status(HttpStatus.OK).json({ message: HttpMessage.OK });
   });
 
   markSlotUnavailable = asyncHandler(async (req: Request, res: Response) => {
     const { slotId } = req.params;
-    const updatedSlot = await slotService.markSlotUnavailable(slotId);
+    const token = req.headers.authorization?.split(" ")[1];
 
-    if (!updatedSlot) {
-      return res.status(404).json({ message: "Slot not found" });
+    if (!token) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({ message:HttpMessage.UNAUTHORIZED });
     }
 
-    res.status(200).json({ message: "Slot marked as unavailable", updatedSlot });
+    const updatedSlot = await slotService.markSlotUnavailable(slotId, token);
+
+    if (!updatedSlot) {
+      return res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
+    }
+
+    res.status(200).json({ message:HttpMessage.OK});
   });
 
   markSlotAvailable = asyncHandler(async (req: Request, res: Response) => {
     const { slotId } = req.params;
-    const updatedSlot = await slotService.markSlotAvailable(slotId);
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({ message: HttpMessage.UNAUTHORIZED });
+    }
+
+    const updatedSlot = await slotService.markSlotAvailable(slotId, token);
 
     if (!updatedSlot) {
-      return res.status(404).json({ message: "Slot not found" });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
     }
 
-    res.status(200).json({ message: "Slot marked as available", updatedSlot });
+    res.status(HttpStatus.OK).json({ message: HttpMessage.NOT_FOUND });
   });
 
-  getSlotsByDoctorAndDate = asyncHandler(async (req: Request, res: Response) => {
-    const { doctorId, date } = req.params;
+  getSlotsByDoctorAndDay = asyncHandler(async (req: Request, res: Response) => {
+    const { doctorId, dayOfWeek } = req.params;
 
-    const slots = await slotService.getSlotsByDoctorAndDate(doctorId, date);
+    const slots = await slotService.getSlotsByDoctorAndDay(doctorId, dayOfWeek);
     if (!slots.length) {
-      return res.status(404).json({ message: "No available slots found." });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
     }
 
-    res.status(200).json({ slots });
+    res.status(HttpStatus.OK).json({ slots });
   });
 
   markSlotAsBooked = asyncHandler(async (req: Request, res: Response) => {
@@ -65,10 +100,10 @@ class SlotController {
     const bookedSlot = await slotService.markSlotAsBooked(slotId);
 
     if (!bookedSlot) {
-      return res.status(404).json({ message: "Slot not found." });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: HttpMessage.NOT_FOUND });
     }
 
-    res.status(200).json({ message: "Slot marked as booked.", bookedSlot });
+    res.status(HttpStatus.OK).json({ message:HttpMessage.OK });
   });
 }
 

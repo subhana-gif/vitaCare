@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { userService } from "../../services/userService";
 import CommonOtpInput from "../../components/common/otpInput"; // ✅ Import CommonOtpInput
 import * as yup from "yup";
+import axios from "axios";
 
 // Define the Yup validation schema
 const signupSchema = yup.object().shape({
@@ -70,7 +71,7 @@ const Signup: React.FC = () => {
           }
         });
         setErrors(validationErrors);
-      } else {
+      }  else if (axios.isAxiosError(error)) {
         setMessage(error.response?.data?.message || "Error sending OTP");
         setMessageType("error");
       }

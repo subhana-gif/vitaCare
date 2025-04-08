@@ -3,7 +3,6 @@ import { BsSearch, BsFilterCircle } from "react-icons/bs";
 import { useLocation, useNavigate } from "react-router-dom";
 import { doctorService } from "../../services/doctorService";
 import { adminService } from "../../services/adminSevice";
-import axios from "axios";
 import Pagination from "../Common/Pagination"; 
 
 interface Doctor {
@@ -48,9 +47,9 @@ const AllDoctors: React.FC = () => {
     const fetchDoctors = async () => {
       try {
         const response = await doctorService.fetchAllDoctors();
-        const activeDoctors = response.doctors.filter((doctor) => !doctor.isBlocked);
+        const activeDoctors = response.doctors.filter((doctor: { isBlocked: any; }) => !doctor.isBlocked);
 
-        const specialities = [...new Set(activeDoctors.map((doctor) => doctor.speciality))];
+        const specialities = [...new Set(activeDoctors.map((doctor: { speciality: any; }) => doctor.speciality))];
         const activeSpecialities = new Set();
 
         for (const speciality of specialities) {
@@ -65,7 +64,7 @@ const AllDoctors: React.FC = () => {
           }
         }
 
-        const filteredDoctors = activeDoctors.filter((doctor) =>
+        const filteredDoctors = activeDoctors.filter((doctor: { speciality: string; }) =>
           activeSpecialities.has(doctor.speciality.toLowerCase())
         );
 

@@ -19,14 +19,11 @@ import reviews from "./src/routes/reviewRoutes"
 import prescription from "./src/routes/prescription.routes"
 import dashboard from "./src/routes/dashboard"
 
-// Extend Express Request to include `io`
 declare module "express-serve-static-core" {
   interface Request {
     io?: Server;
   }
 }
-
-
 
 dotenv.config();
 

@@ -324,6 +324,114 @@ const handleGivePrescription = async (appointment: Appointment) => {
     }
   };
 
+  const handleRefundPayment = async (appointment: Appointment) => {
+    try {
+      const result = await MySwal.fire({
+        title: '<span class="text-red-600">Confirm Refund</span>',
+        html: `
+          <div class="text-left p-2">
+            <div class="flex items-center mb-4 text-orange-600">
+              <i class="fas fa-exclamation-circle text-xl mr-2"></i>
+              <span>Initiate refund for this appointment?</span>
+            </div>
+            <div class="border-t border-b border-gray-200 py-3 my-3">
+              <p className="mb-2"><strong>Patient:</strong> ${(appointment.patientId as unknown as Patient)?.name || "N/A"}</p>
+              <p class="mb-2"><strong>Appointment Date:</strong> ${new Date(appointment.date).toLocaleDateString()}</p>
+              <p className="mb-2"><strong>Amount Paid:</strong> ₹${appointment.appointmentFee.toLocaleString('en-IN')}</p>
+              <p class="mb-2"><strong>Payment ID:</strong> ${appointment.paymentId}</p>
+            </div>
+            <p class="mt-4 text-sm text-gray-600">A refund will be initiated to the original payment method.</p>
+          </div>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-undo mr-1"></i> Process Refund',
+        cancelButtonText: '<i class="fas fa-times mr-1"></i> Cancel',
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        reverseButtons: true,
+        focusCancel: true,
+      });
+
+      if (!result.isConfirmed || !token || !appointment.paymentId) return;
+
+      // Show processing state
+      MySwal.fire({
+        title: 'Processing Refund',
+        html: '<div class="flex justify-center"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div><p class="mt-4">Please wait while we process your refund...</p>',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        didOpen: () => {
+          MySwal.showLoading();
+        }
+      });
+
+      const refundResponse = await appointmentService.refundPayment(appointment._id, appointment.paymentId, token);
+      
+      if (!refundResponse.success || !refundResponse.refundDetails) {
+        throw new Error(refundResponse.message || "Refund failed or missing data.");
+      }
+
+      const refundDetails = refundResponse.refundDetails;
+
+      // Update appointment status to reflect refund
+      setAppointments((prevAppointments) =>
+        prevAppointments.map((appt) =>
+          appt._id === appointment._id
+            ? { ...appt, paymentStatus: "refunded" }
+            : appt
+        )
+      );
+
+      // Show success modal
+      await MySwal.fire({
+        title: '<span class="text-green-600">Refund Successful</span>',
+        html: `
+          <div class="text-left p-2">
+            <div class="border rounded-lg p-4 bg-gray-50">
+              <div class="grid grid-cols-2 gap-2">
+                <p class="text-gray-600">Refund ID:</p>
+                <p class="font-semibold">${refundDetails.refundId}</p>
+                <p class="text-gray-600">Amount Refunded:</p>
+                <p class="font-semibold text-green-600">₹${(refundDetails.amount / 100).toFixed(2)}</p>
+                <p class="text-gray-600">Status:</p>
+                <p class="font-semibold">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Processed
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        `,
+        icon: "success",
+        confirmButtonText: '<i class="fas fa-check mr-1"></i> Done',
+        confirmButtonColor: "#10B981",
+      });
+
+      toast.success("Refund processed successfully.");
+    } catch (error) {
+      console.error("Refund processing error:", error);
+      await MySwal.fire({
+        title: '<span class="text-red-600">Refund Failed</span>',
+        html: `
+          <div class="text-left p-2">
+            <p class="mb-4">We couldn't process the refund for this appointment.</p>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+              <p class="text-sm text-gray-700">${error.message || "Unknown error occurred"}</p>
+            </div>
+          </div>
+        `,
+        icon: "error",
+        confirmButtonText: 'Try Again',
+        confirmButtonColor: "#d33",
+        showCancelButton: true,
+        cancelButtonText: 'Cancel',
+      });
+      toast.error("Failed to process refund.");
+    }
+  };
+
   const handleViewDetails = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setIsModalOpen(true);
@@ -479,11 +587,21 @@ const handleGivePrescription = async (appointment: Appointment) => {
                     </select>
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap">
-                    <span className={`px-3 py-1.5 text-sm font-medium rounded-full ${getPaymentBadgeClass(appointment.paymentStatus)}`}>
-                      {appointment.paymentStatus}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 whitespace-nowrap text-lg text-gray-700 font-medium">
+                      <div className="flex items-center">
+                        <span className={`px-3 py-1.5 text-sm font-medium rounded-full ${getPaymentBadgeClass(appointment.paymentStatus)}`}>
+                          {appointment.paymentStatus}
+                        </span>
+                        {appointment.paymentStatus === "paid" && appointment.status === "cancelled" && (
+                          <button
+                            onClick={() => handleRefundPayment(appointment)}
+                            className="ml-2 text-purple-600 hover:text-purple-900 text-sm"
+                          >
+                            Refund Payment
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 whitespace-nowrap text-lg text-gray-700 font-medium">
                     ₹{appointment.appointmentFee.toLocaleString()}
                   </td>
                   <td className="px-6 py-5 whitespace-nowrap">

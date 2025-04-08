@@ -11,6 +11,12 @@ export interface Appointment {
       imageUrl?: string;
       appointmentFee: number;
     };
+    patientId: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      dob?: string;
+    };    
     paymentStatus?: string;
     paid?: boolean;
   }

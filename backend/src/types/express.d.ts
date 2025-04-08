@@ -4,6 +4,13 @@ import { JwtPayload } from "jsonwebtoken";
 declare module "express-serve-static-core" {
   interface Request {
     user?: JwtPayload & { id: string };
+    io?: SocketIOServer;
+    user?: {
+      id: string;
+      name: string;
+      email?: string;
+      role?: string;
+    };
   }
 }
 

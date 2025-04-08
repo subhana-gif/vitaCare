@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { userServiceInstance } from "../services/userService";
 import { IUserService } from "../interfaces/user/IUserservice";
+import { HttpStatus } from "../enums/HttpStatus";
 
 class UserController {
   constructor(private userService: IUserService) {}  
@@ -8,7 +9,7 @@ class UserController {
     try {
       const { email, password, name } = req.body;
       const result = await this.userService.register({ email, password, name });
-      res.status(200).json({ success: true, message: "User registered successfully", data: result });
+      res.status(HttpStatus.OK).json({ success: true, message: "User registered successfully", data: result });
     } catch (error) {
       next(error);
     }
@@ -18,7 +19,7 @@ class UserController {
     try {
       const { email, password } = req.body;
       const result = await this.userService.login(email, password);
-      res.status(200).json(result);
+      res.status(HttpStatus.OK).json(result);
     } catch (error) {
       next(error);
     }
@@ -28,7 +29,7 @@ class UserController {
     try {
       const { email } = req.body;
       const result = await this.userService.forgotPassword(email);
-      res.status(200).json(result);
+      res.status(HttpStatus.OK).json(result);
     } catch (error) {
       next(error);
     }
@@ -38,7 +39,7 @@ class UserController {
     try {
       const { token, password } = req.body;
       const result = await this.userService.resetPassword(token, password);
-      res.status(200).json(result);
+      res.status(HttpStatus.OK).json(result);
     } catch (error) {
       next(error);
     }
@@ -48,7 +49,7 @@ class UserController {
     try {
       const { email } = req.body;
       const result = await this.userService.sendOTP(email);
-      res.status(200).json(result);
+      res.status(HttpStatus.OK).json(result);
     } catch (error) {
       next(error);
     }
@@ -58,7 +59,7 @@ class UserController {
     try {
       const { email, otp } = req.body;
       const result = await this.userService.verifyOTP(email, otp);
-      res.status(200).json(result);
+      res.status(HttpStatus.OK).json(result);
     } catch (error) {
       next(error);
     }
@@ -68,7 +69,7 @@ class UserController {
     try {
       const { email } = req.body;
       const result = await this.userService.resendOTP(email);
-      res.status(200).json(result);
+      res.status(HttpStatus.OK).json(result);
     } catch (error) {
       next(error);
     }
@@ -77,7 +78,7 @@ class UserController {
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const users = await this.userService.getAllUsers();
-      res.status(200).json(users);
+      res.status(HttpStatus.OK).json(users);
     } catch (error) {
       next(error);
     }
@@ -87,7 +88,7 @@ class UserController {
     try {
       const { userId } = req.params;
       const user = await this.userService.toggleBlockUser(userId);
-      res.status(200).json(user);
+      res.status(HttpStatus.OK).json(user);
     } catch (error) {
       next(error);
     }
@@ -100,7 +101,7 @@ class UserController {
         throw new Error("User ID is missing");
       }
       const user = await this.userService.getUserProfile(userId);
-      res.status(200).json(user);
+      res.status(HttpStatus.OK).json(user);
     } catch (error) {
       next(error);
     }
@@ -126,7 +127,7 @@ class UserController {
         Object.entries(updatedData).filter(([_, v]) => v !== undefined)
       );      
       const user = await this.userService.updateUserProfile(userId, filteredData);
-      res.status(200).json(user);
+      res.status(HttpStatus.OK).json(user);
     } catch (error) {
       next(error);
     }

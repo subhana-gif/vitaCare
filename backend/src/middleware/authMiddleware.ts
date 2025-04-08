@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import TokenService from "../services/tokenService";
 import User from "../models/user";
 import { IUserDocument } from "../interfaces/user/IUser";
+import { HttpStatus,HttpMessage } from "../enums/HttpStatus";
 
 interface DecodedToken {
   id: string;
@@ -21,31 +22,31 @@ export const verifyToken = (roles: string[]) => {
 
     // ✅ Ensure token is in "Bearer <token>" format
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-     res.status(401).json({ message: "Access Denied. No token provided." });
+     res.status(HttpStatus.UNAUTHORIZED).json({ message: "Access Denied. No token provided." });
      return;  
     }
 
     const token = authHeader.split(" ")[1]; 
     if (!token) {
-     res.status(401).json({ message: "Access Denied. Invalid token format." });
+     res.status(HttpStatus.UNAUTHORIZED).json({ message: "Access Denied. Invalid token format." });
      return;
     }
     try {
       const decoded = TokenService.verifyToken(token) as DecodedToken;
       if (!decoded.role || !roles.includes(decoded.role)) {
-        res.status(403).json({ message: "Forbidden: Insufficient permissions." });
+        res.status(HttpStatus.FORBIDDEN).json({ message: "Forbidden: Insufficient permissions." });
         return;
       }
 
       const user = (User.findById(decoded.id)) as unknown as IUserDocument | null;
       ;
       if (!user) {
-        res.status(404).json({ message: "User not found." });
+        res.status(HttpStatus.NOT_FOUND).json({ message: "User not found." });
         return;
       }
 
       if (user.isBlocked) {
-        res.status(403).json({ message: "Your account is blocked. Please contact support." });
+        res.status(HttpStatus.FORBIDDEN).json({ message: "Your account is blocked. Please contact support." });
         return;
       }
 
@@ -54,7 +55,7 @@ export const verifyToken = (roles: string[]) => {
       next(); 
     } catch (error) {
       console.error("Token verification error:", error);
-      res.status(401).json({ message: "Invalid or expired token." });
+      res.status(HttpStatus.UNAUTHORIZED).json({ message: HttpMessage.UNAUTHORIZED });
     }
       };
 };

@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import AuthService from "../services/AdminService";
 import { IAuthService } from "interfaces/IAuthService";
+import { HttpStatus,HttpMessage } from "../enums/HttpStatus";
 
 export class AuthController {
   constructor(private authService: IAuthService) {}
@@ -12,7 +13,7 @@ export class AuthController {
       const token = await this.authService.login(email, password);
       res.json({ token });
     } catch (error) {
-      res.status(401).json({ message: "Invalid Credentials" });
+      res.status(HttpStatus.UNAUTHORIZED).json({ message: HttpMessage.UNAUTHORIZED });
     }
   };
 }

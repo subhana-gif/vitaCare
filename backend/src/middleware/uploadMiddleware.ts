@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../config/s3";
 import { v4 as uuidv4 } from "uuid";
+import { HttpStatus } from "../enums/HttpStatus";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -51,14 +52,14 @@ export const uploadFileToS3 = async (file: Express.Multer.File) => {
 export const uploadAndSaveToS3 = (req: Request, res: Response, next: NextFunction) => {
   upload.single("image")(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ error: err.message });
+      return res.status(HttpStatus.BAD_REQUEST).json({ error: err.message });
     }
     if (req.file) {
       try {
         const { fileUrl } = await uploadFileToS3(req.file);
         req.body.imageUrl = fileUrl; 
       } catch (error) {
-        return res.status(500).json({ error: "Failed to upload image to S3" });
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: "Failed to upload image to S3" });
       }
     }
 

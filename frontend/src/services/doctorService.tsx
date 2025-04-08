@@ -1,7 +1,7 @@
 import axios from "axios";
 import {Chat} from "../types/chat"
 
-const API_BASE_URL = "http://localhost:5001/api/doctor";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL +"/doctor";
 
 interface LoginResponse {
   message: string;
@@ -190,7 +190,7 @@ const setPassword = async (token: string, password: string): Promise<string> => 
 
 
 const fetchDoctorChats = async (doctorId: string, token: string): Promise<Chat[]> => {
-  const res = await axios.get(`http://localhost:5001/api/chat/doctor/${doctorId}/chats`, {
+  const res = await axios.get(import.meta.env.VITE_API_BASE_URL +`/chat/doctor/${doctorId}/chats`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

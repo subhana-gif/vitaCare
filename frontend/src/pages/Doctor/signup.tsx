@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { doctorService } from "../../services/doctorService";
 import { toast } from "react-toastify";
 import * as yup from "yup";
+import axios from "axios";
 
 interface DoctorSignupData {
   name: string;
@@ -55,7 +56,7 @@ const DoctorSignup: React.FC = () => {
           }
         });
         setErrors(validationErrors);
-      } else {
+      } else if (axios.isAxiosError(error)) {
         toast.error(error.response?.data?.message || "Registration failed");
       }
     } finally {
