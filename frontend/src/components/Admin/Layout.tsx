@@ -1,11 +1,11 @@
-import React from "react";
+import React, { FC } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import ProtectedAdminRoute from "../../pages/Admin/ProtectedAdminRoutes";
 import { Outlet } from "react-router-dom";
 
-const Layout = () => {
+const Layout: FC = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Navbar at the Top */}
@@ -20,7 +20,7 @@ const Layout = () => {
         <div className="w-4/5 bg-gray-50 flex flex-col">
           <div className="p-5 flex-grow">
             <ProtectedAdminRoute>
-            <Outlet /> 
+              <Outlet />
             </ProtectedAdminRoute>
           </div>
           <Footer />

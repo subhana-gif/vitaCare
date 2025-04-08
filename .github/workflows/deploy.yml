@@ -24,4 +24,6 @@ jobs:
             git pull origin main
             cd backend
             npm install
-            pm2 restart vitacare-backend || pm2 start server.ts --name vitacare-backend --interpreter ts-node
+            pm2 restart vitacare-backend || pm2 start server.ts \
+              --name vitacare-backend \
+              --interpreter ./node_modules/.bin/ts-node

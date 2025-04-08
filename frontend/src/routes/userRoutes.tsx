@@ -16,7 +16,7 @@ import DoctorLogin from "../pages/Doctor/Login";
 import DoctorSignup from "../pages/Doctor/signup";
 import PrescriptionView from "../components/Prescription/PrescriptionView";
 import About from "../pages/User/About"
-import Contact from "../pages/User/contact"
+import Contact from "../pages/User/Contact"
 import GeminiChat from "../pages/User/geminiChat"
 
 

@@ -15,7 +15,7 @@ const AdminRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route element={<ProtectedAdminRoute />}>
+      <Route element={<ProtectedAdminRoute children={undefined} />}>
         <Route path="/admin" element={<Layout />}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="user-management" element={<AdminUserManagement />} />

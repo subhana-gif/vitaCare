@@ -1,15 +1,15 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 
-const Sidebar = () => {
+const DoctorSidebar: React.FC = () => {
   return (
-    <div className="w-1/5 bg-indigo-500 text-white h-full p-5">
+    <div className="text-white p-5 h-full">
       <ul className="space-y-5">
         <li>
           <NavLink 
-            to="/admin/dashboard"
+            to="/doctor/dashboard"
             end  
-            className={({ isActive }) =>
+            className={({ isActive }: { isActive: boolean }) =>
               `p-2 block rounded-md transition-all duration-300 ease-in-out ${
                 isActive ? "bg-white text-indigo-500 font-bold" : "hover:bg-indigo-600"
               }`
@@ -20,8 +20,8 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink 
-            to="/admin/appointments"
-            className={({ isActive }) =>
+            to="/doctor/appointments"
+            className={({ isActive }: { isActive: boolean }) =>
               `p-2 block rounded-md transition-all duration-300 ease-in-out ${
                 isActive ? "bg-white text-indigo-500 font-bold" : "hover:bg-indigo-600"
               }`
@@ -32,62 +32,50 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink 
-            to="/admin/add-doctor"
-            className={({ isActive }) =>
+            to="/doctor/chat"
+            className={({ isActive }: { isActive: boolean }) =>
               `p-2 block rounded-md transition-all duration-300 ease-in-out ${
                 isActive ? "bg-white text-indigo-500 font-bold" : "hover:bg-indigo-600"
               }`
             }
           >
-            Add Doctor
+            Chat
           </NavLink>
         </li>
         <li>
           <NavLink 
-            to="/admin/speciality"
-            className={({ isActive }) =>
+            to="/doctor/reviews"
+            className={({ isActive }: { isActive: boolean }) =>
               `p-2 block rounded-md transition-all duration-300 ease-in-out ${
                 isActive ? "bg-white text-indigo-500 font-bold" : "hover:bg-indigo-600"
               }`
             }
           >
-            Speciality Management
+            Reviews & Ratings
           </NavLink>
         </li>
         <li>
           <NavLink 
-            to="/admin/doctors-list"
-            className={({ isActive }) =>
+            to="/doctor/slot"
+            className={({ isActive }: { isActive: boolean }) =>
               `p-2 block rounded-md transition-all duration-300 ease-in-out ${
                 isActive ? "bg-white text-indigo-500 font-bold" : "hover:bg-indigo-600"
               }`
             }
           >
-            Doctors Management
+            Slot Management
           </NavLink>
         </li>
-        <li>    
+        <li>
           <NavLink 
-            to="/admin/user-management"
-            className={({ isActive }) =>
+            to="/doctor/profile"
+            className={({ isActive }: { isActive: boolean }) =>
               `p-2 block rounded-md transition-all duration-300 ease-in-out ${
                 isActive ? "bg-white text-indigo-500 font-bold" : "hover:bg-indigo-600"
               }`
             }
           >
-            User Management
-          </NavLink>
-        </li>
-        <li>    
-          <NavLink 
-            to="/admin/rejected-doctors"   // ✅ New Link for Rejected Doctors
-            className={({ isActive }) =>
-              `p-2 block rounded-md transition-all duration-300 ease-in-out ${
-                isActive ? "bg-white text-indigo-500 font-bold" : "hover:bg-indigo-600"
-              }`
-            }
-          >
-             Rejected Doctors
+            Profile
           </NavLink>
         </li>
       </ul>
@@ -95,4 +83,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default DoctorSidebar;
