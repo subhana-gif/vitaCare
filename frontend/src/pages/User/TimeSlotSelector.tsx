@@ -185,14 +185,14 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
     .sort((a, b) => a.time.localeCompare(b.time)) // Sort by time string
     .map(slot => (
       <option key={slot.id} value={slot.id}>
-        {slot.displayTime} — ₹{slot.price}
+        {slot.displayTime} 
       </option>
   ))}
 </select>
           </div>
           {selectedSlot && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
-              <p className="text-blue-800 font-medium">
+              <p className="text-blue-800 font-medium ">
                 Selected: {availableTimeSlots.find(slot => slot.id === selectedSlot)?.displayTime}
               </p>
               <p className="text-blue-600 text-sm mt-1">

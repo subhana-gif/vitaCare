@@ -16,6 +16,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   const [muteLocalAudio, setMuteLocalAudio] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [remoteStreamId, setRemoteStreamId] = useState<string | null>(null);
+  const [callAccepted, setCallAccepted] = useState(false);
+  const [callRejected, setCallRejected] = useState(false);
   const [isLocalMain, setIsLocalMain] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -28,20 +30,12 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   const [connectionState, setConnectionState] = useState<string>("");
   const [iceState, setIceState] = useState<string>("");
 
-  useEffect(() => {
-    console.log("useEffect triggered for call state:", { isCalling, isRinging });
-    if (isCalling && !isRinging) {
-      console.log("Call started, setting callStartTime:", new Date());
-      setCallStartTime(new Date());
-    }
-  }, [isCalling, isRinging]);
-  
   const getCallDuration = () => {
     if (!callStartTime) {
       console.log("No callStartTime, returning duration 0");
       return 0;
     }
-    const duration = Math.round((new Date().getTime() - callStartTime.getTime()) / 1000); // in seconds
+    const duration = Math.round((new Date().getTime() - callStartTime.getTime()) / 1000); // Duration in seconds
     console.log("Calculated call duration:", duration, "seconds");
     return duration;
   };
@@ -51,24 +45,20 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       console.log("playVideo: No element or stream provided");
       return;
     }
-    
     try {
       console.log("playVideo: Assigning stream to element");
       if (element.srcObject !== stream) {
         element.srcObject = stream;
       }
-      
       element.muted = element === localVideoRef.current;
-      
       const playPromise = element.play();
-      
       if (playPromise !== undefined) {
         await playPromise;
         console.log("playVideo: Video playback started successfully");
       }
-    } catch (error:any) {
-      console.error('playVideo: Error playing video:', error);
-      if (error.name === 'AbortError') {
+    } catch (error: any) {
+      console.error("playVideo: Error playing video:", error);
+      if (error.name === "AbortError") {
         console.log("playVideo: Retry scheduled due to AbortError");
         setTimeout(() => playVideo(element, stream), 500);
       }
@@ -128,7 +118,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       return true;
     } catch (err) {
       console.error("Permission check error:", err);
-      return true;
+      return true; // Fallback to true if permission API fails
     }
   };
 
@@ -137,7 +127,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
-  
+
     pc.onicecandidate = (event) => {
       console.log("ICE Candidate:", event.candidate ? "Found" : "All candidates gathered");
       if (event.candidate && targetSocketId) {
@@ -145,7 +135,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         socket.emit("iceCandidate", { to: targetSocketId, candidate: event.candidate });
       }
     };
-  
+
     pc.ontrack = (event) => {
       console.log("Received remote track:", event.track.kind);
       const remoteStream = new MediaStream();
@@ -153,11 +143,10 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         console.log(`Adding remote ${track.kind} track`);
         remoteStream.addTrack(track);
       });
-      
       playVideo(remoteVideoRef.current, remoteStream);
       setRemoteStreamId(remoteStream.id);
     };
-    
+
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
       setConnectionState(state);
@@ -169,7 +158,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         console.log("Peer connection established successfully");
       }
     };
-  
+
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       setIceState(state);
@@ -181,7 +170,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         console.log("ICE connection established");
       }
     };
-  
+
     return pc;
   };
 
@@ -192,6 +181,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       if (!hasPermission) return;
 
       setIsCalling(true);
+      setCallStartTime(new Date());
       const pc = createPeerConnection();
       peerConnectionRef.current = pc;
 
@@ -216,7 +206,10 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         localVideoRef.current.srcObject = stream;
         localVideoRef.current.play().catch((e) => console.error("Error playing local video:", e));
       }
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      stream.getTracks().forEach((track) => {
+        console.log(`Adding local ${track.kind} track to peer connection`);
+        pc.addTrack(track, stream);
+      });
       stream.getAudioTracks()[0].enabled = !muteLocalAudio;
       stream.getVideoTracks()[0].enabled = videoEnabled;
 
@@ -235,8 +228,13 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     console.log("Accepting call from socketId:", socketId);
     try {
       setIsRinging(false);
-      if (isCalling) return;
+      if (isCalling) {
+        console.log("Already in a call, ignoring acceptCall");
+        return;
+      }
       setIsCalling(true);
+      setCallAccepted(true);
+      setCallStartTime(new Date());
 
       const pc = createPeerConnection();
       peerConnectionRef.current = pc;
@@ -262,7 +260,10 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         localVideoRef.current.srcObject = stream;
         localVideoRef.current.play().catch((e) => console.error("Error playing local video:", e));
       }
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      stream.getTracks().forEach((track) => {
+        console.log(`Adding local ${track.kind} track to peer connection`);
+        pc.addTrack(track, stream);
+      });
       stream.getAudioTracks()[0].enabled = !muteLocalAudio;
       stream.getVideoTracks()[0].enabled = videoEnabled;
 
@@ -274,42 +275,65 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     } catch (error: any) {
       console.error("Error accepting call:", error.name, error.message);
       setIsCalling(false);
+      setCallAccepted(false);
       toast.error(`Failed to accept call: ${error.message}`);
     }
   };
 
   const rejectCall = () => {
     console.log("Rejecting call, targetSocketId:", targetSocketId);
+    setCallRejected(true);
     setIsRinging(false);
     socket.emit("rejectCall", { to: targetSocketId });
+    endCall(false, 0); // Explicitly end call on rejection
   };
 
   const endCall = (initiatedLocally = true, callDuration = 0) => {
-    console.log("Ending call, initiatedLocally:", initiatedLocally, "duration:", callDuration);
+    const calculatedDuration = callDuration || getCallDuration();
+    console.log("Ending call", {
+      initiatedLocally,
+      calculatedDuration,
+      isCalling,
+      remoteStreamId,
+      callAccepted,
+      callRejected,
+      remoteHungUp,
+      connectionState,
+      iceState,
+    });
+
     if (initiatedLocally && targetSocketId) {
-      console.log("Emitting endCall to:", targetSocketId);
-      socket.emit("endCall", { to: targetSocketId });
+      console.log("Emitting endCall to:", targetSocketId, "with duration:", calculatedDuration);
+      socket.emit("endCall", { to: targetSocketId, duration: calculatedDuration });
     }
-  
+
     let status: "Completed" | "Missed" | "Not Answered";
-    if (initiatedLocally) {
+    if (callAccepted || (isCalling && (calculatedDuration > 0 || remoteStreamId))) {
       status = "Completed";
+    } else if (callRejected) {
+      status = "Missed";
+    } else if (remoteHungUp || connectionState === "disconnected" || iceState === "disconnected") {
+      status = "Not Answered";
     } else {
-      status = remoteHungUp ? "Not Answered" : "Missed";
+      status = "Missed";
     }
-  
-    // Emit callHistory regardless of connection state, since a call was initiated
-    const callData = {
-      sender: userId,
-      receiver: targetUserId,
-      type: "call",
-      status,
-      callDuration: Math.round(callDuration / 60), // Convert to minutes
-      createdAt: new Date(),
-    };
-    console.log("Emitting callHistory with data:", callData);
-    socket.emit("callHistory", callData);
-  
+
+    // Only emit callHistory if this peer initiated the call end or rejection
+    if (initiatedLocally || callRejected) {
+      const callData = {
+        sender: userId,
+        receiver: targetUserId,
+        type: "call",
+        status,
+        callDuration: Math.round(calculatedDuration / 60), // Convert to minutes
+        createdAt: new Date(),
+      };
+      console.log("Emitting callHistory with data:", callData);
+      socket.emit("callHistory", callData);
+    } else {
+      console.log("Not emitting callHistory; call ended remotely or not rejected locally");
+    }
+
     if (peerConnectionRef.current) {
       peerConnectionRef.current.ontrack = null;
       peerConnectionRef.current.onicecandidate = null;
@@ -317,16 +341,16 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       peerConnectionRef.current = null;
       console.log("Peer connection cleaned up");
     }
-  
+
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
+      localStreamRef.current.getTracks().forEach((track) => {
         track.stop();
         track.enabled = false;
       });
       localStreamRef.current = null;
       console.log("Local stream tracks stopped");
     }
-  
+
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
       console.log("Local video source cleared");
@@ -335,12 +359,16 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       remoteVideoRef.current.srcObject = null;
       console.log("Remote video source cleared");
     }
-  
+
     setIsCalling(false);
     setIsRinging(false);
     setRemoteHungUp(false);
     setRemoteStreamId(null);
-    
+    setCallAccepted(false);
+    setCallRejected(false);
+    setCallStartTime(null);
+    setConnectionState("");
+    setIceState("");
     if (ringAudioRef.current) {
       ringAudioRef.current.pause();
       ringAudioRef.current.currentTime = 0;
@@ -372,6 +400,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       console.log("Received callTargetSocket, setting targetSocketId:", targetSocketId);
       setTargetSocketId(targetSocketId);
     });
+
     socket.emit("registerVideoCall", userId);
 
     socket.on("incomingCall", async ({ from, offer, socketId }) => {
@@ -382,33 +411,47 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       if (proceed) {
         (window as any).acceptCall = () => acceptCall(offer, socketId);
         setTimeout(() => {
-          if (isRinging && !isCalling) rejectCall();
+          if (isRinging && !isCalling) {
+            console.log("Call timeout, rejecting call");
+            rejectCall();
+          }
         }, 30000);
       }
     });
 
     socket.on("callAccepted", async ({ answer }) => {
       console.log("Received callAccepted, setting remote description");
-      await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(answer));
+      setCallAccepted(true);
+      try {
+        await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log("Remote description set successfully");
+      } catch (error) {
+        console.error("Error setting remote description:", error);
+      }
     });
 
     socket.on("iceCandidate", async ({ candidate }) => {
       console.log("Received iceCandidate");
       if (candidate && peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log("Added ICE candidate");
+        try {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log("Added ICE candidate");
+        } catch (error) {
+          console.error("Error adding ICE candidate:", error);
+        }
       }
     });
 
     socket.on("callRejected", () => {
       console.log("Call was rejected by remote user");
+      setCallRejected(true);
       endCall(false, 0);
       toast.warn("The other user rejected your call");
     });
 
-    socket.on("callEnded", () => {
-      console.log("Remote user ended the call");
-      endCall(false, getCallDuration());
+    socket.on("callEnded", ({ duration }) => {
+      console.log("Remote user ended the call with duration:", duration);
+      endCall(false, duration || getCallDuration());
     });
 
     socket.on("callFailed", ({ message }) => {
@@ -427,7 +470,9 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       socket.off("callRejected");
       socket.off("callEnded");
       socket.off("callFailed");
-      if (ringAudioRef.current) ringAudioRef.current.pause();
+      if (ringAudioRef.current) {
+        ringAudioRef.current.pause();
+      }
     };
   }, [socket, userId, targetUserId]);
 
@@ -458,7 +503,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                onError={(e) => console.error('Remote video error:', e)}
+                onError={(e) => console.error("Remote video error:", e)}
                 className="w-full h-full object-cover rounded-lg shadow-lg"
               />
             )}

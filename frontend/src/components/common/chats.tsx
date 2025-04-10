@@ -207,7 +207,21 @@ const CommonChat: React.FC<CommonChatProps> = ({
 
     const handleCallHistory = (callData: Message) => {
       console.log("Received callHistory:", callData);
-      fetchMessages(); // Refetch to ensure consistency
+      // Add call history directly instead of refetching all messages
+      setMessages((prev) => {
+        const exists = prev.some((m) => 
+          m.createdAt.toString() === callData.createdAt.toString() && 
+          m.type === "call" && 
+          m.sender === callData.sender && 
+          m.receiver === callData.receiver
+        );
+        if (!exists) {
+          return [...prev, callData].sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        }
+        return prev; // Skip if duplicate
+      });
     };
     socket.on("callHistory", handleCallHistory);
 
@@ -305,94 +319,95 @@ const CommonChat: React.FC<CommonChatProps> = ({
               .map((group, index) => (
                 <div key={index}>
                   <div className="text-center text-gray-500 my-4">{group.date}</div>
-                  {group.messages.map((msg) => (
-                    <div
-                      key={msg._id}
-                      className={`p-3 my-2 rounded-lg max-w-xs relative ${
-                        msg.sender === currentUserId
-                          ? "bg-blue-500 text-white self-end ml-auto"
-                          : "bg-gray-200 self-start mr-auto"
-                      } ${
-                        msg.type === "call"
-                          ? (msg.status === "Missed" || msg.status === "Not Answered"
-                              ? "bg-red-800 text-red-800"
-                              : "bg-green-800 text-green-800") + " !bg-opacity-20"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="flex-grow">
-                          {msg.type === "call" ? (
-                            <div className="flex items-center gap-2">
-                              <Video
-                                size={18}
-                                className={
-                                  msg.status === "Missed" || msg.status === "Not Answered"
-                                    ? "text-red-500"
-                                    : "text-green-500"
-                                }
-                              />
-                              <div>
-                                <p className="font-medium">
-                                  {msg.status === "Completed"
-                                    ? `Video call (${msg.callDuration || 0} min)`
-                                    : msg.status === "Missed"
-                                    ? "Missed video call"
-                                    : msg.status === "Not Answered"
-                                    ? "Not answered"
-                                    : "Video call"}
-                                </p>
-                                <p className="text-xs opacity-75 mt-1">
-                                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              {msg.text && <p>{msg.text}</p>}
-                              {msg.media && (
-                                <div className="media-container mt-2">
-                                  {msg.media.endsWith(".mp4") ? (
-                                    <video
-                                      src={msg.media}
-                                      controls
-                                      className="w-64 h-48 object-cover rounded"
-                                    />
-                                  ) : (
-                                    <img
-                                      src={msg.media}
-                                      alt="Shared Media"
-                                      className="w-64 h-48 object-cover rounded"
-                                    />
-                                  )}
+                  {group.messages.map((msg) => {
+                    const isOutgoing = msg.sender === currentUserId;
+                    return (
+                      <div
+                        key={msg._id}
+                        className={`p-3 my-2 rounded-lg max-w-xs relative ${
+                          isOutgoing
+                            ? "bg-blue-500 text-white self-end ml-auto"
+                            : "bg-gray-200 self-start mr-auto"
+                        } ${
+                          msg.type === "call"
+                            ? (msg.status === "Missed" || msg.status === "Not Answered"
+                                ? "bg-red-800 text-red-800"
+                                : "bg-green-800 text-green-800") + " !bg-opacity-20"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="flex-grow">
+                            {msg.type === "call" ? (
+                              <div className="flex items-center gap-2">
+                                <Video
+                                  size={18}
+                                  className={
+                                    msg.status === "Missed" || msg.status === "Not Answered"
+                                      ? "text-red-500"
+                                      : "text-green-500"
+                                  }
+                                />
+                                <div>
+                                  <p className="font-medium">
+                                    {msg.status === "Completed"
+                                      ? `${isOutgoing ? "Outgoing" : "Incoming"} video call (${msg.callDuration || 0} min)`
+                                      : msg.status === "Missed"
+                                      ? `${isOutgoing ? "Outgoing" : "Incoming"} missed video call`
+                                      : `${isOutgoing ? "Outgoing" : "Incoming"} not answered video call`}
+                                  </p>
+                                  <p className="text-xs opacity-75 mt-1">
+                                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </p>
                                 </div>
-                              )}
-                              {(msg.text || msg.media) && (
-                                <span className="text-xs opacity-75 block text-right mt-1">
-                                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </span>
-                              )}
-                            </>
+                              </div>
+                            ) : (
+                              <>
+                                {msg.text && <p>{msg.text}</p>}
+                                {msg.media && (
+                                  <div className="media-container mt-2">
+                                    {msg.media.endsWith(".mp4") ? (
+                                      <video
+                                        src={msg.media}
+                                        controls
+                                        className="w-64 h-48 object-cover rounded"
+                                      />
+                                    ) : (
+                                      <img
+                                        src={msg.media}
+                                        alt="Shared Media"
+                                        className="w-64 h-48 object-cover rounded"
+                                      />
+                                    )}
+                                  </div>
+                                )}
+                                {(msg.text || msg.media) && (
+                                  <span className="text-xs opacity-75 block text-right mt-1">
+                                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                          {msg.type !== "call" && (
+                            <MessageDropdown
+                              isOwnMessage={msg.sender === currentUserId}
+                              onDelete={() => {
+                                setMessageToDelete(msg._id);
+                                setShowConfirm(true);
+                              }}
+                            />
                           )}
                         </div>
-                        {msg.type !== "call" && (
-                          <MessageDropdown
-                            isOwnMessage={msg.sender === currentUserId}
-                            onDelete={() => {
-                              setMessageToDelete(msg._id);
-                              setShowConfirm(true);
-                            }}
-                          />
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ))}
           </>

@@ -68,15 +68,12 @@ export default (io: Server) => {
 
     // Updated: Include duration in endCall event
     socket.on("endCall", ({ to, duration }) => {
-      console.log("Received endCall event, forwarding to:", to, "with duration:", duration);
       io.to(to).emit("callEnded", { duration: duration || 0 });
     });
 
     socket.on("callHistory", async (callData) => {
       try {
         const { sender, receiver, type, status, callDuration, createdAt } = callData;
-        console.log("Received callHistory:", callData);
-
         const message = await chatdpService.sendMessage(
           sender,
           receiver,
@@ -87,7 +84,6 @@ export default (io: Server) => {
 
         const roomId = [sender, receiver].sort().join("_");
         io.to(roomId).emit("receiveMessage", message);
-        console.log("Call history saved and emitted:", message);
       } catch (error) {
         console.error("Error saving call history:", error);
       }

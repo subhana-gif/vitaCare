@@ -198,7 +198,3 @@ const dayOfWeek = new Date(date).toLocaleString('en-US', { weekday: 'long' });
   }
 }
 
-// Remove the incorrect dayjs function
-// function dayjs(date: string) {
-//   throw new Error("Function not implemented.");
-// }

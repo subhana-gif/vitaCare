@@ -300,11 +300,20 @@ const handleChatNavigation = () => {
       
       {selectedSlotId && selectedSlotTime && (
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-          <h4 className="font-semibold text-lg text-green-800">Selected Appointment</h4>
-          <p className="text-gray-700">Date: {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <p className="text-gray-700">Time: {dayjs(`2000-01-01 ${selectedSlotTime}`).format('h:mm A')}</p>
-          <p className="text-gray-700">Price: ₹{selectedSlotPrice}</p>
-        </div>
+  <h4 className="font-semibold text-xl text-green-800">Selected Appointment</h4>
+  <p className="text-gray-700 text-lg mt-2">
+    Date: {new Date(selectedDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })}
+  </p>
+  <p className="text-gray-700 text-lg mt-2">
+    Time: {dayjs(`2000-01-01 ${selectedSlotTime}`).format('h:mm A')}
+  </p>
+  <p className="text-gray-700 text-lg mt-2">Price: ₹{selectedSlotPrice}</p>
+</div>
       )}
     </div>
     <button
