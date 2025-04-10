@@ -32,6 +32,11 @@ export class AppointmentService implements IAppointmentService {
     
   async bookAppointment(appointmentData: Omit<IAppointment, "_id">): Promise<IAppointment> {
     const { doctorId, date, time, patientId, slotId } = appointmentData;
+
+    const now=dayjs()
+    if(dayjs(`${date}${time}`).diff(now,'minute')<60){
+      throw new Error("book appointment early")
+    }
   
     // Fetch slot by ID
     const slot: ISlot | null = await slotService.getSlotById(slotId);
