@@ -8,17 +8,18 @@ export const fetchAppointmentsApi = async (token: string): Promise<Appointment[]
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-  });
+});
 
   if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
 
-  const data: Appointment[] = await res.json();
-  return data.filter((appt) => appt.doctorId)
+  const response = await res.json();
+  const data: Appointment[] = response.appointments;
+    return data.filter((appt) => appt.doctorId)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
 
 export const cancelAppointmentApi = async (appointmentId: string, token: string, reason: string): Promise<void> => {
-  const response = await fetch(`http://localhost:5001/api/appointments/${appointmentId}`, { 
+  const response = await fetch(import.meta.env.VITE_API_BASE_URL +`/appointments/${appointmentId}`, { 
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -29,7 +30,7 @@ export const cancelAppointmentApi = async (appointmentId: string, token: string,
 };
 
 export const fetchAppointments =  async (token: string) => {
-    const response = await axios.get("http://localhost:5001/api/appointments", {
+    const response = await axios.get(import.meta.env.VITE_API_BASE_URL +"/appointments", {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -40,7 +41,7 @@ export const fetchAppointments =  async (token: string) => {
 
 export const fetchAppointmentsDoctor =  async (token: string) => {
     try {
-      const response = await axios.get("http://localhost:5001/api/appointments/doctor", {
+      const response = await axios.get(import.meta.env.VITE_API_BASE_URL +"/appointments/doctor", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -55,7 +56,7 @@ export const fetchAppointmentsDoctor =  async (token: string) => {
 
 export const checkPrescriptionExists = async (appointmentId: string, token: string) => {
   try {
-    const response = await axios.get(`http://localhost:5001/api/prescriptions/${appointmentId}`, {
+    const response = await axios.get(import.meta.env.VITE_API_BASE_URL +`/prescriptions/${appointmentId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -85,7 +86,7 @@ export const checkPrescriptionExists = async (appointmentId: string, token: stri
 export const updateAppointmentStatus = async (appointmentId: string, newStatus: string, token: string) => {
     try {
       const response = await axios.put(
-        `http://localhost:5001/api/appointments/${appointmentId}/status`,
+        import.meta.env.VITE_API_BASE_URL +`/appointments/${appointmentId}/status`,
         { status: newStatus },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -103,7 +104,7 @@ export const updateAppointmentStatus = async (appointmentId: string, newStatus: 
 export const refundPayment = async (appointmentId: string, paymentId: string, token: string) => {
     try {
       const response = await axios.post(
-        "http://localhost:5001/api/payment/refund",
+        import.meta.env.VITE_API_BASE_URL +"/payment/refund",
         {
           appointmentId,
           paymentId,
@@ -131,8 +132,8 @@ export const savePrescription = async (
 ) => {
   const method = existingPrescriptionId ? "put" : "post";
   const url = existingPrescriptionId
-    ? `http://localhost:5001/api/prescriptions/${existingPrescriptionId}`
-    : "http://localhost:5001/api/prescriptions";
+    ? import.meta.env.VITE_API_BASE_URL +`/prescriptions/${existingPrescriptionId}`
+    : import.meta.env.VITE_API_BASE_URL +"/prescriptions";
 
   const response = await axios[method](url, data, {
     headers: { Authorization: `Bearer ${token}` },
@@ -141,8 +142,6 @@ export const savePrescription = async (
   return response.data;
 };
 
-
-const API_BASE = "http://localhost:5001/api"; // Match your backend base URL
 
 export const bookAppointment = async (
   patientId: string,
@@ -154,7 +153,7 @@ export const bookAppointment = async (
 ) => {
   try {
     const response = await axios.post(
-      `${API_BASE}/appointments/book`,
+      import.meta.env.VITE_API_BASE_URL +`/appointments/book`,
       { patientId, doctorId, slotId, date, time },
       {
         headers: {

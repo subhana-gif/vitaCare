@@ -175,20 +175,20 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
               Available Appointment Times
             </label>
             <select
-              id="timeSlot"
-              value={selectedSlot}
-              onChange={handleTimeSelect}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            >
-              <option value="">Select a time</option>
-              {Object.entries(slotsByPrice).map(([price, slots]) => (
-                <optgroup key={price} label={`₹${price}`}>
-                  {slots.map(slot => (
-                    <option key={slot.id} value={slot.id}>{slot.displayTime}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+  id="timeSlot"
+  value={selectedSlot}
+  onChange={handleTimeSelect}
+  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+>
+  <option value="">Select a time</option>
+  {[...availableTimeSlots]
+    .sort((a, b) => a.time.localeCompare(b.time)) // Sort by time string
+    .map(slot => (
+      <option key={slot.id} value={slot.id}>
+        {slot.displayTime} — ₹{slot.price}
+      </option>
+  ))}
+</select>
           </div>
           {selectedSlot && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md">

@@ -27,6 +27,7 @@ interface Appointment {
   appointmentFee: number;
   patientName?: string;
   paymentId?: string;
+  cancelledBy?: 'patient' | 'doctor';
 }
 
 interface Medicine {
@@ -61,12 +62,27 @@ const AppointmentPage: React.FC = () => {
 
   useEffect(() => {
     const fetchAppointments = async () => {
-      if(!token)return
+      if (!token) return;
       try {
         setLoading(true);
         const data = await appointmentService.fetchAppointmentsDoctor(token);
-        setAppointments(data.appointments);
-        setFilteredAppointments(data.appointments);
+        
+        // Sort appointments by date (newest first) and then by time
+        const sortedAppointments = data.appointments.sort((a: Appointment, b: Appointment) => {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          
+          // If dates are different, sort by date
+          if (dateA !== dateB) {
+            return dateB - dateA; // Newest first
+          }
+          
+          // If dates are same, sort by time
+          return b.time.localeCompare(a.time);
+        });
+        
+        setAppointments(sortedAppointments);
+        setFilteredAppointments(sortedAppointments);
         setTotalPages(Math.ceil(data.appointments.length / appointmentsPerPage));
         setError(null);
       } catch (error) {
@@ -298,7 +314,7 @@ const handleGivePrescription = async (appointment: Appointment) => {
       setAppointments((prevAppointments) =>
         prevAppointments.map((appt) =>
           appt._id === appointmentId
-            ? { ...appt, status: newStatus, ...(newStatus === "completed" && { paymentStatus: "paid" }) }
+            ? { ...appt, status: newStatus, cancelledBy: 'doctor', ...(newStatus === "completed" && { paymentStatus: "paid" }) }
             : appt
         )
       );
@@ -591,8 +607,8 @@ const handleGivePrescription = async (appointment: Appointment) => {
                         <span className={`px-3 py-1.5 text-sm font-medium rounded-full ${getPaymentBadgeClass(appointment.paymentStatus)}`}>
                           {appointment.paymentStatus}
                         </span>
-                        {appointment.paymentStatus === "paid" && appointment.status === "cancelled" && (
-                          <button
+                        {appointment.paymentStatus === "paid" && appointment.status === "cancelled" && 
+ (appointment.cancelledBy != 'doctor') &&(                          <button
                             onClick={() => handleRefundPayment(appointment)}
                             className="ml-2 text-purple-600 hover:text-purple-900 text-sm"
                           >

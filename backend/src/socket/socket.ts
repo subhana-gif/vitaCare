@@ -1,13 +1,12 @@
 import { Server, Socket } from "socket.io";
-import  {ChatdpService}  from "../services/chatdpservices";
-import  {ChatdpRepository}  from "../repositories/chatdpRepository";
+import { ChatdpService } from "../services/chatdpservices";
+import { ChatdpRepository } from "../repositories/chatdpRepository";
 
 export default (io: Server) => {
-  const chatdpService = new ChatdpService(new ChatdpRepository()); // pass an instance
+  const chatdpService = new ChatdpService(new ChatdpRepository());
   const users: { [key: string]: string } = {};
 
   io.on("connection", (socket: Socket) => {
-
     socket.on("joinRoom", ({ userId, doctorId }) => {
       const roomId = [userId, doctorId].sort().join("_");
       socket.join(roomId);
@@ -40,10 +39,9 @@ export default (io: Server) => {
       io.to(roomId).emit("messageDeleted", { messageId });
     });
 
-    
     socket.on("registerVideoCall", (userId: string) => {
       users[socket.id] = userId;
-      io.emit("userList", Object.values(users)); // Optional: Notify all clients of active users
+      io.emit("userList", Object.values(users));
     });
 
     socket.on("callUser", ({ to, from, offer }) => {
@@ -55,23 +53,23 @@ export default (io: Server) => {
         socket.emit("callFailed", { message: "User not available" });
       }
     });
-    
+
     socket.on("iceCandidate", ({ to, candidate }) => {
       io.to(to).emit("iceCandidate", { candidate });
     });
-    
+
     socket.on("acceptCall", ({ to, answer }) => {
       io.to(to).emit("callAccepted", { answer });
     });
-    
-    // Handle call rejection (optional)
+
     socket.on("rejectCall", ({ to }) => {
       io.to(to).emit("callRejected");
     });
 
-    // Handle call end
-    socket.on("endCall", ({ to }) => {
-      io.to(to).emit("callEnded");
+    // Updated: Include duration in endCall event
+    socket.on("endCall", ({ to, duration }) => {
+      console.log("Received endCall event, forwarding to:", to, "with duration:", duration);
+      io.to(to).emit("callEnded", { duration: duration || 0 });
     });
 
     socket.on("callHistory", async (callData) => {
@@ -79,39 +77,30 @@ export default (io: Server) => {
         const { sender, receiver, type, status, callDuration, createdAt } = callData;
         console.log("Received callHistory:", callData);
 
-        // Save call history as a message
         const message = await chatdpService.sendMessage(
           sender,
           receiver,
-          undefined, // No text
-          undefined, // No media
-          {
-            type,
-            status,
-            callDuration,
-            createdAt: new Date(createdAt),
-          } as any // Type assertion to bypass strict typing for now
+          undefined,
+          undefined,
+          { type, status, callDuration, createdAt: new Date(createdAt) } as any
         );
 
         const roomId = [sender, receiver].sort().join("_");
-        io.to(roomId).emit("receiveMessage", message); // Notify both users
+        io.to(roomId).emit("receiveMessage", message);
         console.log("Call history saved and emitted:", message);
       } catch (error) {
         console.error("Error saving call history:", error);
       }
     });
 
-    // --- Cleanup on Disconnect ---
     socket.on("disconnect", () => {
       const userId = users[socket.id];
       delete users[socket.id];
-      io.emit("userList", Object.values(users)); 
+      io.emit("userList", Object.values(users));
       if (userId) {
-        const otherSocketId = Object.keys(users).find(
-          (key) => users[key] !== userId
-        );
+        const otherSocketId = Object.keys(users).find((key) => users[key] !== userId);
         if (otherSocketId) {
-          io.to(otherSocketId).emit("callEnded");
+          io.to(otherSocketId).emit("callEnded", { duration: 0 });
         }
       }
     });

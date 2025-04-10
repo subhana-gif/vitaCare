@@ -3,8 +3,7 @@ import { IAppointmentService } from "../interfaces/appointment/IAppointmentServi
 import { INotificationService } from "../interfaces/notification/INotification";
 import { DoctorService } from "../services/DoctorService";
 import { DoctorRepository } from "../repositories/doctorRepository";
-import { HttpStatus,HttpMessage } from '../enums/HttpStatus';
-
+import { HttpStatus } from '../enums/HttpStatus';
 
 export class AppointmentController {
   constructor(
@@ -16,8 +15,7 @@ export class AppointmentController {
   async bookAppointment(req: Request, res: Response): Promise<void> {
     try {
       const appointment = await this.appointmentService.bookAppointment(req.body);
-  
-      // Send notification to doctor
+
       const doctor = await this.doctorService.getDoctorById(appointment.doctorId.toString());
       if (doctor) {
         const notification = await this.notificationService.createNotification({
@@ -25,38 +23,34 @@ export class AppointmentController {
           recipientRole: "doctor",
           message: `New appointment booked with you by ${req.user?.name || 'a patient'} on ${appointment.date} at ${appointment.time}`,
         });
-  
+
         req.io?.to(appointment.doctorId.toString()).emit("newNotification", notification);
       }
-  
+
       res.status(HttpStatus.CREATED).json({
-        message: HttpMessage.CREATED,
+        message: "Appointment booked successfully.",
         appointment,
       });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST});
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      }
+      console.error("Error booking:", error);
+      const message = error instanceof Error ? error.message : "Failed to book appointment.";
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
     }
   }
+
   async updateStatus(req: Request, res: Response): Promise<void> {
     try {
       const { appointmentId } = req.params;
       const { status } = req.body;
-      
       const updatedAppointment = await this.appointmentService.updateAppointmentStatus(appointmentId, status);
+
       res.status(HttpStatus.OK).json({
-        message: HttpMessage.OK,
+        message: "Appointment status updated successfully.",
         updatedAppointment
       });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      }
+      const message = error instanceof Error ? error.message : "Failed to update appointment status.";
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
     }
   }
 
@@ -64,13 +58,10 @@ export class AppointmentController {
     try {
       const doctorId = req.user?.id as string;
       const appointments = await this.appointmentService.getAppointmentsByDoctor(doctorId);
-      res.status(HttpStatus.CREATED).json({ appointments });
+      res.status(HttpStatus.OK).json({ appointments });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      }
+      const message = error instanceof Error ? error.message : "Failed to fetch doctor appointments.";
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
     }
   }
 
@@ -80,11 +71,8 @@ export class AppointmentController {
       const appointments = await this.appointmentService.getAppointmentsByPatient(patientId);
       res.status(HttpStatus.OK).json({ appointments });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      }
+      const message = error instanceof Error ? error.message : "Failed to fetch patient appointments.";
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
     }
   }
 
@@ -92,13 +80,10 @@ export class AppointmentController {
     try {
       const userId = req.user?.id as string;
       const appointments = await this.appointmentService.getAppointmentsByUserId(userId);
-      res.status(HttpStatus.OK).json(appointments);
+      res.status(HttpStatus.OK).json({ appointments });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      }
+      const message = error instanceof Error ? error.message : "Failed to fetch appointments.";
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
     }
   }
 
@@ -106,13 +91,10 @@ export class AppointmentController {
     try {
       const { id } = req.params;
       await this.appointmentService.cancelAppointment(id);
-      res.status(HttpStatus.OK).json({ message: HttpMessage.OK });
+      res.status(HttpStatus.OK).json({ message: "Appointment cancelled successfully." });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      }
+      const message = error instanceof Error ? error.message : "Failed to cancel appointment.";
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
     }
   }
 
@@ -121,11 +103,8 @@ export class AppointmentController {
       const appointments = await this.appointmentService.getAllAppointments();
       res.status(HttpStatus.OK).json({ appointments });
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      }
+      const message = error instanceof Error ? error.message : "Failed to fetch all appointments.";
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
     }
   }
 }

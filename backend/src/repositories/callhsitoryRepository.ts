@@ -9,13 +9,13 @@ export class CallHistoryRepository implements ICallHistoryRepository {
     return savedCall.toObject() as ICallHistoryDocument;
   }
 
-  async findByUsers(userId: Types.ObjectId, targetId: Types.ObjectId): Promise<ICallHistoryDocument[]> {
-    const calls = await CallHistory.find({
-      $or: [
-        { callerId: userId, receiverId: targetId },
-        { callerId: targetId, receiverId: userId },
-      ],
-    }).lean();
-    return calls as ICallHistoryDocument[];
-  }
-}
+// Add this in your CallHistoryRepository
+async findByUsers(userId: Types.ObjectId, targetId: Types.ObjectId): Promise<ICallHistoryDocument[]> {
+  const calls = await CallHistory.find({
+    $or: [
+      { callerId: userId, receiverId: targetId },
+      { callerId: targetId, receiverId: userId },
+    ],
+  }).lean();
+  return calls as ICallHistoryDocument[];
+}}

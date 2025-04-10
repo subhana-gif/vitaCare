@@ -115,6 +115,9 @@ const AdminDashboard: React.FC = () => {
   const [topDoctors, setTopDoctors] = useState<TopEntityData[]>([]);
   const [topPatients, setTopPatients] = useState<TopEntityData[]>([]);
   const token = localStorage.getItem("adminToken")
+  useEffect(() => {
+    console.log("Rendering Admin Page");
+  }, []);
   
 
   useEffect(() => {

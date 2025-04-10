@@ -6,6 +6,7 @@ import EmailService from "../services/emailService";
 import { IUser } from "../interfaces/user/IUser";
 import logger from "../utils/logger";
 import { IUserService } from "../interfaces/user/IUserservice";
+import { saveOTP,verifyOTP } from "../config/otpStore";
 
 export class UserService implements IUserService {
     constructor(private userRepository: IUserRepository) {}
@@ -55,28 +56,29 @@ export class UserService implements IUserService {
     return { success: true, message: "Reset instructions sent to your email" };
   }
 
-
-
   async resetPassword(token: string, newPassword: string) {
     const decoded = TokenService.verifyToken(token) as unknown as { email: string };
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    console.log("hashed:",hashedPassword)
     await this.userRepository.updatePassword(decoded.email, hashedPassword);
     return { success: true, message: "Password reset successful" };
   }
 
   async sendOTP(email: string) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    saveOTP(email, otp, 300); // Store for 5 minutes
     await EmailService.sendOTPEmail(email, otp);
     return { success: true, message: "OTP sent successfully" };
   }
 
-  async verifyOTP(email: string, otp: string) {
-    return { success: true, message: "OTP verified successfully" };
-  }
+ async verifyOTP(email: string, otp: string) {
+  const isValid = verifyOTP(email, otp);
+  if (!isValid) throw new Error("Invalid or expired OTP");
+  return { success: true, message: "OTP verified successfully" };
+}
 
   async resendOTP(email: string) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    saveOTP(email, otp, 300);
     await EmailService.sendOTPEmail(email, otp);
     return { success: true, message: "OTP resent successfully" };
   }

@@ -66,7 +66,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
         await playPromise;
         console.log("playVideo: Video playback started successfully");
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error('playVideo: Error playing video:', error);
       if (error.name === 'AbortError') {
         console.log("playVideo: Retry scheduled due to AbortError");

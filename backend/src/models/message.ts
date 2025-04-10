@@ -6,7 +6,7 @@ export interface IMessage {
   receiver: Types.ObjectId | string;
   text?: string;
   media?: string;
-  type?: "image" | "video" | "call";
+  type?: "image" | "video" | "call" | "text";
   status?: "Missed" | "Not Answered" | "Completed";
   callDuration?: number;
   createdAt?: Date;
@@ -40,7 +40,7 @@ const messageSchema = new Schema<IMessageDocument>(
     },
     type: {
       type: String,
-      enum: ["image", "video", "call"],
+      enum: ["image", "video", "call" , "text"],
       default: "text",
     },
     status: {
