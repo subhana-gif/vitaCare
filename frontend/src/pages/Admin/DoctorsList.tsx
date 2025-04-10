@@ -227,116 +227,122 @@ const DoctorListSidebar: React.FC = () => {
 
   const handleAdminEdit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-
-    if (!selectedDoctor) return;
-
+  
+    if (!selectedDoctor || !selectedDoctor._id) {
+      console.error('No doctor selected or missing ID');
+      return;
+    }
+  
     try {
       const formDataToSend = new FormData();
-
-      // Append all doctor data to FormData
+  
       Object.entries(selectedDoctor).forEach(([key, value]) => {
-        if (key !== 'image' && key !== 'imageUrl' && key !== '_id' && value !== null && value !== undefined) {
+        if (
+          key !== 'image' &&
+          key !== 'imageUrl' &&
+          key !== '_id' &&
+          value !== null &&
+          value !== undefined
+        ) {
           formDataToSend.append(key, value.toString());
         }
       });
-
+  
       if (selectedDoctor.image && selectedDoctor.image instanceof File) {
-        formDataToSend.append('image', selectedDoctor.image); // Ensure it's a file, not a string/URL
+        formDataToSend.append('image', selectedDoctor.image);
       }
-      
+  
       const token = localStorage.getItem('adminToken');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
+      if (!token) throw new Error('Authentication token not found');
+  
       const response = await doctorService.updateDoctorProfile(
         selectedDoctor._id,
         token,
         formDataToSend
       );
-      
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update doctor');
       }
-
+  
       const responseData = await response.json();
-
-      // Validate the response data structure
       if (!responseData || typeof responseData !== 'object') {
         throw new Error('Invalid response format from server');
       }
+  
       const updatedDoctor = {
         ...selectedDoctor,
         ...responseData
       };
-
-      // Ensure critical fields are present in the merged data
+  
       if (!updatedDoctor._id || !updatedDoctor.name || !updatedDoctor.speciality) {
         throw new Error('Critical doctor data missing after update');
       }
-
-      // Update the doctors list with the merged data
+  
       setDoctors(prevDoctors =>
         prevDoctors.map(doc =>
           doc._id === updatedDoctor._id ? updatedDoctor : doc
         )
       );
-
-      // Close the modal after successful update
+  
       closeModal();
       toast.success('Doctor profile updated successfully!');
-
     } catch (error) {
       console.error('Error updating doctor:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update doctor');
     }
   };
 
+  
   const handleToggleBlock = async (): Promise<void> => {
-    if (!selectedDoctor) return;
-
+    if (!selectedDoctor || !selectedDoctor._id) {
+      console.error('No selected doctor or missing ID');
+      return;
+    }
+  
     try {
       const token = localStorage.getItem('adminToken');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const formData = new FormData();
+      if (!token) throw new Error('Authentication token not found');
+  
       const newBlockStatus = !selectedDoctor.isBlocked;
-
+      const formData = new FormData();
       formData.append('isBlocked', newBlockStatus.toString());
-
+  
       const response = await doctorService.updateDoctorProfile(
         selectedDoctor._id,
         token,
         formData
       );
-      
-
+  
+      const responseData = await response.json();
+      console.log('Response from toggle block:', responseData);
+  
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update block status');
+        throw new Error(responseData.message || 'Failed to update block status');
       }
-
-      const { doctor: updatedDoctor } = await response.json();
-
-      // Update both selectedDoctor and doctors state
+  
+      const updatedDoctor = responseData?.doctor || responseData;
+  
+      if (!updatedDoctor || !updatedDoctor._id) {
+        throw new Error('Invalid doctor data in response');
+      }
+  
       setSelectedDoctor(updatedDoctor);
       setDoctors(prevDoctors =>
         prevDoctors.map(doc =>
           doc._id === updatedDoctor._id ? updatedDoctor : doc
         )
       );
-
+  
       toast.success(`Doctor has been ${updatedDoctor.isBlocked ? 'blocked' : 'unblocked'}`);
-
     } catch (error) {
       console.error('Error toggling block status:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update block status');
     }
   };
-
+  
+  
   const handleApproval = async (doctorId: string, status: string) => {
     try {
       await doctorService.approveDoctor(doctorId, status);

@@ -150,7 +150,7 @@ export class DoctorController {
         return;
       }
 
-      res.status(HttpStatus.OK).json({ message: HttpMessage.OK });
+      res.status(HttpStatus.OK).json(doctor);
     } catch (error) {
       this.handleError(res, error, "Error updating doctor");
     }
