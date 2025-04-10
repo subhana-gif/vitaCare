@@ -2,7 +2,6 @@ import { Types } from "mongoose";
 import slotRepository from "../repositories/slotRepository";
 import { ISlot } from "../models/slot";
 
-// Assuming slotRepository has these methods (update your repository accordingly)
 interface SlotRepository {
   createSlot(slotData: Partial<ISlot>): Promise<ISlot>;
   getSlotsByDoctorId(doctorId: string): Promise<ISlot[]>;

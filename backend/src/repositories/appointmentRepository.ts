@@ -8,7 +8,7 @@ export class AppointmentRepository implements IAppointmentRepository {
   }
 
   async findByDetails(doctorId: string, date: string, time: string): Promise<IAppointment | null> {
-    return Appointment.findOne({ doctorId, date, time }).exec();
+    return Appointment.findOne({ doctorId, date, time, status: { $ne: 'cancelled' } }).exec();
   }
 
   async create(appointmentData: Omit<IAppointment, "_id">): Promise<IAppointment> {
