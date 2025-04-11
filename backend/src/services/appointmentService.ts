@@ -10,7 +10,6 @@ import AppointmentReminderService from "./appointmentReminderService";
 import notificationService from "./notificationService";
 import { sendCallReminder } from "../config/twilioCall";
 import schedule from "node-schedule";
-import logger from "../utils/logger";
 import { IUserService } from "../interfaces/user/IUserservice";
 import {Dayjs} from "dayjs";
 import {  ISlot } from "../models/slot"; // Adjust path to your types file
@@ -136,8 +135,6 @@ const dayOfWeek = new Date(date).toLocaleString('en-US', { weekday: 'long' });
   }
 
   async getAppointmentsByUserId(userId: string): Promise<IAppointment[]> {
-    logger.info(`Appointment get request for userid: ${userId}`);
-
     return this.appointmentRepository.getAppointmentsByPatient(userId);
   }
 

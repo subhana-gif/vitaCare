@@ -39,7 +39,6 @@ NotificationSchema.pre("save", async function (this: INotification, next) {
 
       if (oldestNotification) {
         await notificationModel.deleteOne({ _id: oldestNotification._id });
-        console.log(`Deleted oldest notification: ${oldestNotification._id}`);
       }
     }
 
