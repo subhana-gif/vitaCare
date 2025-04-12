@@ -106,6 +106,41 @@ export class UserService implements IUserService {
   async getUserById(id: string): Promise<IUser | null> {
     return this.userRepository.findById(id);
   }
+
+  async changePassword(
+    userId: string, 
+    currentPassword: string, 
+    newPassword: string
+  ) {
+    // Find user by ID
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+  
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword, 
+      user.password
+    );
+    if (!isPasswordValid) {
+      throw new Error("Current password is incorrect");
+    }
+  
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    await this.userRepository.updateUser(userId, { 
+      password: hashedPassword 
+    });
+  
+    return { 
+      success: true, 
+      message: "Password changed successfully" 
+    };
+  }
+  
 }
 
 export const userServiceInstance = new UserService(UserRepository.getInstance());

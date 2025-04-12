@@ -1,14 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import axios from "axios";
 import CommonChat from "../../components/common/chats";
 import { doctorService } from "../../services/doctorService";
-
-interface Chat {
-  _id: string;
-  userDetails: { name: string };
-  lastMessage: string;
-}
+import { Chat } from "../../types/chat";
 
 interface UnreadInfo {
   count: number;
@@ -22,31 +16,113 @@ const DoctorChatPage: React.FC = () => {
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [unreadInfo, setUnreadInfo] = useState<{ [key: string]: UnreadInfo }>({});
 
-  useEffect(() => {
-    if (!doctorId) return;
+  // Fetch chat list and sort by the most recent message
+useEffect(() => {
+  if (!doctorId) return;
 
-    const fetchChats = async () => {
-      try {
-        const chats = await doctorService.fetchDoctorChats(doctorId, token);
-        setChatList(chats);
-      } catch (err) {
-        console.error("Error fetching chat list:", err);
-      }
-    };
+  const fetchChats = async () => {
+    try {
+      const chats = await doctorService.fetchDoctorChats(doctorId, token);
+      
+      // Sort by lastMessageTime in descending order
+      const sortedChats = [...chats].sort((a, b) => {
+        const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+        const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+        return timeB - timeA;
+      });
+      
+      setChatList(sortedChats);
+    } catch (err) {
+      console.error("Error fetching chat list:", err);
+    }
+  };
 
-    fetchChats();
-    console.log(`DoctorChatPage: doctorId=${doctorId}, token=${token}`);
-  }, [doctorId, token]);
+  fetchChats();
+}, [doctorId, token]);
+
+  // Helper function to safely get a valid date object
+  const getValidDate = (dateString: string | Date | undefined | null): Date | null => {
+    if (!dateString) return null;
+    
+    // If already a Date object
+    if (dateString instanceof Date) {
+      return isNaN(dateString.getTime()) ? null : dateString;
+    }
+    
+    // Try parsing string date
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? null : date;
+    } catch (e) {
+      console.error("Invalid date format:", dateString);
+      return null;
+    }
+  };
+
+  // Handle patient selection and update unread message info
   const handleSelectPatient = (patientId: string) => {
     setSelectedPatient(patientId);
     console.log(`Selected patient: currentUserId=${doctorId}, targetUserId=${patientId}`);
-    const now = new Date();  
+    const now = new Date();
     setUnreadInfo((prev) => ({
       ...prev,
       [patientId]: { ...(prev[patientId] || { count: 0, lastOpened: null }), lastOpened: now },
     }));
   };
 
+  const formatMessageTime = (dateString: string | Date | undefined | null): string => {
+    if (!dateString) return "No messages";
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "No messages";
+    
+    const now = new Date();
+    
+    // Today - show time with AM/PM
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    }
+    
+    // Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday " + date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    
+    // Within 7 days - show weekday and time
+    const lastWeek = new Date(now);
+    lastWeek.setDate(now.getDate() - 7);
+    if (date > lastWeek) {
+      return date.toLocaleDateString([], { weekday: 'short' }) + " " + 
+             date.toLocaleTimeString([], {
+               hour: '2-digit',
+               minute: '2-digit',
+               hour12: true
+             });
+    }
+    
+    // Older than 7 days - show date and time
+    return date.toLocaleDateString([], { 
+      month: 'short', 
+      day: 'numeric',
+      ...(date.getFullYear() !== now.getFullYear() && { year: 'numeric' })
+    }) + " " + date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+  
+  
   return (
     <div className="flex h-screen">
       {/* Chat List Sidebar */}
@@ -62,8 +138,15 @@ const DoctorChatPage: React.FC = () => {
               }`}
             >
               <div className="flex-grow">
-                <h3 className="text-lg font-semibold">{chat.userDetails.name}</h3>
-                <p className="text-gray-600 truncate">{chat.lastMessage}</p>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">{chat.userDetails.name}</h3>
+                  <span className="text-xs text-gray-500">
+                    {formatMessageTime(chat.lastMessageTime)} 
+                  </span>
+                </div>
+                <p className="text-gray-600 truncate">
+                  {chat.lastMessage || "No messages yet"}
+                </p>
               </div>
               {unreadInfo[chat._id]?.count > 0 && (
                 <div className="flex-shrink-0 ml-2">

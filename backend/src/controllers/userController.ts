@@ -132,6 +132,26 @@ class UserController {
       next(error);
     }
   }
+
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as { user?: { id: string } }).user?.id;
+      if (!userId) {
+        throw new Error("User ID is missing");
+      }
+      
+      const { currentPassword, newPassword } = req.body;
+      const result = await this.userService.changePassword(
+        userId, 
+        currentPassword, 
+        newPassword
+      );
+      
+      res.status(HttpStatus.OK).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const userController = new UserController(userServiceInstance);  

@@ -14,11 +14,18 @@ interface User {
   dob?: string;
 }
 
+interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 const Profile: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isChangingPassword, setIsChangingPassword] = useState<boolean>(false);
   const authUser = useSelector((state: RootState) => state.auth.user);
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
@@ -29,6 +36,18 @@ const Profile: React.FC = () => {
     address: "",
     gender: "",
     dob: "",
+  });
+
+  const [passwordData, setPasswordData] = useState<PasswordChangeData>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const [passwordErrors, setPasswordErrors] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const calculateAge = (dob: string): number => {
@@ -94,6 +113,53 @@ const Profile: React.FC = () => {
     });
   };
 
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    setPasswordData({
+      ...passwordData,
+      [name]: value,
+    });
+
+    // Clear errors when typing
+    if (passwordErrors[name as keyof typeof passwordErrors]) {
+      setPasswordErrors({
+        ...passwordErrors,
+        [name]: ""
+      });
+    }
+  };
+
+  const validatePasswordForm = (): boolean => {
+    let isValid = true;
+    const newErrors = {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    };
+
+    if (!passwordData.currentPassword.trim()) {
+      newErrors.currentPassword = "Current password is required";
+      isValid = false;
+    }
+
+    if (!passwordData.newPassword.trim()) {
+      newErrors.newPassword = "New password is required";
+      isValid = false;
+    } else if (passwordData.newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
+      isValid = false;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    setPasswordErrors(newErrors);
+    return isValid;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
   
@@ -130,6 +196,41 @@ const Profile: React.FC = () => {
     } catch (err) {
       setError("Failed to update profile");
       console.error("Error updating profile:", err);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    
+    if (!validatePasswordForm()) {
+      return;
+    }
+    
+    try {
+      await userService.changePassword(accessToken as string, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      
+      setIsChangingPassword(false);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      
+      toast.success("Password changed successfully!");
+    } catch (err: any) {
+      // Handle specific error cases
+      if (err.response && err.response.status === 401) {
+        setPasswordErrors(prev => ({
+          ...prev,
+          currentPassword: "Current password is incorrect"
+        }));
+      } else {
+        toast.error("current password is incorrect");
+      }
+      console.error("Error changing password:", err);
     }
   };
   
@@ -189,21 +290,32 @@ const Profile: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">{user?.name || "User"}</h1>
           <p className="text-gray-500">{user?.email}</p>
-          {!isEditing && (
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="mt-4 px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-              </svg>
-              Edit Profile
-            </button>
+          {!isEditing && !isChangingPassword && (
+            <div className="flex flex-wrap gap-3 mt-4">
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+                Edit Profile
+              </button>
+              <button 
+                onClick={() => setIsChangingPassword(true)}
+                className="px-5 py-2 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-lg hover:from-purple-600 hover:to-purple-800 transition-all duration-300 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                Change Password
+              </button>
+            </div>
           )}
         </div>
       </div>
 
-      {!isEditing ? (
+      {!isEditing && !isChangingPassword ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {fieldsConfig.map((field) => (
             <div key={field.key} className="p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow duration-300">
@@ -225,12 +337,12 @@ const Profile: React.FC = () => {
             </div>
           ))}
         </div>
-      ) : (
+      ) : isEditing ? (
         <form onSubmit={handleSubmit} className="bg-gray-50 p-6 rounded-xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {fieldsConfig.map((field) => (
               <div key={field.key} className="mb-4">
-                <label className="block text-gray-700 mb-2 font-medium  items-center">
+                <label className="block text-gray-700 mb-2 font-medium items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={field.icon} />
                   </svg>
@@ -286,6 +398,109 @@ const Profile: React.FC = () => {
             <button 
               type="button" 
               onClick={() => setIsEditing(false)} 
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={handlePasswordSubmit} className="bg-gray-50 p-6 rounded-xl">
+          <h2 className="text-xl font-semibold mb-6 flex items-center text-gray-800">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            Change Your Password
+          </h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">Current Password</label>
+              <div className="relative">
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={passwordData.currentPassword}
+                  onChange={handlePasswordChange}
+                  className={`w-full p-3 border ${
+                    passwordErrors.currentPassword ? "border-red-500" : "border-gray-300"
+                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all`}
+                  placeholder="Enter your current password"
+                />
+                {passwordErrors.currentPassword && (
+                  <p className="text-red-500 text-sm mt-1">{passwordErrors.currentPassword}</p>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">New Password</label>
+              <div className="relative">
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={passwordData.newPassword}
+                  onChange={handlePasswordChange}
+                  className={`w-full p-3 border ${
+                    passwordErrors.newPassword ? "border-red-500" : "border-gray-300"
+                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all`}
+                  placeholder="Enter new password"
+                />
+                {passwordErrors.newPassword && (
+                  <p className="text-red-500 text-sm mt-1">{passwordErrors.newPassword}</p>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Password must be at least 8 characters long</p>
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-medium">Confirm New Password</label>
+              <div className="relative">
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange}
+                  className={`w-full p-3 border ${
+                    passwordErrors.confirmPassword ? "border-red-500" : "border-gray-300"
+                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all`}
+                  placeholder="Confirm new password"
+                />
+                {passwordErrors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">{passwordErrors.confirmPassword}</p>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex space-x-4 mt-8">
+            <button 
+              type="submit" 
+              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-lg hover:from-purple-600 hover:to-purple-800 transition-all duration-300 flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Update Password
+            </button>
+            <button 
+              type="button" 
+              onClick={() => {
+                setIsChangingPassword(false);
+                setPasswordData({
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmPassword: "",
+                });
+                setPasswordErrors({
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmPassword: "",
+                });
+              }} 
               className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 flex items-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">

@@ -34,9 +34,6 @@ export class ChatdpService {
         createdAt: callData.createdAt || new Date(),
       }),
     };
-
-
-
     return this.chatRepository.saveMessage(message as IMessage);
   }
 

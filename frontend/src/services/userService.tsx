@@ -3,6 +3,12 @@ import API from "../api/axiosInstance";
 import {store} from "../redux/store"; 
 import { RootState } from "../redux/store";
 
+
+interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+}
+
 const getToken = () => {
   const state: RootState = store.getState();
   return state.auth.accessToken;
@@ -171,6 +177,15 @@ export const userService = {
           throw new Error("An unexpected error occurred");
         }
       }
+  },
+
+  changePassword: async (token: string, data: PasswordChangeData) => {
+    const response = await axios.post(`${BASE_URL}/change-password`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
+    });
+    return response.data;
+  }
 
   };

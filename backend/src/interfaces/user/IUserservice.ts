@@ -1,7 +1,7 @@
 import { IUser } from "./IUser";
 
 export interface IUserService {
-  register(userData: IUser): Promise<{ token: string; user: IUser }>;
+  changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }>;  register(userData: IUser): Promise<{ token: string; user: IUser }>;
   login(email: string, password: string): Promise<{ token: string; user: IUser }>;
   forgotPassword(email: string): Promise<{ success: boolean; message: string }>;
   resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }>;

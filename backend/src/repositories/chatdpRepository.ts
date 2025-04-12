@@ -24,7 +24,13 @@ export class ChatdpRepository implements IChatRepository {
     try {
       return await Message.aggregate([
         { $match: { receiver: new mongoose.Types.ObjectId(doctorId) } },
-        { $group: { _id: "$sender", lastMessage: { $last: "$text" } } },
+        { 
+          $group: { 
+            _id: "$sender", 
+            lastMessage: { $last: "$text" },
+            lastMessageTime: { $last: "$createdAt" }  // Add this line
+          } 
+        },
         { 
           $lookup: { 
             from: "users", 
@@ -36,7 +42,8 @@ export class ChatdpRepository implements IChatRepository {
         { $unwind: "$userDetails" },
         { $project: { 
             _id: 1, 
-            lastMessage: 1, 
+            lastMessage: 1,
+            lastMessageTime: 1,  // Include in projection
             "userDetails.name": 1, 
             "userDetails.email": 1 
           } 
@@ -46,7 +53,6 @@ export class ChatdpRepository implements IChatRepository {
       throw new Error(`Failed to get doctor chat list: ${error.message}`);
     }
   }
-
   async deleteMessage(messageId: string): Promise<boolean> {
     try {
       const result = await Message.findByIdAndDelete(messageId);

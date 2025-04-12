@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { doctorService } from "../../services/doctorService";
-import dayjs from "dayjs"; // Add this import at the top
+import dayjs from "dayjs";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FaMapMarkerAlt } from "react-icons/fa";
-import TimeSlotSelector from './TimeSlotSelector'; // Path to the new component
+import TimeSlotSelector from './TimeSlotSelector';
 import DoctorReviews from '../../components/Reviews/DoctorReviews';
 import { appointmentService } from "../../services/appointmentService";
 

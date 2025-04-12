@@ -64,7 +64,6 @@ const CommonChat: React.FC<CommonChatProps> = ({
   };
 
   const handleDelete = async (messageId: string) => {
-    console.log("Attempting to delete message with ID:", messageId);
     if (!token || !currentUserId || !targetUserId) {
       console.error("Cannot delete message: missing token, currentUserId, or targetUserId", {
         token,
@@ -77,7 +76,6 @@ const CommonChat: React.FC<CommonChatProps> = ({
       await axios.delete(`http://localhost:5001/api/chat/message/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Message deleted successfully from backend");
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
 
       const userId = isDoctor ? targetUserId : currentUserId;
@@ -161,22 +159,18 @@ const CommonChat: React.FC<CommonChatProps> = ({
   };
 
   useEffect(() => {
-    console.log("useEffect triggered for socket setup, currentUserId:", currentUserId, "targetUserId:", targetUserId);
     if (!currentUserId || !targetUserId || !token) {
       console.error("Missing required params:", { currentUserId, targetUserId, token });
       return;
     }
 
     socket.emit("joinRoom", { userId: targetUserId, doctorId: currentUserId });
-    console.log("Joined room with userId:", targetUserId, "doctorId:", currentUserId);
 
     const fetchMessages = async () => {
-      console.log("Fetching messages from backend");
       try {
         const res = await axios.get<Message[]>(`http://localhost:5001/api/chat/${targetUserId}/${currentUserId}`, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
-        console.log("Fetched messages:", res.data);
         const sortedMessages = res.data.sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
@@ -188,7 +182,6 @@ const CommonChat: React.FC<CommonChatProps> = ({
     fetchMessages();
 
     const handleReceiveMessage = (msg: Message) => {
-      console.log("Received message:", msg);
       setMessages((prev) =>
         prev.some((m) => m._id === msg._id)
           ? prev
@@ -200,7 +193,6 @@ const CommonChat: React.FC<CommonChatProps> = ({
     socket.on("receiveMessage", handleReceiveMessage);
 
     const handleCallHistory = (callData: Message) => {
-      console.log("Received callHistory:", callData);
       // Add call history directly instead of refetching all messages
       setMessages((prev) => {
         const exists = prev.some((m) => 
@@ -220,13 +212,11 @@ const CommonChat: React.FC<CommonChatProps> = ({
     socket.on("callHistory", handleCallHistory);
 
     const handleMessageDeleted = ({ messageId }: { messageId: string }) => {
-      console.log("Message deleted, ID:", messageId);
       setMessages((prev) => [...prev.filter((msg) => msg._id !== messageId)]);
     };
     socket.on("messageDeleted", handleMessageDeleted);
 
     return () => {
-      console.log("Cleaning up socket listeners");
       socket.off("receiveMessage", handleReceiveMessage);
       socket.off("callHistory", handleCallHistory);
       socket.off("messageDeleted", handleMessageDeleted);
@@ -234,7 +224,6 @@ const CommonChat: React.FC<CommonChatProps> = ({
   }, [currentUserId, targetUserId, token]);
 
   const sendMessage = async () => {
-    console.log("Sending message, text:", text, "media:", media);
     if (!currentUserId || !targetUserId || (!text.trim() && !media) || !token) {
       console.error("Cannot send message: missing required fields", { currentUserId, targetUserId, text, media, token });
       return;
@@ -250,7 +239,6 @@ const CommonChat: React.FC<CommonChatProps> = ({
       const res = await axios.post("http://localhost:5001/api/chat/send", formData, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
-      console.log("Message sent successfully, response:", res.data);
       socket.emit("sendMessage", res.data);
       setMessages((prev) => [...prev, res.data]);
       setText("");
@@ -269,12 +257,10 @@ const CommonChat: React.FC<CommonChatProps> = ({
   };
 
   const handleAttachmentClick = () => {
-    console.log("Attachment click triggered");
     fileInputRef.current?.click();
   };
 
   useEffect(() => {
-    console.log("Messages updated, scrolling to bottom");
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 

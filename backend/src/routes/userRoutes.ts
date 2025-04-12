@@ -17,5 +17,6 @@ router.get("/", verifyToken(["admin"]),userController.getAllUsers.bind(userContr
 router.put("/block/:userId",verifyToken(["admin"]), userController.toggleBlockUser.bind(userController));
 router.get("/profile",verifyToken(["admin","user"]), userController.getUserProfile.bind(userController));
 router.put("/profile", validate(),verifyToken(["admin","user"]),userController.updateUserProfile.bind(userController));
+router.post("/change-password", verifyToken(["user"]), userController.changePassword.bind(userController));
 
 export default router;
