@@ -188,7 +188,6 @@ const setPassword = async (token: string, password: string): Promise<string> => 
       }
     }
 
-
 const fetchDoctorChats = async (doctorId: string, token: string): Promise<Chat[]> => {
   const res = await axios.get(import.meta.env.VITE_API_BASE_URL +`/chat/doctor/${doctorId}/chats`, {
     headers: {
@@ -198,8 +197,18 @@ const fetchDoctorChats = async (doctorId: string, token: string): Promise<Chat[]
   return res.data;
 };
 
+const fetchDoctorRating = async (doctorId: string) => {
+  try {
+    const response = await axios.get(import.meta.env.VITE_API_BASE_URL +`/reviews/${doctorId}/rating`);
+    console.log("response of doctor rating:",response)
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching rating for doctor ${doctorId}:`, error);
+    throw error;
+  }
+};
 
         
 export const doctorService = { createDoctor ,setPassword,forgotPassword,fetchAllDoctors,
   resetPassword,login,uploadImage,fetchDoctor,updateProfile,signupDoctor,getDoctorById,approveDoctor,
-  fetchDoctorChats,updateDoctorProfile};
+  fetchDoctorChats,updateDoctorProfile,fetchDoctorRating};

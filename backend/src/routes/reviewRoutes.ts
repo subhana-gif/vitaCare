@@ -17,6 +17,6 @@ const reviewController = new ReviewController(reviewService,userService);
 
 router.post('/', verifyToken(['user']), reviewController.createReview);
 router.get('/:doctorId', verifyToken(['doctor', 'user']), reviewController.getDoctorReviews);
-router.get('/:doctorId/rating',verifyToken(['user', 'doctor']),reviewController.getDoctorRating);
+router.get('/:doctorId/rating', reviewController.getDoctorRating);
 
 export default router;

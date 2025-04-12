@@ -55,8 +55,8 @@ export class ReviewController {
   getDoctorRating = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { doctorId } = req.params;
-      const rating = await this.reviewService.getDoctorRating(doctorId);
-      res.json(rating);
+      const { averageRating, totalReviews } = await this.reviewService.getDoctorRating(doctorId);
+      res.json({ averageRating, totalReviews });
     } catch (error) {
       next(error);
     }
