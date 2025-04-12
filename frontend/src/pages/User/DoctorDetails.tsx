@@ -149,13 +149,6 @@ const handleBooking = async () => {
     console.error("Booking error:", error);
   }
 };
-const handleChatNavigation = () => {
-  if (user?._id && doctor?._id) {
-    navigate(`/chats/${user._id}/${doctor._id}`);
-  } else {
-    navigate(`/chats`);
-  }
-};
   
 
   if (isLoading) return (
@@ -227,12 +220,6 @@ const handleChatNavigation = () => {
               <span className="bg-green-100 text-green-800 px-4 py-1 rounded-full text-lg">
                 {doctor.experience} years exp.
               </span>
-              <span
-      className="bg-green-100 text-green-800 px-4 py-1 rounded-full text-lg cursor-pointer"
-      onClick={handleChatNavigation}
-    >
-      Chat with Doctor
-    </span>
             </div>
           </div>
         </div>

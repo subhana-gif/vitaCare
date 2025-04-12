@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 interface AppointmentCardProps {
   appointment: Appointment & {
     cancellationReason?: string;
-    appointmentFee:string;
+    appointmentFee: string;
     doctorApproval?: {
       status: 'approved' | 'rejected' | 'pending';
       reason?: string;
@@ -42,6 +42,19 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     navigate(`/prescription/${appointment._id}`);
   };
 
+  const handleChatWithDoctor = () => {
+    if (appointment.doctorId?._id) {
+      navigate(`/chats/${appointment.patientId}/${appointment.doctorId._id}`);
+    } else {
+      navigate(`/chats`);
+    }
+  };
+
+  // Function to check if chat button should be shown - only for confirmed/completed appointments
+  const shouldShowChatButton = () => {
+    return appointment.status === "confirmed" || appointment.status === "completed";
+  };
+
   // Function to render the appropriate action content based on appointment status
   const renderActionContent = () => {
     // Handle cancelled appointments
@@ -64,6 +77,14 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           >
             View Prescription
           </button>
+          {shouldShowChatButton() && (
+            <button
+              onClick={handleChatWithDoctor}
+              className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+            >
+              Chat with Doctor
+            </button>
+          )}
         </div>
       );
     }
@@ -107,6 +128,14 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
             Pay Now
           </button>
         )}
+        {shouldShowChatButton() && (
+          <button
+            onClick={handleChatWithDoctor}
+            className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
+          >
+            Chat with Doctor
+          </button>
+        )}
         {appointment.status !== "pending" && (
           <button
             onClick={() => onCancel(appointment._id)}
@@ -118,6 +147,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
       </div>
     );
   };
+
   // Helper function to determine if appointment is active
   const isActive = isUpcoming(appointment.date) && appointment.status !== "cancelled" && appointment.status !== "completed";
 
@@ -201,7 +231,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-lg font-medium bg-yellow-100 text-yellow-800">
                     Payment Due
                   </span>
-                  <p className="text-gray-500 mt-1 text-xl font-medium">₹{appointment.appointmentFee.toLocaleString() || 0}</p>
+                  <p className="text-gray-500 mt-1 text-xl font-medium">₹{typeof appointment.appointmentFee === 'number' ? appointment.appointmentFee.toLocaleString() : appointment.appointmentFee || 0}</p>
                 </div>
               )}
             </div>

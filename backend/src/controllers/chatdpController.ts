@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { ChatdpService } from "../services/chatdpservices";
 import { HttpMessage, HttpStatus } from '../enums/HttpStatus';
+import notificationService from "../services/notificationService";
+import { DoctorRepository } from "../repositories/doctorRepository";
+import UserRepository from "../repositories/userRepository";
 
 
 export class ChatdpController {
@@ -9,21 +12,59 @@ export class ChatdpController {
   async sendMessage(req: Request, res: Response): Promise<void> {
     try {
       const { sender, receiver, text } = req.body;
-      const imageUrl = req.body.imageUrl; 
+      const imageUrl = req.body.imageUrl;
+  
       if (!sender || !receiver) {
         throw new Error("Sender and receiver IDs are required");
       }
-      const message = await this.chatService.sendMessage(sender,receiver,text,imageUrl);
+  
+      // Identify recipient role
+      let recipientRole: "user" | "doctor";
+  
+      const userRepo = UserRepository.getInstance();
+      const user = await userRepo.findById(receiver);
+      if (user) {
+        recipientRole = "user";
+      } else {
+        const doctorRepo = new DoctorRepository();
+        const doctor = await doctorRepo.findById(receiver);
+        if (doctor) {
+          recipientRole = "doctor";
+        } else {
+          throw new Error("Receiver not found in user or doctor records");
+        }
+      }
+  
+      // Determine sender name (for notification message)
+      let senderName: string = "Someone";
+  
+      const senderUser = await userRepo.findById(sender);
+      if (senderUser) {
+        senderName = senderUser.name;
+      } else {
+        const doctorRepo = new DoctorRepository();
+        const senderDoctor = await doctorRepo.findById(sender);
+        if (senderDoctor) {
+          senderName = senderDoctor.name;
+        }
+      }
+  
+      // Create notification with sender's name
+      const notification = await notificationService.createNotification({
+        recipientId: receiver,
+        recipientRole: recipientRole,
+        message: `New message from ${senderName}`,
+      });
+  
+      req.io?.to(receiver).emit("newNotification", notification);
+  
+      const message = await this.chatService.sendMessage(sender, receiver, text, imageUrl);
       res.status(HttpStatus.CREATED).json(message);
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
-      } else {
-        res.status(HttpStatus.BAD_REQUEST).json({ message:HttpMessage.BAD_REQUEST});
-      }
+      res.status(HttpStatus.BAD_REQUEST).json({ message: HttpMessage.BAD_REQUEST });
     }
   }
-
+  
   async getChatHistory(req: Request, res: Response): Promise<void> {
     try {
       const { userId, doctorId } = req.params;

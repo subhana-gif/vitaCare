@@ -35,7 +35,7 @@ const LanguageSelector = () => {
 interface Notification {
   message: string;
   createdAt: Date;
-  seen: boolean;
+  isRead: boolean; 
 }
 
 
@@ -71,6 +71,7 @@ const Navbar: React.FC = () => {
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
     });
+    
 
     return () => {
       socket.disconnect();
@@ -118,6 +119,9 @@ const Navbar: React.FC = () => {
     }
   };
 
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+
   return (
     <nav className="max-w-9xl mx-auto px-4 py-4 flex justify-between items-center">
       <Link to="/">
@@ -141,42 +145,42 @@ const Navbar: React.FC = () => {
 
       {/* Notification Icon and Dropdown */}
       <div className="relative mr-4" ref={notifRef}>
-        <button
-          onClick={() => setShowNotifications(!showNotifications)}
-          className="text-gray-600 text-3xl hover:text-blue-600 focus:outline-none relative"
-        >
-          <IoNotificationsOutline className="w-8 h-8" />
-          {notifications.filter(n => !n.seen).length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-              {notifications.filter(n => !n.seen).length}
-            </span>
-          )}
-        </button>
-        {showNotifications && (
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800"><T keyName="Notifications">Notifications</T></h3>
-            </div>
-            {notifications.length > 0 ? (
-              <div className="divide-y divide-gray-200">
-                {notifications.map((notification, index) => (
-                  <div key={index} className="p-4 hover:bg-gray-50">
-                    <p className="text-gray-800">{notification.message}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {new Date(notification.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 text-center text-gray-500">
-                <T keyName="No_notifications">No notifications</T>
-              </div>
-            )}
-          </div>
+      <button
+        onClick={() => setShowNotifications(!showNotifications)}
+        className="text-gray-600 hover:text-blue-600 focus:outline-none relative"
+      >
+        <IoNotificationsOutline className="w-8 h-8" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+            {unreadCount}
+          </span>
         )}
-      </div>
+      </button>
 
+      {showNotifications && (
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+          </div>
+          {notifications.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {notifications.map((notification, index) => (
+                <div key={index} className="p-4 hover:bg-gray-50">
+                  <p className="text-gray-800">{notification.message}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date(notification.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-gray-500">
+              No notifications
+            </div>
+          )}
+        </div>
+         )}
+    </div>
       {/* Profile Icon with Dropdown */}
       <div className="relative" ref={dropdownRef}>
         <button

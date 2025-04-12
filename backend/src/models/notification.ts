@@ -20,22 +20,16 @@ const NotificationSchema = new Schema<INotification>(
   },
   { timestamps: true }
 );
-
-// Pre-save middleware to limit notifications to 5 per recipientId
 NotificationSchema.pre("save", async function (this: INotification, next) {
   try {
     const notificationModel = this.constructor as mongoose.Model<INotification>;
-
-    // Count existing notifications for this recipientId
     const notificationCount = await notificationModel.countDocuments({
       recipientId: this.recipientId,
     });
-
-    // If there are 5 or more, delete the oldest one
     if (notificationCount >= 5) {
       const oldestNotification = await notificationModel
         .findOne({ recipientId: this.recipientId })
-        .sort({ createdAt: 1 }); // Oldest first
+        .sort({ createdAt: 1 }); 
 
       if (oldestNotification) {
         await notificationModel.deleteOne({ _id: oldestNotification._id });

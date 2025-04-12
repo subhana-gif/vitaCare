@@ -1,8 +1,11 @@
-import { Types } from "mongoose";
 import { IChatRepository, IMessage, IMessageDocument, IDoctorChatSummary } from "../interfaces/chat/IChatdpRepository";
+import { DoctorRepository } from "../repositories/doctorRepository";
+import notificationService from "./notificationService";
+import UserRepository from "../repositories/userRepository";
 
 export class ChatdpService {
   constructor(private readonly chatRepository: IChatRepository) {}
+
 
   async sendMessage(
     sender: string,
@@ -19,7 +22,6 @@ export class ChatdpService {
     if (!sender || !receiver) {
       throw new Error("Sender and receiver are required");
     }
-
     const message: Partial<IMessage> = {
       sender,
       receiver,
@@ -32,6 +34,8 @@ export class ChatdpService {
         createdAt: callData.createdAt || new Date(),
       }),
     };
+
+
 
     return this.chatRepository.saveMessage(message as IMessage);
   }

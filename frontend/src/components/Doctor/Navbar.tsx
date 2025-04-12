@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux';
 interface Notification {
   message: string;
   createdAt: Date;
+  isRead: boolean; 
 }
 
 const DoctorNavbar = () => {
@@ -59,7 +60,7 @@ const DoctorNavbar = () => {
       
       setNotifications(prev => prev.map(notification => ({
         ...notification,
-        seen: true
+        isRead: true
       })));
       setNotificationCount(0);
     } catch (error) {
