@@ -19,12 +19,6 @@ interface Message {
   callDuration?: number;
 }
 
-interface UserInfo {
-  id: string;
-  name: string;
-  imageUrl?: string;
-}
-
 interface CommonChatProps {
   currentUserId: string;
   targetUserId: string;
@@ -332,7 +326,7 @@ const CommonChat: React.FC<CommonChatProps> = ({
                           msg.type === "call"
                             ? (msg.status === "Missed" || msg.status === "Not Answered"
                                 ? "bg-red-800 text-red-800"
-                                : "bg-green-800 text-green-800") + " !bg-opacity-20"
+                                : "bg-green-950 text-green-950") + " !bg-opacity-20"
                             : ""
                         }`}
                       >
@@ -344,8 +338,8 @@ const CommonChat: React.FC<CommonChatProps> = ({
                                   size={18}
                                   className={
                                     msg.status === "Missed" || msg.status === "Not Answered"
-                                      ? "text-red-500"
-                                      : "text-green-500"
+                                      ? "text-red-800"
+                                      : "text-green-800"
                                   }
                                 />
                                 <div>

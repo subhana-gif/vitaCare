@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Signup from "../pages/User/signup";
 import Login from "../pages/User/Login";
 import Home from "../pages/User/Home";
@@ -18,17 +18,22 @@ import PrescriptionView from "../components/Prescription/PrescriptionView";
 import About from "../pages/User/About"
 import Contact from "../pages/User/Contact"
 import GeminiChat from "../pages/User/geminiChat"
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 
 const UserRoutes: React.FC = () => {
+  const user = useSelector((state: RootState) => state.auth.user);
+
+
   return (
     <Routes>
       <Route path="/doctors/login" element={<DoctorLogin />} />
       <Route path="/doctors/signup" element={<DoctorSignup />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+      <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
+      <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
-      <Route path="/signup" element={<Signup />} />
 
       <Route path="/" element={<LayoutUser />}>
         <Route index element={<Home />} />
