@@ -1,0 +1,27 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const appointmentController_1 = require("../controllers/appointmentController");
+const DoctorService_1 = require("../services/DoctorService");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const doctorRepository_1 = require("../repositories/doctorRepository");
+const appointmentRepository_1 = require("../repositories/appointmentRepository");
+const appointmentService_1 = require("../services/appointmentService");
+const notificationService_1 = __importDefault(require("../services/notificationService"));
+const router = express_1.default.Router();
+const doctorRepository = new doctorRepository_1.DoctorRepository();
+const doctorService = new DoctorService_1.DoctorService(doctorRepository);
+const appointmentRepository = new appointmentRepository_1.AppointmentRepository();
+const appointmentService = new appointmentService_1.AppointmentService(appointmentRepository, doctorService);
+const appointmentController = new appointmentController_1.AppointmentController(appointmentService, notificationService_1.default);
+router.post("/book", (0, authMiddleware_1.verifyToken)(["user"]), (req, res) => appointmentController.bookAppointment(req, res));
+router.put("/:appointmentId/status", (0, authMiddleware_1.verifyToken)(["doctor"]), (req, res) => appointmentController.updateStatus(req, res));
+router.get("/doctor", (0, authMiddleware_1.verifyToken)(["doctor", "user"]), (req, res) => appointmentController.getDoctorAppointments(req, res));
+router.get("/patient/:patientId", (0, authMiddleware_1.verifyToken)(["user"]), (req, res) => appointmentController.getPatientAppointments(req, res));
+router.get("/patient", (0, authMiddleware_1.verifyToken)(["user", "admin"]), (req, res) => appointmentController.getAppointments(req, res));
+router.delete("/:id", (0, authMiddleware_1.verifyToken)(["user"]), (req, res) => appointmentController.cancelAppointment(req, res));
+router.get("/", (0, authMiddleware_1.verifyToken)(["admin"]), (req, res) => appointmentController.getAllAppointments(req, res));
+exports.default = router;

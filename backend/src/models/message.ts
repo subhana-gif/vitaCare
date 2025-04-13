@@ -1,4 +1,4 @@
-import { IMessageDocument } from "interfaces/chat/IChatdpRepository";
+import { IMessageDocument } from "../interfaces/chat/IChatdpRepository";
 import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface IMessage {

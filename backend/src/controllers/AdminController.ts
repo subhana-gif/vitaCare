@@ -1,7 +1,7 @@
 // controllers/AuthController.ts
 import { Request, Response, NextFunction } from "express";
 import AuthService from "../services/AdminService";
-import { IAuthService } from "interfaces/IAuthService";
+import { IAuthService } from "../interfaces/IAuthService";
 import { HttpStatus,HttpMessage } from "../enums/HttpStatus";
 
 export class AuthController {

@@ -1,0 +1,23 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const reviewController_1 = require("../controllers/reviewController");
+const reviewService_1 = require("../services/reviewService");
+const reviewRepository_1 = require("../repositories/reviewRepository");
+const Review_1 = __importDefault(require("../models/Review"));
+const userService_1 = require("../services/userService");
+const userRepository_1 = __importDefault(require("../repositories/userRepository"));
+const router = express_1.default.Router();
+const reviewRepository = new reviewRepository_1.ReviewRepository(Review_1.default);
+const userRepository = userRepository_1.default.getInstance();
+const reviewService = new reviewService_1.ReviewService(reviewRepository);
+const userService = new userService_1.UserService(userRepository);
+const reviewController = new reviewController_1.ReviewController(reviewService, userService);
+router.post('/', (0, authMiddleware_1.verifyToken)(['user']), reviewController.createReview);
+router.get('/:doctorId', (0, authMiddleware_1.verifyToken)(['doctor', 'user']), reviewController.getDoctorReviews);
+router.get('/:doctorId/rating', reviewController.getDoctorRating);
+exports.default = router;
