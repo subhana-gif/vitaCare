@@ -10,7 +10,6 @@ const router = Router();
 router.post("/login", validate(),AuthController.login);
 router.get("/specialities",SpecialityController.getAllSpecialities);
 router.get("/specialities/status",specialityController.specialityStatus);
-
 router.post("/specialities", verifyToken(["admin"]),SpecialityController.addSpeciality);
 router.put("/specialities/:id/toggle",verifyToken(["admin"]), SpecialityController.toggleSpecialityStatus);
 export default router;

@@ -7,7 +7,6 @@ import { Server } from "socket.io";
 import socketHandler from "./src/socket/socket";
 import errorHandler from "./src/middleware/errorHandler"
 
-
 import adminRoutes from "./src/routes/adminRoutes";
 import authRoutes from "./src/routes/userRoutes";
 import doctorRoutes from "./src/routes/doctorRoutes"
@@ -41,7 +40,6 @@ app.use(
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 
-// ✅ Handle Preflight Requests (OPTIONS)
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "http://localhost:5173");
   res.header("Access-Control-Allow-Credentials", "true");
@@ -53,19 +51,18 @@ app.options("*", (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // ✅ Replace "*" with your frontend URL
-    credentials: true, // ✅ Allow credentials
-    methods: ["GET", "POST"], // ✅ Specify allowed methods
+    origin: "http://localhost:5173", 
+    credentials: true,
+    methods: ["GET", "POST"],
   },
 });
 app.use((req, res, next) => {
-  req.io = io; // Attach `io` to request
+  req.io = io; 
   next();
 });
 socketHandler(io);
 
 
-// Routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/user", authRoutes);
 app.use("/api/doctor",doctorRoutes)
@@ -80,11 +77,10 @@ app.use("/api/dashboard",dashboard)
 
 app.use(errorHandler)
 
-// Start the server after DB connection
 const PORT = process.env.PORT || 5001;
 connectDB()
   .then(() => {
-    server.listen(PORT, () => {  // ✅ Use `server.listen()` instead of `app.listen()`
+    server.listen(PORT, () => { 
       console.log(`Server running on port ${PORT}`);
     });
   })
