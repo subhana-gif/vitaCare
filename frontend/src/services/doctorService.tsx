@@ -117,7 +117,6 @@ const setPassword = async (token: string, password: string): Promise<string> => 
   };
   
     const getDoctorById = async (id: string) => {
-      // Use user token if available, otherwise use doctor token
       const userToken = localStorage.getItem("accessToken");
       const doctorToken = localStorage.getItem("doctortoken");
       const token = userToken || doctorToken;

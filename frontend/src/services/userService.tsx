@@ -52,15 +52,12 @@ export const userService = {
 
   getProfile: async (p0: string) => {
     const accessToken = getToken();
-    console.log("accesstoken:",accessToken)
     const response = await fetch(`${BASE_URL}/profile`, {
       method: "GET",
       headers: { Authorization: `Bearer ${accessToken}` },
     });
   
-    const data = await response.json();
-    console.log("Raw Response Data:", data); // ✅ Add this to inspect API response
-  
+    const data = await response.json();  
     if (!response.ok) {
       throw new Error(data.message || "Failed to fetch profile.");
     }

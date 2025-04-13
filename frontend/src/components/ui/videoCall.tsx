@@ -8,16 +8,16 @@ interface VideoCallProps {
   socket: Socket;
   userId: string;
   targetUserId: string;
-  userName?: string;       
-  targetUserName?: string; 
+  userName: string;
+  targetUserName: string;
 }
 
 const VideoCall: React.FC<VideoCallProps> = ({ 
   socket, 
   userId, 
   targetUserId, 
-  userName = "User", 
-  targetUserName = "Contact" 
+  userName, 
+  targetUserName
 }) => {
   const [isCalling, setIsCalling] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
@@ -197,7 +197,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
         to: targetUserId, 
         from: userId, 
         offer, 
-        userName // Send the user's name with the call
+        userName 
       });
     } catch (error: any) {
       console.error("Error starting call:", error.name, error.message);
@@ -250,7 +250,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
       socket.emit("acceptCall", { 
         to: socketId, 
         answer, 
-        userName // Send the user's name when accepting
+        userName
       });
     } catch (error: any) {
       console.error("Error accepting call:", error.name, error.message);
@@ -362,7 +362,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
     socket.on("incomingCall", async ({ from, offer, socketId, userName: callerName }) => {
       setIsRinging(true);
       setTargetSocketId(socketId);
-      setCallerName(callerName || "Unknown Caller");
+      setCallerName(callerName || targetUserName  || "Unknown Caller");
       const proceed = await checkPermissions();
       if (proceed) {
         (window as any).acceptCall = () => acceptCall(offer, socketId);

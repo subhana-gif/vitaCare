@@ -3,6 +3,10 @@ import { MoreVertical, Trash2, Share2, Video } from "lucide-react";
 import io, { Socket } from "socket.io-client";
 import axios from "axios";
 import VideoCall from "../ui/videoCall";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
+import { userService } from "../../services/userService";
+import { doctorService } from "../../services/doctorService";
 
 const socket: Socket = io("http://localhost:5001", { withCredentials: true });
 
@@ -26,6 +30,7 @@ interface CommonChatProps {
   isDoctor: boolean;
   headerName?: string;
   headerImageUrl?: string;
+  targetUserName?: string; 
 }
 
 const CommonChat: React.FC<CommonChatProps> = ({
@@ -35,15 +40,41 @@ const CommonChat: React.FC<CommonChatProps> = ({
   isDoctor,
   headerName,
   headerImageUrl,
+  targetUserName,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState<string>("");
   const [media, setMedia] = useState<File | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>(""); // Add state for currentUserName
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
+useEffect(() => {
+  const fetchCurrentUser = async () => {
+    if (!accessToken || !currentUserId) return;
+    
+    try {
+      // First try to get user profile
+      try {
+        const profileData = await userService.getProfile(accessToken);
+        setCurrentUserName(profileData.name);
+      } catch (userError) {
+        console.log("Not a regular user, trying doctor profile...");
+        // If user profile fails, try doctor profile
+        const doctorData = await doctorService.getDoctorById(currentUserId);
+        setCurrentUserName(doctorData.name);
+      }
+    } catch (error) {
+      console.error("Error fetching current user name:", error);
+      setCurrentUserName("User"); // Fallback name
+    }
+  };
+  
+  fetchCurrentUser();
+}, [currentUserId, accessToken]); // Use accessToken instead of token
   const getDateHeader = (date: Date) => {
     const today = new Date();
     const yesterday = new Date(today);
@@ -277,7 +308,13 @@ const CommonChat: React.FC<CommonChatProps> = ({
           )}
           <h2 className="text-xl font-semibold">{headerName || "Chat"}</h2>
         </div>
-        <VideoCall socket={socket} userId={currentUserId} targetUserId={targetUserId} />
+        <VideoCall 
+          socket={socket} 
+          userId={currentUserId} 
+          targetUserId={targetUserId}
+          userName={currentUserName || "You"} 
+          targetUserName={targetUserName || headerName || "User"} 
+        />
       </div>
 
       <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
