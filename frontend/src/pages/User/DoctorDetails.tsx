@@ -85,11 +85,11 @@ const DoctorDetails: React.FC = () => {
     if (doctor) {
       const fetchBookedSlots = async () => {
         try {
-          const data = await appointmentService.fetchAppointmentsDoctor(token as string);
-          if (Array.isArray(data)) {
-            setBookedSlots(data);
+          const response = await appointmentService.fetchAppointmentsDoctor(token as string);
+          if (response && Array.isArray(response.appointments)) {
+            setBookedSlots(response.appointments);
           } else {
-            console.error("Unexpected format in booked slots response:", data);
+            console.error("Unexpected format in booked slots response:", response);
             setBookedSlots([]);
           }
         } catch (error) {
@@ -97,7 +97,7 @@ const DoctorDetails: React.FC = () => {
           setBookedSlots([]);
         }
       };
-            
+                  
       const fetchRelatedDoctors = async () => {
         try {
           const allDoctors = await doctorService.fetchAllDoctors();  

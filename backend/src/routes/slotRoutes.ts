@@ -9,7 +9,7 @@ router.get("/:doctorId",verifyToken(["doctor"]), slotController.getSlotsByDoctor
 router.put("/:slotId", verifyToken(["doctor"]), slotController.updateSlot);
 router.put("/:slotId/unavailable",verifyToken(["doctor"]), slotController.markSlotUnavailable);
 router.put("/:slotId/available", verifyToken(["doctor"]),slotController.markSlotAvailable);
-router.get("/:doctorId/day/:dayOfWeek", verifyToken(["user"]),slotController.getSlotsByDoctorAndDay);
+router.get("/:doctorId/date/:selectedDate", verifyToken(["user"]),slotController.getSlotsByDoctorAndDate);
 router.put("/:slotId/book", verifyToken(["user"]), slotController.markSlotAsBooked);
 
 export default router;

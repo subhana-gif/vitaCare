@@ -15,6 +15,8 @@ interface Slot {
   endTime: string;
   price: number;
   status: "available" | "booked";
+  startDate?: string;
+  endDate?: string;
 }
 
 const daysOfWeekOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -32,10 +34,16 @@ const SlotManagement: React.FC = () => {
   const [editingPrice, setEditingPrice] = useState<number>(0);
   const [editingStartTime, setEditingStartTime] = useState<string>("");
   const [editingEndTime, setEditingEndTime] = useState<string>("");
-  const [sortBy, setSortBy] = useState<"dayOfWeek" | "startTime" | "price" | "status">("dayOfWeek");
+  const [sortBy, setSortBy] = useState<"dayOfWeek" | "startTime" | "price" | "status" | "startDate">("dayOfWeek");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(7);
+  
+  // Date range states
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [editingStartDate, setEditingStartDate] = useState<string>("");
+  const [editingEndDate, setEditingEndDate] = useState<string>("");
 
   // Redux state
   const doctorId = useSelector((state: RootState) => state.doctors.doctorId);
@@ -60,6 +68,23 @@ const SlotManagement: React.FC = () => {
     }
   };
 
+  const validateDateRange = (start: string, end: string): boolean => {
+    if (!start || !end) {
+      toast.warn("Please select both start and end dates.");
+      return false;
+    }
+
+    const startDateObj = new Date(start);
+    const endDateObj = new Date(end);
+
+    if (startDateObj > endDateObj) {
+      toast.warn("End date must be after start date.");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleAddDefaultSlots = async () => {
     if (!startTime || !endTime || price <= 0 || selectedDays.length === 0) {
       toast.warn("Please fill all fields and select at least one day.");
@@ -68,18 +93,31 @@ const SlotManagement: React.FC = () => {
 
     if (!validateTimeRange(startTime, endTime)) return;
     
+    if (!validateDateRange(startDate, endDate)) return;
+    
     try {
       if (!doctorId || !token) return;
       setLoading(true);
 
       await Promise.all(selectedDays.map(day => 
-        slotService.addSlot(doctorId, day, startTime, endTime, price, token)
+        slotService.addSlot(
+          doctorId, 
+          day, 
+          startTime, 
+          endTime, 
+          price, 
+          token,
+          startDate,  // Add start date
+          endDate     // Add end date
+        )
       ));
       
       toast.success(`Slots for ${selectedDays.length} days added successfully!`);
       setPrice(0);
       setSelectedDays([]);
       setSelectAll(false);
+      setStartDate("");
+      setEndDate("");
       await fetchSlots();
     } catch (error) {
       toast.error("Failed to add slots. Please try again.");
@@ -113,12 +151,16 @@ const SlotManagement: React.FC = () => {
     setEditingPrice(slot.price);
     setEditingStartTime(slot.startTime);
     setEditingEndTime(slot.endTime);
+    setEditingStartDate(slot.startDate || "");
+    setEditingEndDate(slot.endDate || "");
   };
 
   const handleUpdateSlot = async () => {
     if (!editingSlotId || !token) return;
     
     if (!validateTimeRange(editingStartTime, editingEndTime)) return;
+    
+    if (!validateDateRange(editingStartDate, editingEndDate)) return;
     
     try {
       await slotService.updateSlot(
@@ -127,7 +169,9 @@ const SlotManagement: React.FC = () => {
           price: editingPrice,
           startTime: editingStartTime,
           endTime: editingEndTime,
-          date: ""
+          startDate: editingStartDate,
+          endDate: editingEndDate,
+          date: ""  // Keeping this for backward compatibility
         },
         token
       );
@@ -160,17 +204,26 @@ const SlotManagement: React.FC = () => {
     setSortBy(field);
   };
 
+  const formatDateString = (dateStr?: string) => {
+    if (!dateStr) return "Not set";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString();
+  };
+
   const sortedSlots = [...slots].sort((a, b) => {
-    const aValue = a[sortBy] ?? "";
-    const bValue = b[sortBy] ?? "";
-    
     if (sortBy === "dayOfWeek") {
       const aIndex = daysOfWeekOrder.indexOf(a.dayOfWeek);
       const bIndex = daysOfWeekOrder.indexOf(b.dayOfWeek);
       return sortOrder === "asc" ? aIndex - bIndex : bIndex - aIndex;
     } else if (sortBy === "price") {
       return sortOrder === "asc" ? a.price - b.price : b.price - a.price;
+    } else if (sortBy === "startDate") {
+      const aDate = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const bDate = b.startDate ? new Date(b.startDate).getTime() : 0;
+      return sortOrder === "asc" ? aDate - bDate : bDate - aDate;
     } else {
+      const aValue = a[sortBy] || "";
+      const bValue = b[sortBy] || "";
       return sortOrder === "asc" 
         ? String(aValue).localeCompare(String(bValue))
         : String(bValue).localeCompare(String(aValue));
@@ -183,6 +236,9 @@ const SlotManagement: React.FC = () => {
   const totalPages = Math.ceil(sortedSlots.length / itemsPerPage);
 
   const handlePageChange = (page: number) => setCurrentPage(page);
+
+  // Get today's date in YYYY-MM-DD format for min date
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="p-3 w-full bg-white rounded-lg shadow-lg">
@@ -220,6 +276,31 @@ const SlotManagement: React.FC = () => {
                 className="w-full border border-gray-300 p-2 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 min="0"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Availability Range</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    min={today}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full border border-gray-300 p-2 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate || today}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full border border-gray-300 p-2 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <div>
@@ -328,6 +409,20 @@ const SlotManagement: React.FC = () => {
                     </th>
                     <th 
                       scope="col" 
+                      className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => toggleSort("startDate")}
+                    >
+                      <div className="flex items-center">
+                        Date Range
+                        {sortBy === "startDate" && (
+                          <span className="ml-1">
+                            {sortOrder === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
                       className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Status
@@ -377,6 +472,33 @@ const SlotManagement: React.FC = () => {
                           <div className="font-medium">
                             ₹{slot.price.toLocaleString()}
                           </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {editingSlotId === slot._id ? (
+                          <div className="flex space-x-2 items-center">
+                            <input
+                              type="date"
+                              value={editingStartDate}
+                              min={today}
+                              onChange={(e) => setEditingStartDate(e.target.value)}
+                              className="border border-gray-300 rounded-md px-2 py-1 w-24"
+                            />
+                            <span className="text-gray-500">to</span>
+                            <input
+                              type="date"
+                              value={editingEndDate}
+                              min={editingStartDate || today}
+                              onChange={(e) => setEditingEndDate(e.target.value)}
+                              className="border border-gray-300 rounded-md px-2 py-1 w-24"
+                            />
+                          </div>
+                        ) : (
+                          <span>
+                            {slot.startDate && slot.endDate 
+                              ? `${formatDateString(slot.startDate)} - ${formatDateString(slot.endDate)}`
+                              : "Not set"}
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">

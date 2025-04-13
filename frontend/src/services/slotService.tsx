@@ -1,7 +1,7 @@
 import axios from "axios";
 import dayjs from "dayjs";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL +"/slots";
+const API_BASE = import.meta.env.VITE_API_BASE_URL + "/slots";
 
 export const slotService = {
   fetchSlots: async (doctorId: string, token: string) => {
@@ -14,10 +14,26 @@ export const slotService = {
   },
 
   addSlot: async (
-doctorId: string, dayOfWeek: string, startTime: string, endTime: string, price: number, token: string  ) => {
+    doctorId: string, 
+    dayOfWeek: string, 
+    startTime: string, 
+    endTime: string, 
+    price: number, 
+    token: string,
+    startDate?: string,
+    endDate?: string
+  ) => {
     return await axios.post(
       `${API_BASE}/create`,
-      { doctorId, dayOfWeek, startTime, endTime, price },
+      { 
+        doctorId, 
+        dayOfWeek, 
+        startTime, 
+        endTime, 
+        price,
+        startDate,
+        endDate
+      },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -33,6 +49,8 @@ doctorId: string, dayOfWeek: string, startTime: string, endTime: string, price: 
       date: string;
       startTime: string;
       endTime: string;
+      startDate?: string;
+      endDate?: string;
     },
     token: string
   ) => {
@@ -53,8 +71,8 @@ doctorId: string, dayOfWeek: string, startTime: string, endTime: string, price: 
 
   fetchSlotsByDate: async (doctorId: string, selectedDate: string, token: string) => {
     try {
-      const dayOfWeek = dayjs(selectedDate).format("dddd"); // Convert date to day of week
-      const response = await axios.get(`${API_BASE}/${doctorId}/day/${dayOfWeek}`, { // Change endpoint
+      const dayOfWeek = dayjs(selectedDate).format("dddd");
+      const response = await axios.get(`${API_BASE}/${doctorId}/date/${selectedDate}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.data || !Array.isArray(response.data.slots)) {

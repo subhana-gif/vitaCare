@@ -144,17 +144,14 @@ const setPassword = async (token: string, password: string): Promise<string> => 
     
     const fetchDoctor = async () => {
       const token = localStorage.getItem("doctortoken");
-      
       if (!token) {
         throw new Error("Authentication token not found");
       }
-    
       try {
         const response = await axios.get(`${API_BASE_URL}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        return response.data; // Now returns the profile object directly
+        }); 
+        return response.data;
       } catch (error) {
         console.error("Error fetching doctor profile:", error);
         throw error;

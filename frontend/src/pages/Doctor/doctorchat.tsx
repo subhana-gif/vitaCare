@@ -145,7 +145,7 @@ useEffect(() => {
                   </span>
                 </div>
                 <p className="text-gray-600 truncate">
-                  {chat.lastMessage || "No messages yet"}
+                  {chat.lastMessage || ""}
                 </p>
               </div>
               {unreadInfo[chat._id]?.count > 0 && (

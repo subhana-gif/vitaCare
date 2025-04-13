@@ -8,9 +8,17 @@ interface VideoCallProps {
   socket: Socket;
   userId: string;
   targetUserId: string;
+  userName?: string;       
+  targetUserName?: string; 
 }
 
-const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) => {
+const VideoCall: React.FC<VideoCallProps> = ({ 
+  socket, 
+  userId, 
+  targetUserId, 
+  userName = "User", 
+  targetUserName = "Contact" 
+}) => {
   const [isCalling, setIsCalling] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
   const [muteLocalAudio, setMuteLocalAudio] = useState(true);
@@ -29,6 +37,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
   const [connectionState, setConnectionState] = useState<string>("");
   const [iceState, setIceState] = useState<string>("");
+  const [callerName, setCallerName] = useState<string>("");  // Store caller's name
 
   const getCallDuration = () => {
     if (!callStartTime) {
@@ -184,7 +193,12 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      socket.emit("callUser", { to: targetUserId, from: userId, offer });
+      socket.emit("callUser", { 
+        to: targetUserId, 
+        from: userId, 
+        offer, 
+        userName // Send the user's name with the call
+      });
     } catch (error: any) {
       console.error("Error starting call:", error.name, error.message);
       setIsCalling(false);
@@ -233,7 +247,11 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      socket.emit("acceptCall", { to: socketId, answer });
+      socket.emit("acceptCall", { 
+        to: socketId, 
+        answer, 
+        userName // Send the user's name when accepting
+      });
     } catch (error: any) {
       console.error("Error accepting call:", error.name, error.message);
       setIsCalling(false);
@@ -311,6 +329,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
     setCallStartTime(null);
     setConnectionState("");
     setIceState("");
+    setCallerName("");
     if (ringAudioRef.current) {
       ringAudioRef.current.pause();
       ringAudioRef.current.currentTime = 0;
@@ -340,9 +359,10 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
 
     socket.emit("registerVideoCall", userId);
 
-    socket.on("incomingCall", async ({ from, offer, socketId }) => {
+    socket.on("incomingCall", async ({ from, offer, socketId, userName: callerName }) => {
       setIsRinging(true);
       setTargetSocketId(socketId);
+      setCallerName(callerName || "Unknown Caller");
       const proceed = await checkPermissions();
       if (proceed) {
         (window as any).acceptCall = () => acceptCall(offer, socketId);
@@ -417,6 +437,17 @@ const VideoCall: React.FC<VideoCallProps> = ({ socket, userId, targetUserId }) =
 
       {(isCalling || isRinging) && (
         <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center z-50">
+          {/* Display user name */}
+          <div className="absolute top-4 left-0 right-0 text-center">
+            <h2 className="text-white text-2xl font-semibold">
+              {isRinging && !isCalling ? (
+                <span>Incoming call from <span className="text-green-400">{callerName}</span></span>
+              ) : (
+                <span>Calling <span className="text-green-400">{targetUserName}</span></span>
+              )}
+            </h2>
+          </div>
+          
           <div className="relative w-full h-[80vh] max-w-5xl flex items-center justify-center">
             {isLocalMain ? (
               <video
