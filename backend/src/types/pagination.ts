@@ -1,5 +1,5 @@
-export interface PaginationResult<T> {
-    data: T[];
+export interface PaginationResult<T> {    
+  data: T[];
     pagination: {
       total: number;
       pages: number;
