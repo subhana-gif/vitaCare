@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle, Calendar, Clock, Star, Shield, Users } from "lucide-react";
-import { fetchHealthArticles } from "../../services/healthservice";
+// import { fetchHealthArticles } from "../../services/healthservice";
 import { motion } from "framer-motion";
 import { T } from "@tolgee/react";
 
@@ -64,15 +64,15 @@ const HomePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [testimonials.length]);
 
-  useEffect(() => {
-    const loadArticles = async () => {
-      const data = await fetchHealthArticles();
-      setArticles(data);
-      setLoading(false);
-    };
+  // useEffect(() => {
+  //   const loadArticles = async () => {
+  //     const data = await fetchHealthArticles();
+  //     setArticles(data);
+  //     setLoading(false);
+  //   };
 
-    loadArticles();
-  }, []);
+  //   loadArticles();
+  // }, []);
 
 
   const handleSpecialtyClick = (specialty: Specialty) => {
