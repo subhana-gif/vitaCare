@@ -194,7 +194,7 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-6">
+      {/* <div className="p-6">
       <h1 className="text-3xl font-bold mb-4">
         <T keyName="🩺 Latest Health Articles">
         🩺 Latest Health Articles
@@ -228,7 +228,7 @@ const HomePage: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+    </div> */}
 
 
       {/* Footer */}

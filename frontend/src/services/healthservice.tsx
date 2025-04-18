@@ -5,8 +5,15 @@ const BASE_URL = "https://newsapi.org/v2/everything";
 
 export const fetchHealthArticles = async () => {
   try {
-    const response = await axios.get(`https://gnews.io/api/v4/search?q=health&lang=en&token=${API_KEY}`);
-      return response.data.articles;
+    const response = await axios.get(`${BASE_URL}`, {
+      params: {
+        q: "health",
+        apiKey: API_KEY,
+        pageSize: 6, 
+        language: "en",
+      },
+    });
+    return response.data.articles;
   } catch (error) {
     console.error("Error fetching health articles:", error);
     return [];
