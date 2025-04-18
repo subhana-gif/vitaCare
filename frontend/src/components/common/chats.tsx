@@ -8,7 +8,9 @@ import { RootState } from "../../redux/store";
 import { userService } from "../../services/userService";
 import { doctorService } from "../../services/doctorService";
 
-const socket: Socket = io("http://localhost:5001", { withCredentials: true });
+const socket: Socket = io("https://vitacare.life", {
+  withCredentials: true,
+});
 
 interface Message {
   _id: string;
@@ -104,7 +106,7 @@ useEffect(() => {
       return;
     }
     try {
-      await axios.delete(`http://localhost:5001/api/chat/message/${messageId}`, {
+      await axios.delete(`https://vitacare.life/api/chat/message/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
@@ -199,7 +201,7 @@ useEffect(() => {
 
     const fetchMessages = async () => {
       try {
-        const res = await axios.get<Message[]>(`http://localhost:5001/api/chat/${targetUserId}/${currentUserId}`, {
+        const res = await axios.get<Message[]>(`https://vitacare.life/api/chat/${targetUserId}/${currentUserId}`, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
         const sortedMessages = res.data.sort(
@@ -267,7 +269,7 @@ useEffect(() => {
     if (media) formData.append("image", media);
 
     try {
-      const res = await axios.post("http://localhost:5001/api/chat/send", formData, {
+      const res = await axios.post("https://vitacare.life/api/chat/send", formData, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
       socket.emit("sendMessage", res.data);
