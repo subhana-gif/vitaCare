@@ -53,7 +53,7 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const socket = io("http://localhost:5001", {
+    const socket = io("https://vitacare.life/api", {
       withCredentials: true,
       transports: ["websocket", "polling"],
     });

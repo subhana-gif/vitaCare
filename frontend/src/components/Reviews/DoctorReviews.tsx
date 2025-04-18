@@ -30,7 +30,7 @@ const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
   const fetchReviews = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/reviews/${doctorId}`,
+        `https://vitacare.life/api/reviews/${doctorId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -48,7 +48,7 @@ const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
   const fetchAverageRating = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/reviews/${doctorId}/rating`,
+        `https://vitacare.life/api/reviews/${doctorId}/rating`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -91,7 +91,7 @@ const DoctorReviews: React.FC<DoctorReviewsProps> = ({ doctorId, token }) => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://localhost:5001/api/reviews', {
+      const response = await fetch('https://vitacare.life/api/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

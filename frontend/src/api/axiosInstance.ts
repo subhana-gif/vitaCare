@@ -2,7 +2,7 @@ import axios, {  InternalAxiosRequestConfig } from "axios";
 import { store } from "../redux/store";
 
 const API = axios.create({
-  baseURL: "http://localhost:5001",
+  baseURL: "https://vitacare.life/api",
   withCredentials: true, // Send cookies
 });
 

@@ -22,7 +22,7 @@ const DoctorNavbar = () => {
   useEffect(() => {
     if (!doctorId) return;
 
-    const newSocket = io("http://localhost:5001", {
+    const newSocket = io("https://vitacare.life/api", {
       withCredentials: true,
       transports: ["websocket", "polling"],
     });
@@ -51,7 +51,7 @@ const DoctorNavbar = () => {
 
   const markNotificationsAsSeen = async () => {
     try {
-      await fetch(`http://localhost:5001/api/notifications/mark-seen/${doctorId}`, {
+      await fetch(`https://vitacare.life/api/notifications/mark-seen/${doctorId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

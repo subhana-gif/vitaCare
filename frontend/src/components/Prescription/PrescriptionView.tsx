@@ -32,7 +32,7 @@ const PrescriptionView: React.FC = () => {
     const fetchPrescription = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5001/api/prescriptions/${appointmentId}`,
+          `https://vitacare.life/api/prescriptions/${appointmentId}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -54,7 +54,7 @@ const PrescriptionView: React.FC = () => {
   const handleDownload = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5001/api/prescriptions/${appointmentId}/download`,
+        `https://vitacare.life/api/prescriptions/${appointmentId}/download`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
