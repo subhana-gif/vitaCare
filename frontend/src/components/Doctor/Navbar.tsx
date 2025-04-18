@@ -22,7 +22,8 @@ const DoctorNavbar = () => {
   useEffect(() => {
     if (!doctorId) return;
 
-    const newSocket = io("https://vitacare.life/api", {
+    const newSocket = io("https://vitacare.life", {
+      path: "/socket.io/",
       withCredentials: true,
       transports: ["websocket", "polling"],
     });

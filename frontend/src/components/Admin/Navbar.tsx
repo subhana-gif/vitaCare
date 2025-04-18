@@ -19,7 +19,8 @@ const Navbar = () => {
   useEffect(() => {
     if (!token) return;
 
-    const socket = io("https://vitacare.life/api", {
+    const socket = io("https://vitacare.life", {
+      path: "/socket.io/",
       withCredentials: true,
       transports: ["websocket", "polling"],
     });

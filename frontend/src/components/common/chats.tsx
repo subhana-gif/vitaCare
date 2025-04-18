@@ -9,6 +9,7 @@ import { userService } from "../../services/userService";
 import { doctorService } from "../../services/doctorService";
 
 const socket: Socket = io("https://vitacare.life", {
+  path: "/socket.io/",
   withCredentials: true,
 });
 
