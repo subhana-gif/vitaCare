@@ -51,7 +51,7 @@ export class UserService implements IUserService {
     }
 
     const resetToken = TokenService.generateToken({ email: user.email,role:"user" }, "1h");
-    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL || "https://vitacare.life"}/reset-password/${resetToken}`;
     await EmailService.sendPasswordResetEmail(email, resetLink);
     return { success: true, message: "Reset instructions sent to your email" };
   }

@@ -52,7 +52,7 @@ export class DoctorService implements IDoctorService {
     );
     console.log("set password token:",resetToken)
     const resetLink = `${
-      process.env.FRONTEND_URL || "http://localhost:5173"
+      process.env.FRONTEND_URL || "https://vitacare.life"
     }/doctors/set-password/${resetToken}`;
     await EmailService.sendPasswordResetEmail(doctor.email, resetLink);
 
@@ -86,7 +86,7 @@ export class DoctorService implements IDoctorService {
       "1h"
     );
     const resetLink = `${
-      process.env.FRONTEND_URL || "http://localhost:5173"
+      process.env.FRONTEND_URL || "https://vitacare.life"
     }/doctor/resetPassword/${resetToken}`;
     await EmailService.sendPasswordResetEmail(email, resetLink);
   }
