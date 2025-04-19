@@ -39,6 +39,7 @@ import React, { useState, useEffect } from "react";
     const [selectedSpecialization, setSelectedSpecialization] = useState<string>("");
     const [showFilters, setShowFilters] = useState<boolean>(false);
     const [showSortDropdown, setShowSortDropdown] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [sort, setSort] = useState<SortState>({
       field: sortFieldParam,
       direction: sortDirParam
@@ -63,6 +64,7 @@ import React, { useState, useEffect } from "react";
 
     useEffect(() => {
       const fetchDoctors = async () => {
+        setIsLoading(true);
   try {
     const response = await doctorService.fetchAllDoctors();
     const activeDoctors = response.doctors.filter((doctor: { isBlocked: any; }) => !doctor.isBlocked);
@@ -109,6 +111,8 @@ import React, { useState, useEffect } from "react";
   } catch (error) {
     console.error("Error fetching doctors:", error);
     setDoctors([]);
+  }finally {
+    setIsLoading(false);
   }
 };
 
@@ -206,6 +210,18 @@ import React, { useState, useEffect } from "react";
         default: return "Name";
       }
     };
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-24 h-24 border-8 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <p className="text-3xl font-bold text-gray-700">Loading Doctors...</p>
+          </div>
+        </div>
+      );
+    }
+  
 
     return (
       <div className="w-full px-2 py-6">

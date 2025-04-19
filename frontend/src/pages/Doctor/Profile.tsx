@@ -5,7 +5,6 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { doctorService } from "../../services/doctorService";
 import React from "react";
-import axios from "axios";
 import { adminService } from "../../services/adminSevice";
 
 interface Doctor {
