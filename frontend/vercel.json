@@ -1,6 +1,14 @@
-{
+
+  {
     "rewrites": [
-      { "source": "/(.*)", "destination": "/index.html" }
+      {
+        "source": "/(.*)",
+        "destination": "https://44.208.23.192/api/$1"
+      },
+      {
+        "source": "/socket.io/(.*)",
+        "destination": "https://44.208.23.192/socket.io/$1"
+      }
     ]
   }
   
