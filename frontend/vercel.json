@@ -10,7 +10,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "https://vitacare.life/$1"
+      "destination": "index.html"
     }
   ]
 }
