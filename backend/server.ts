@@ -51,7 +51,7 @@ app.options("*", (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://vitacare.life", 
+    origin: ["https://vitacare.life","https://vita-care-subhana-gifs-projects.vercel.app/"] ,
     credentials: true,
     methods: ["GET", "POST"],
   },
