@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://13.218.50.207/api/$1"
+      "destination": "https://18.212.172.46/api/$1"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "https://13.218.50.207/socket.io/$1"
+      "destination": "https://18.212.172.46/socket.io/$1"
     },
     {
       "source": "/(.*)",
